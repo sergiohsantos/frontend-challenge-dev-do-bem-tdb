@@ -523,12 +523,7 @@ https://github.com/sergiohsantos/frontend-challenge-dev-do-bem-sprint3
 **Link do vídeo no YouTube:**
 
 ```txt
-
-```
-
-Exemplo:
-```txt
-
+https://youtu.be/wmODf-Xuycg?si=hnypX6oyPrGFbAI6
 ```
 
 ---
