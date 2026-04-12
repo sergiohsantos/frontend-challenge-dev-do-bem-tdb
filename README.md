@@ -513,12 +513,7 @@ Além disso, o projeto passou a contar com:
 **Link do repositório:**
 
 ```txt
-COLE_AQUI_O_LINK_DO_GITHUB
-```
-
-Exemplo:
-```txt
-https://github.com/seu-usuario/seu-repositorio
+https://github.com/sergiohsantos/frontend-challenge-dev-do-bem-sprint3
 ```
 
 ---
