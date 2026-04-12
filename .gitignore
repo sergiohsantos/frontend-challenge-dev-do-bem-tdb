@@ -1,0 +1,15 @@
+#sandbox internal files
+runtime_loader.js
+devtools.tsx
+jsx-dev-runtime.ts
+.snowflake/
+trash/
+next.user-config.*
+
+# Environment variables
+.env*.local
+
+# Common ignores
+node_modules/
+.next/
+.DS_Store
