@@ -31,6 +31,52 @@ const steps = [
   { id: 3, title: "Disponibilidade", icon: FileCheck },
 ]
 
+const ESPECIALIDADE_LABELS: Record<string, string> = {
+  "clinico-geral": "Clínico Geral",
+  ortodontia: "Ortodontia",
+  endodontia: "Endodontia",
+  periodontia: "Periodontia",
+  odontopediatria: "Odontopediatria",
+  cirurgia: "Cirurgia",
+  protese: "Prótese",
+  clinica: "Clínica",
+  infantil: "Infantil",
+  adolescentes: "Adolescentes",
+  familiar: "Familiar",
+  outra: "Outra",
+}
+
+const HORARIOS_LABELS: Record<string, string> = {
+  manha: "Manhã (8h - 12h)",
+  tarde: "Tarde (13h - 18h)",
+  noite: "Noite (18h - 21h)",
+  integral: "Integral",
+  flexivel: "Flexível",
+}
+
+const QUANTIDADE_LABELS: Record<string, string> = {
+  "1-2": "1 a 2 pacientes",
+  "3-5": "3 a 5 pacientes",
+  "5-10": "5 a 10 pacientes",
+  "10+": "Mais de 10 pacientes",
+}
+
+const TEMPO_EXPERIENCIA_LABELS: Record<string, string> = {
+  "0-2": "0 a 2 anos",
+  "2-5": "2 a 5 anos",
+  "5-10": "5 a 10 anos",
+  "10+": "Mais de 10 anos",
+}
+
+const COMO_CONHECEU_LABELS: Record<string, string> = {
+  "cro-crp": "CRO/CRP",
+  internet: "Internet/Redes Sociais",
+  colega: "Colega de profissão",
+  evento: "Evento/Congresso",
+  "tv-radio": "TV/Rádio",
+  outro: "Outro",
+}
+
 export default function CadastroVoluntarioPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -130,6 +176,33 @@ export default function CadastroVoluntarioPage() {
     }
   }
 
+  const buildAvailabilitySummary = () => {
+    const parts = [
+      formData.diasDisponiveis.length > 0 ? `Dias: ${formData.diasDisponiveis.join(", ")}` : "",
+      formData.horariosDisponiveis ? `Horários: ${HORARIOS_LABELS[formData.horariosDisponiveis] ?? formData.horariosDisponiveis}` : "",
+      formData.quantidadeAtendimentos ? `Capacidade mensal: ${QUANTIDADE_LABELS[formData.quantidadeAtendimentos] ?? formData.quantidadeAtendimentos}` : "",
+    ]
+
+    return parts.filter(Boolean).join(" | ")
+  }
+
+  const buildObservationsSummary = () => {
+    const parts = [
+      formData.dataNascimento ? `Data de nascimento: ${formData.dataNascimento}` : "",
+      formData.cep ? `CEP: ${normalizeDigits(formData.cep)}` : "",
+      formData.bairro ? `Bairro: ${formData.bairro.trim()}` : "",
+      formData.endereco ? `Endereço residencial: ${formData.endereco.trim()}, ${formData.numero.trim()}` : "",
+      formData.tempoExperiencia ? `Tempo de experiência: ${TEMPO_EXPERIENCIA_LABELS[formData.tempoExperiencia] ?? formData.tempoExperiencia}` : "",
+      formData.clinica ? `Clínica/consultório: ${formData.clinica.trim()}` : "",
+      formData.enderecoClinica ? `Endereço da clínica: ${formData.enderecoClinica.trim()}` : "",
+      formData.motivacao ? `Motivação: ${formData.motivacao.trim()}` : "",
+      formData.comoConheceu ? `Como conheceu a TDB: ${COMO_CONHECEU_LABELS[formData.comoConheceu] ?? formData.comoConheceu}` : "",
+      "Termos aceitos no frontend: política/uso e compromisso de voluntariado.",
+    ]
+
+    return parts.filter(Boolean).join("\n").slice(0, 2000)
+  }
+
   const validateStep = (step: number): boolean => {
     const nextErrors: Record<string, string> = {}
     if (step === 1) {
@@ -139,7 +212,11 @@ export default function CadastroVoluntarioPage() {
       if (!formData.telefone.trim()) nextErrors.telefone = "Informe o telefone."
       if (!formData.email.trim()) nextErrors.email = "Informe o e-mail."
       if (!formData.cep.trim()) nextErrors.cep = "Informe o CEP."
-      if (!formData.estado.trim()) nextErrors.estado = "Informe o estado."
+      if (!formData.estado.trim()) {
+        nextErrors.estado = "Informe o estado."
+      } else if (formData.estado.trim().length !== 2) {
+        nextErrors.estado = "Selecione uma UF válida."
+      }
       if (!formData.cidade.trim()) nextErrors.cidade = "Informe a cidade."
       if (!formData.bairro.trim()) nextErrors.bairro = "Informe o bairro."
       if (!formData.endereco.trim()) nextErrors.endereco = "Informe a rua/endereco."
@@ -183,13 +260,32 @@ export default function CadastroVoluntarioPage() {
     setSubmitError(null)
     
     try {
-      // Prepare payload with normalized values
+      const tipoProfissional =
+        formData.profissao === "psicologo"
+          ? "PSICOLOGO"
+          : formData.profissao === "dentista"
+            ? "DENTISTA"
+            : "OUTRO"
+
+      const croCrp =
+        formData.profissao === "dentista"
+          ? formData.cro.trim()
+          : formData.profissao === "psicologo"
+            ? formData.crp.trim()
+            : undefined
+
       const payload = {
-        ...formData,
-        cpf: normalizeDigits(formData.cpf),
-        telefone: normalizeDigits(formData.telefone),
-        cep: normalizeDigits(formData.cep),
+        nomeCompleto: formData.nomeCompleto.trim(),
         email: normalizeEmail(formData.email),
+        telefone: normalizeDigits(formData.telefone),
+        cpf: normalizeDigits(formData.cpf),
+        tipoProfissional,
+        especialidade: formData.especialidade ? (ESPECIALIDADE_LABELS[formData.especialidade] ?? formData.especialidade) : undefined,
+        croCrp: croCrp || undefined,
+        cidade: formData.cidade.trim(),
+        estado: formData.estado.trim().length === 2 ? formData.estado.trim() : undefined,
+        disponibilidade: buildAvailabilitySummary() || undefined,
+        observacoes: buildObservationsSummary() || undefined,
       }
       
       const response = await apiFetch<RegistrationSuccessResponse>("/api/volunteers/registrations", {
@@ -428,7 +524,22 @@ export default function CadastroVoluntarioPage() {
                               <SelectItem value="PA">Pará</SelectItem>
                               <SelectItem value="SC">Santa Catarina</SelectItem>
                               <SelectItem value="GO">Goiás</SelectItem>
-                              <SelectItem value="outro">Outro</SelectItem>
+                              <SelectItem value="MA">MaranhÃ£o</SelectItem>
+                              <SelectItem value="AM">Amazonas</SelectItem>
+                              <SelectItem value="ES">EspÃ­rito Santo</SelectItem>
+                              <SelectItem value="PB">ParaÃ­ba</SelectItem>
+                              <SelectItem value="RN">Rio Grande do Norte</SelectItem>
+                              <SelectItem value="MT">Mato Grosso</SelectItem>
+                              <SelectItem value="AL">Alagoas</SelectItem>
+                              <SelectItem value="PI">PiauÃ­</SelectItem>
+                              <SelectItem value="DF">Distrito Federal</SelectItem>
+                              <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
+                              <SelectItem value="SE">Sergipe</SelectItem>
+                              <SelectItem value="RO">RondÃ´nia</SelectItem>
+                              <SelectItem value="TO">Tocantins</SelectItem>
+                              <SelectItem value="AC">Acre</SelectItem>
+                              <SelectItem value="AP">AmapÃ¡</SelectItem>
+                              <SelectItem value="RR">Roraima</SelectItem>
                             </SelectContent>
                           </Select>
                           {errors.estado && <p className="text-sm text-destructive">{errors.estado}</p>}
