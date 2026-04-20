@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -15,6 +15,7 @@ import { ProgressIndicator } from "@/components/ui/progress-indicator"
 import { ContextualHelp } from "@/components/ui/contextual-help"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { apiFetch, normalizeDigits, normalizeEmail } from "@/lib/api"
+import { fetchAddressByCep } from "@/lib/viacep"
 
 // Response type for registration endpoint
 interface RegistrationSuccessResponse {
@@ -40,6 +41,8 @@ export default function CadastroBeneficiarioPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isCepLoading, setIsCepLoading] = useState(false)
+  const [cepFeedback, setCepFeedback] = useState<string | null>(null)
   const [registrationResponse, setRegistrationResponse] = useState<RegistrationSuccessResponse | null>(null)
   const [formData, setFormData] = useState({
     // Step 1
@@ -79,6 +82,52 @@ export default function CadastroBeneficiarioPage() {
     }
   }
 
+  useEffect(() => {
+    const cep = normalizeDigits(formData.cep)
+    if (cep.length !== 8) {
+      setIsCepLoading(false)
+      setCepFeedback(null)
+      return
+    }
+
+    const controller = new AbortController()
+    setIsCepLoading(true)
+    setCepFeedback(null)
+
+    fetchAddressByCep(cep, controller.signal)
+      .then((address) => {
+        if (!address) {
+          setCepFeedback("CEP não encontrado. Você pode preencher o endereço manualmente.")
+          return
+        }
+
+        if (!address.endereco) {
+          setCepFeedback("CEP encontrado, mas a rua nÃ£o foi informada. Preencha o endereÃ§o manualmente.")
+        }
+        setFormData((prev) => ({
+          ...prev,
+          cep: address.cep,
+          estado: address.estado,
+          cidade: address.cidade,
+          bairro: address.bairro,
+          endereco: address.endereco,
+        }))
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.name === "AbortError") {
+          return
+        }
+        setCepFeedback("Não foi possível consultar o CEP agora. Você pode continuar preenchendo manualmente.")
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsCepLoading(false)
+        }
+      })
+
+    return () => controller.abort()
+  }, [formData.cep])
+
   // Heurística 3: Prevenção de Erros - Validação antes de avançar
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {}
@@ -86,16 +135,25 @@ export default function CadastroBeneficiarioPage() {
     if (step === 1) {
       if (!formData.nomeCompleto.trim()) newErrors.nomeCompleto = "Nome é obrigatório"
       if (!formData.dataNascimento) newErrors.dataNascimento = "Data de nascimento é obrigatória"
+      if (!formData.genero) newErrors.genero = "Gênero é obrigatório"
+      if (!formData.cpf.trim()) newErrors.cpf = "CPF é obrigatório"
+      if (!formData.telefone.trim()) newErrors.telefone = "Telefone é obrigatório"
+      if (!formData.nomeResponsavel.trim()) newErrors.nomeResponsavel = "Nome do responsável é obrigatório"
       if (!formData.telefoneResponsavel.trim()) newErrors.telefoneResponsavel = "Telefone do responsável é obrigatório"
+      if (!formData.parentesco) newErrors.parentesco = "Parentesco é obrigatório"
     }
     
     if (step === 2) {
       if (!formData.cep.trim()) newErrors.cep = "CEP é obrigatório"
+      if (!formData.estado.trim()) newErrors.estado = "Estado é obrigatório"
       if (!formData.cidade.trim()) newErrors.cidade = "Cidade é obrigatória"
+      if (!formData.bairro.trim()) newErrors.bairro = "Bairro é obrigatório"
       if (!formData.endereco.trim()) newErrors.endereco = "Endereço é obrigatório"
+      if (!formData.numero.trim()) newErrors.numero = "Número é obrigatório"
     }
-    
+
     if (step === 3) {
+      if (!formData.rendaFamiliar) newErrors.rendaFamiliar = "Renda familiar mensal é obrigatória"
       if (!formData.termos) newErrors.termos = "Você deve aceitar os termos"
     }
     
@@ -285,7 +343,7 @@ export default function CadastroBeneficiarioPage() {
                             value={formData.genero} 
                             onValueChange={(value) => handleInputChange("genero", value)}
                           >
-                            <SelectTrigger className="h-12 text-base">
+                            <SelectTrigger className={`h-12 text-base ${errors.genero ? "border-destructive" : ""}`}>
                               <SelectValue placeholder="Selecione" />
                             </SelectTrigger>
                             <SelectContent>
@@ -295,6 +353,12 @@ export default function CadastroBeneficiarioPage() {
                               <SelectItem value="prefiro-nao-dizer">Prefiro não dizer</SelectItem>
                             </SelectContent>
                           </Select>
+                          {errors.genero && (
+                            <p className="flex items-center gap-1 text-sm text-destructive">
+                              <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                              {errors.genero}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -306,9 +370,15 @@ export default function CadastroBeneficiarioPage() {
                             placeholder="000.000.000-00"
                             value={formData.cpf}
                             onChange={(e) => handleInputChange("cpf", e.target.value)}
-                            className="h-12 text-base"
+                            className={`h-12 text-base ${errors.cpf ? "border-destructive" : ""}`}
                             required
                           />
+                          {errors.cpf && (
+                            <p className="flex items-center gap-1 text-sm text-destructive">
+                              <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                              {errors.cpf}
+                            </p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="rg" className="text-base">RG</Label>
@@ -331,9 +401,15 @@ export default function CadastroBeneficiarioPage() {
                             placeholder="(00) 00000-0000"
                             value={formData.telefone}
                             onChange={(e) => handleInputChange("telefone", e.target.value)}
-                            className="h-12 text-base"
+                            className={`h-12 text-base ${errors.telefone ? "border-destructive" : ""}`}
                             required
                           />
+                          {errors.telefone && (
+                            <p className="flex items-center gap-1 text-sm text-destructive">
+                              <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                              {errors.telefone}
+                            </p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="email" className="text-base">E-mail</Label>
@@ -366,9 +442,15 @@ export default function CadastroBeneficiarioPage() {
                               placeholder="Nome completo do pai, mãe ou responsável"
                               value={formData.nomeResponsavel}
                               onChange={(e) => handleInputChange("nomeResponsavel", e.target.value)}
-                              className="h-12 text-base"
+                              className={`h-12 text-base ${errors.nomeResponsavel ? "border-destructive" : ""}`}
                               required
                             />
+                            {errors.nomeResponsavel && (
+                              <p className="flex items-center gap-1 text-sm text-destructive">
+                                <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                                {errors.nomeResponsavel}
+                              </p>
+                            )}
                           </div>
                           <div className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
@@ -381,9 +463,15 @@ export default function CadastroBeneficiarioPage() {
                                 placeholder="(00) 00000-0000"
                                 value={formData.telefoneResponsavel}
                                 onChange={(e) => handleInputChange("telefoneResponsavel", e.target.value)}
-                                className="h-12 text-base"
+                                className={`h-12 text-base ${errors.telefoneResponsavel ? "border-destructive" : ""}`}
                                 required
                               />
+                              {errors.telefoneResponsavel && (
+                                <p className="flex items-center gap-1 text-sm text-destructive">
+                                  <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                                  {errors.telefoneResponsavel}
+                                </p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="parentesco" className="text-base">Parentesco *</Label>
@@ -391,7 +479,7 @@ export default function CadastroBeneficiarioPage() {
                                 value={formData.parentesco} 
                                 onValueChange={(value) => handleInputChange("parentesco", value)}
                               >
-                                <SelectTrigger className="h-12 text-base">
+                                <SelectTrigger className={`h-12 text-base ${errors.parentesco ? "border-destructive" : ""}`}>
                                   <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -403,6 +491,12 @@ export default function CadastroBeneficiarioPage() {
                                   <SelectItem value="outro">Outro</SelectItem>
                                 </SelectContent>
                               </Select>
+                              {errors.parentesco && (
+                                <p className="flex items-center gap-1 text-sm text-destructive">
+                                  <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                                  {errors.parentesco}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -421,9 +515,16 @@ export default function CadastroBeneficiarioPage() {
                             placeholder="00000-000"
                             value={formData.cep}
                             onChange={(e) => handleInputChange("cep", e.target.value)}
-                            className="h-12 text-base"
+                            className={`h-12 text-base ${errors.cep ? "border-destructive" : ""}`}
                             required
                           />
+                          {isCepLoading && (
+                            <p className="text-sm text-muted-foreground">Buscando endereço pelo CEP...</p>
+                          )}
+                          {!isCepLoading && cepFeedback && (
+                            <p className="text-sm text-muted-foreground">{cepFeedback}</p>
+                          )}
+                          {errors.cep && <p className="text-sm text-destructive">{errors.cep}</p>}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="estado" className="text-base">Estado *</Label>
@@ -431,7 +532,7 @@ export default function CadastroBeneficiarioPage() {
                             value={formData.estado} 
                             onValueChange={(value) => handleInputChange("estado", value)}
                           >
-                            <SelectTrigger className="h-12 text-base">
+                            <SelectTrigger className={`h-12 text-base ${errors.estado ? "border-destructive" : ""}`}>
                               <SelectValue placeholder="Selecione o estado" />
                             </SelectTrigger>
                             <SelectContent>
@@ -464,6 +565,7 @@ export default function CadastroBeneficiarioPage() {
                               <SelectItem value="RR">Roraima</SelectItem>
                             </SelectContent>
                           </Select>
+                          {errors.estado && <p className="text-sm text-destructive">{errors.estado}</p>}
                         </div>
                       </div>
 
@@ -475,9 +577,10 @@ export default function CadastroBeneficiarioPage() {
                             placeholder="Nome da cidade"
                             value={formData.cidade}
                             onChange={(e) => handleInputChange("cidade", e.target.value)}
-                            className="h-12 text-base"
+                            className={`h-12 text-base ${errors.cidade ? "border-destructive" : ""}`}
                             required
                           />
+                          {errors.cidade && <p className="text-sm text-destructive">{errors.cidade}</p>}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="bairro" className="text-base">Bairro *</Label>
@@ -486,9 +589,10 @@ export default function CadastroBeneficiarioPage() {
                             placeholder="Nome do bairro"
                             value={formData.bairro}
                             onChange={(e) => handleInputChange("bairro", e.target.value)}
-                            className="h-12 text-base"
+                            className={`h-12 text-base ${errors.bairro ? "border-destructive" : ""}`}
                             required
                           />
+                          {errors.bairro && <p className="text-sm text-destructive">{errors.bairro}</p>}
                         </div>
                       </div>
 
@@ -499,9 +603,10 @@ export default function CadastroBeneficiarioPage() {
                           placeholder="Rua, Avenida, etc."
                           value={formData.endereco}
                           onChange={(e) => handleInputChange("endereco", e.target.value)}
-                          className="h-12 text-base"
+                          className={`h-12 text-base ${errors.endereco ? "border-destructive" : ""}`}
                           required
                         />
+                        {errors.endereco && <p className="text-sm text-destructive">{errors.endereco}</p>}
                       </div>
 
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -512,9 +617,10 @@ export default function CadastroBeneficiarioPage() {
                             placeholder="Número"
                             value={formData.numero}
                             onChange={(e) => handleInputChange("numero", e.target.value)}
-                            className="h-12 text-base"
+                            className={`h-12 text-base ${errors.numero ? "border-destructive" : ""}`}
                             required
                           />
+                          {errors.numero && <p className="text-sm text-destructive">{errors.numero}</p>}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="complemento" className="text-base">Complemento</Label>
@@ -575,7 +681,7 @@ export default function CadastroBeneficiarioPage() {
                           value={formData.rendaFamiliar} 
                           onValueChange={(value) => handleInputChange("rendaFamiliar", value)}
                         >
-                          <SelectTrigger className="h-12 text-base">
+                          <SelectTrigger className={`h-12 text-base ${errors.rendaFamiliar ? "border-destructive" : ""}`}>
                             <SelectValue placeholder="Selecione a faixa de renda" />
                           </SelectTrigger>
                           <SelectContent>
@@ -585,6 +691,12 @@ export default function CadastroBeneficiarioPage() {
                             <SelectItem value="3-mais">Mais de 3 salários mínimos</SelectItem>
                           </SelectContent>
                         </Select>
+                        {errors.rendaFamiliar && (
+                          <p className="flex items-center gap-1 text-sm text-destructive">
+                            <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                            {errors.rendaFamiliar}
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -655,6 +767,12 @@ export default function CadastroBeneficiarioPage() {
                             . Autorizo o uso dos dados para fins de cadastro e acompanhamento pelo programa.
                           </Label>
                         </div>
+                        {errors.termos && (
+                          <p className="mt-3 flex items-center gap-1 text-sm text-destructive">
+                            <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                            {errors.termos}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}

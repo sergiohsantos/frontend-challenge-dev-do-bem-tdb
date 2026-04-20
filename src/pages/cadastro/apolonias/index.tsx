@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -16,6 +16,7 @@ import { ProgressIndicator } from "@/components/ui/progress-indicator"
 import { ContextualHelp } from "@/components/ui/contextual-help"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { apiFetch, normalizeDigits } from "@/lib/api"
+import { fetchAddressByCep } from "@/lib/viacep"
 
 // Response type for the Apolônias registration endpoint
 interface ApoloniasRegistrationResponse {
@@ -42,6 +43,8 @@ export default function CadastroApoloniasPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isCepLoading, setIsCepLoading] = useState(false)
+  const [cepFeedback, setCepFeedback] = useState<string | null>(null)
   const [registrationResponse, setRegistrationResponse] = useState<ApoloniasRegistrationResponse | null>(null)
   const [formData, setFormData] = useState({
     // Dados pessoais
@@ -78,6 +81,52 @@ export default function CadastroApoloniasPage() {
       setErrors((prev) => ({ ...prev, [field]: "" }))
     }
   }
+
+  useEffect(() => {
+    const cep = normalizeDigits(formData.cep)
+    if (cep.length !== 8) {
+      setIsCepLoading(false)
+      setCepFeedback(null)
+      return
+    }
+
+    const controller = new AbortController()
+    setIsCepLoading(true)
+    setCepFeedback(null)
+
+    fetchAddressByCep(cep, controller.signal)
+      .then((address) => {
+        if (!address) {
+          setCepFeedback("CEP não encontrado. Você pode preencher o endereço manualmente.")
+          return
+        }
+
+        if (!address.endereco) {
+          setCepFeedback("CEP encontrado, mas a rua nÃ£o foi informada. Preencha o endereÃ§o manualmente.")
+        }
+        setFormData((prev) => ({
+          ...prev,
+          cep: address.cep,
+          endereco: address.endereco,
+          bairro: address.bairro,
+          cidade: address.cidade,
+          estado: address.estado,
+        }))
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.name === "AbortError") {
+          return
+        }
+        setCepFeedback("Não foi possível consultar o CEP agora. Você pode continuar preenchendo manualmente.")
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsCepLoading(false)
+        }
+      })
+
+    return () => controller.abort()
+  }, [formData.cep])
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {}
@@ -474,6 +523,12 @@ export default function CadastroApoloniasPage() {
                                 className={`h-12 text-base ${errors.cep ? "border-destructive" : ""}`}
                                 required
                               />
+                              {isCepLoading && (
+                                <p className="text-sm text-muted-foreground">Buscando endereço pelo CEP...</p>
+                              )}
+                              {!isCepLoading && cepFeedback && (
+                                <p className="text-sm text-muted-foreground">{cepFeedback}</p>
+                              )}
                               {errors.cep && (
                                 <p className="flex items-center gap-1 text-sm text-destructive">
                                   <AlertCircle className="h-4 w-4" aria-hidden="true" />
@@ -488,8 +543,9 @@ export default function CadastroApoloniasPage() {
                                 placeholder="Rua, Avenida..."
                                 value={formData.endereco}
                                 onChange={(e) => handleInputChange("endereco", e.target.value)}
-                                className="h-12 text-base"
+                                className={`h-12 text-base ${errors.endereco ? "border-destructive" : ""}`}
                               />
+                              {errors.endereco && <p className="text-sm text-destructive">{errors.endereco}</p>}
                             </div>
                           </div>
 
@@ -501,8 +557,9 @@ export default function CadastroApoloniasPage() {
                                 placeholder="123"
                                 value={formData.numero}
                                 onChange={(e) => handleInputChange("numero", e.target.value)}
-                                className="h-12 text-base"
+                                className={`h-12 text-base ${errors.numero ? "border-destructive" : ""}`}
                               />
+                              {errors.numero && <p className="text-sm text-destructive">{errors.numero}</p>}
                             </div>
                             <div className="space-y-2 sm:col-span-2">
                               <Label htmlFor="complemento" className="text-base">Complemento</Label>
@@ -523,8 +580,9 @@ export default function CadastroApoloniasPage() {
                               placeholder="Nome do bairro"
                               value={formData.bairro}
                               onChange={(e) => handleInputChange("bairro", e.target.value)}
-                              className="h-12 text-base"
+                              className={`h-12 text-base ${errors.bairro ? "border-destructive" : ""}`}
                             />
+                            {errors.bairro && <p className="text-sm text-destructive">{errors.bairro}</p>}
                           </div>
 
                           <div className="grid gap-4 sm:grid-cols-2">
