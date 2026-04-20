@@ -424,7 +424,7 @@ export default function CadastroBeneficiarioPage() {
                         </div>
                       </div>
 
-                      <div className="rounded-xl border border-border bg-muted/50 p-4">
+                      <div className={`rounded-xl border bg-muted/50 p-4 ${errors.termos ? "border-destructive/50" : "border-border"}`}>
                         <h3 className="mb-4 font-semibold text-foreground flex items-center gap-2">
                           <Info className="h-5 w-5 text-primary" aria-hidden="true" />
                           Dados do Responsável
@@ -874,7 +874,6 @@ export default function CadastroBeneficiarioPage() {
                           type="submit"
                           size="lg"
                           className="h-12 gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
-                          disabled={!formData.termos}
                         >
                           <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
                           Enviar cadastro

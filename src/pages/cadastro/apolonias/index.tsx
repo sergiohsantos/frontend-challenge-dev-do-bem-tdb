@@ -647,7 +647,7 @@ export default function CadastroApoloniasPage() {
                         </div>
 
                         <div className="space-y-6">
-                          <div className="space-y-3">
+                          <div className={`space-y-3 rounded-xl ${errors.situacaoViolencia ? "border border-destructive/50 p-3" : ""}`}>
                             <Label className="text-base">
                               Você sofreu violência que afetou sua dentição? *
                             </Label>
@@ -826,7 +826,7 @@ export default function CadastroApoloniasPage() {
                         </div>
 
                         <div className="space-y-4 pt-4">
-                          <div className="flex items-start space-x-3 rounded-lg border border-border p-4">
+                          <div className={`flex items-start space-x-3 rounded-lg border p-4 ${errors.termos ? "border-destructive/50" : "border-border"}`}>
                             <Checkbox
                               id="termos"
                               checked={formData.termos}
@@ -849,7 +849,7 @@ export default function CadastroApoloniasPage() {
                             </p>
                           )}
 
-                          <div className="flex items-start space-x-3 rounded-lg border border-border p-4">
+                          <div className={`flex items-start space-x-3 rounded-lg border p-4 ${errors.privacidade ? "border-destructive/50" : "border-border"}`}>
                             <Checkbox
                               id="privacidade"
                               checked={formData.privacidade}

@@ -882,7 +882,6 @@ export default function CadastroVoluntarioPage() {
                           type="submit"
                           size="lg"
                           className="h-12 gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
-                          disabled={!formData.termos || !formData.termosVoluntariado}
                         >
                           <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
                           Enviar cadastro
