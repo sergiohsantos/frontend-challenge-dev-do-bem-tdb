@@ -18,8 +18,13 @@ type VolunteerItem = {
   id: number
   nome: string
   especialidade?: string
+  tipoProfissional?: string
+  registro?: string
+  email?: string
+  telefone?: string
   cidade?: string
   uf?: string
+  availabilityNotes?: string
   programa?: string
   atendimentos?: number
   beneficiarios?: number
@@ -93,6 +98,9 @@ export default function AdminVoluntariosPage() {
         !term ||
         (item.nome || "").toLowerCase().includes(term) ||
         (item.especialidade || "").toLowerCase().includes(term) ||
+        (item.tipoProfissional || "").toLowerCase().includes(term) ||
+        (item.email || "").toLowerCase().includes(term) ||
+        (item.telefone || "").toLowerCase().includes(term) ||
         (item.programa || "").toLowerCase().includes(term)
       const matchesStatus = statusFilter === "all" || (item.status || "") === statusFilter
       const matchesSpecialty = specialtyFilter === "all" || (item.especialidade || "") === specialtyFilter
@@ -250,7 +258,13 @@ export default function AdminVoluntariosPage() {
                               <p className="font-semibold text-foreground">{volunteer.nome || "Voluntário"}</p>
                               {volunteer.destaque ? <Award className="h-4 w-4 text-amber-500" /> : null}
                             </div>
-                            <p className="text-sm text-muted-foreground">{volunteer.especialidade || "Especialidade não informada"}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {volunteer.tipoProfissional || "Tipo nao informado"} - {volunteer.especialidade || "Especialidade nao informada"}
+                              {volunteer.registro ? ` - ${volunteer.registro}` : ""}
+                            </p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {volunteer.email || "E-mail nao informado"} - {volunteer.telefone || "Telefone nao informado"}
+                            </p>
                             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <MapPin className="h-4 w-4" />
@@ -265,6 +279,9 @@ export default function AdminVoluntariosPage() {
                                 {volunteer.atendimentos ?? 0} atendimento(s)
                               </div>
                             </div>
+                            {volunteer.availabilityNotes ? (
+                              <p className="mt-2 text-sm text-muted-foreground">Disponibilidade: {volunteer.availabilityNotes}</p>
+                            ) : null}
                             <p className="mt-2 text-sm text-muted-foreground">Programa: {volunteer.programa || "Não informado"}</p>
                             <p className="mt-1 text-sm text-muted-foreground">Avaliação: {volunteer.avaliacao ?? 0}</p>
                           </div>

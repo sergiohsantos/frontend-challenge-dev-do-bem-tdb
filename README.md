@@ -594,3 +594,129 @@ A Sprint 3 foi fundamental para:
 ✅ Integração com VLibras adicionada  
 ✅ Integração com WhatsApp Cloud API preparada  
 ✅ Projeto pronto para entrega acadêmica
+
+---
+
+## Atualizacoes da integracao administrativa com backend Java
+
+Durante a evolucao do projeto, foi adicionada uma integracao complementar com um backend em **Java Quarkus** para atender especificamente o fluxo administrativo de **triagem** e **onboarding**.
+
+Essa integracao foi implementada de forma isolada, preservando:
+
+- o backend principal em Python como core da aplicacao;
+- as integracoes ja existentes do frontend;
+- as paginas publicas e os fluxos anteriores;
+- o shell administrativo, autenticacao e guards ja existentes.
+
+### Rotas administrativas integradas com Java
+
+As seguintes rotas do frontend passaram a consumir o backend Java:
+
+- `/admin/triagem`
+- `/admin/onboarding`
+
+Essas funcionalidades permanecem restritas a area administrativa e nao foram movidas para paginas publicas nem para os fluxos de beneficiario e voluntario.
+
+### Jornada administrativa implementada
+
+O modulo administrativo com backend Java passou a contemplar a seguinte jornada:
+
+- criacao manual de **LeadBeneficiario** pelo administrador;
+- listagem, busca local, edicao e exclusao de leads em `/admin/triagem`;
+- registro explicito da triagem para um lead valido;
+- priorizacao da triagem pelo backend Java;
+- sugestao de encaminhamento pelo backend Java;
+- encaminhamento do lead triado para `/admin/onboarding`;
+- validacao documental por checklist;
+- conversao final do lead para **APTO_ATENDIMENTO** no backend Java.
+
+### Camada isolada da API Java Quarkus
+
+Para manter a separacao entre os backends, foi criada uma camada exclusiva para o Java em:
+
+```text
+src/services/java-api/
+```
+
+Arquivos principais:
+
+- `client.ts`
+- `lead-beneficiario.service.ts`
+- `triagem.service.ts`
+- `onboarding.service.ts`
+
+Tambem foi criada uma tipagem dedicada para esse modulo em:
+
+```text
+src/types/java-api.ts
+```
+
+### Variavel de ambiente da API Java
+
+O frontend passou a considerar a URL da API Java por meio da variavel:
+
+```bash
+VITE_JAVA_API_URL=http://localhost:8080
+```
+
+Essa variavel e usada apenas para as telas administrativas novas integradas ao backend Java.
+
+### Endpoints Java consumidos pelo frontend
+
+#### Triagem
+- `GET /api/leads-beneficiarios`
+- `GET /api/leads-beneficiarios/{id}`
+- `POST /api/leads-beneficiarios`
+- `PUT /api/leads-beneficiarios/{id}`
+- `DELETE /api/leads-beneficiarios/{id}`
+- `GET /api/triagens`
+- `POST /api/triagens`
+- `POST /api/triagens/{id}/priorizar`
+- `POST /api/encaminhamentos/sugerir/{leadId}`
+
+#### Onboarding
+- `POST /api/checklists`
+- `POST /api/checklists/{leadId}/validar`
+- `POST /api/leads-beneficiarios/{id}/converter`
+
+### Resiliencia e consistencia da integracao
+
+As telas de `/admin/triagem` e `/admin/onboarding` receberam tratamento adicional para:
+
+- loading e estados vazios;
+- mensagens amigaveis de erro e sucesso;
+- desabilitar botoes durante submit;
+- evitar falhas de renderizacao em respostas inconsistentes;
+- manter a aparencia e os componentes ja utilizados no admin.
+
+Tambem foram realizados ajustes para alinhar os payloads do frontend com o contrato real do backend Java, incluindo:
+
+- dados obrigatorios de `LeadBeneficiario`;
+- estrutura esperada de `Triagem`;
+- persistencia e validacao do checklist de onboarding;
+- conversao do lead apenas quando a validacao permitir.
+
+### Como executar tambem o backend Java localmente
+
+Para habilitar as funcionalidades administrativas de triagem e onboarding, o backend Java tambem deve estar em execucao.
+
+```bash
+cd ../tdb-onboarding-api
+./mvnw quarkus:dev
+```
+
+No Windows:
+
+```bash
+cd ..\\tdb-onboarding-api
+mvnw.cmd quarkus:dev
+```
+
+Swagger do backend Java:
+
+- `http://localhost:8080/q/swagger-ui`
+
+Com o frontend em desenvolvimento e o backend Java ativo, as paginas abaixo ficam integradas ao novo modulo administrativo:
+
+- `http://localhost:3000/admin/triagem`
+- `http://localhost:3000/admin/onboarding`

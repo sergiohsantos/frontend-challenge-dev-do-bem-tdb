@@ -28,13 +28,31 @@ import { toast } from "sonner"
 interface VolunteerProfile {
   id: number
   nome: string
+  fullName?: string
   email: string
   telefone?: string
+  phone?: string
   especialidade?: string
+  specialty?: string
   registro?: string
+  licenseNumber?: string
   cidade?: string
+  city?: string
   estado?: string
+  uf?: string
+  state?: string
   tipoProfissional?: string
+  professionalType?: string
+  availabilityNotes?: string
+  disponibilidade?: string
+  status?: string
+  isActive?: boolean
+  country?: string
+  stats?: {
+    activeCases?: number
+    completedCases?: number
+    appointments?: number
+  }
 }
 
 function buildBaseProfile(
@@ -43,15 +61,15 @@ function buildBaseProfile(
   user?: { full_name?: string | null; email?: string | null } | null,
 ): ManagedProfileData {
   return {
-    nome: String(stored?.nome || apiData?.nome || user?.full_name || ""),
-    email: String(stored?.email || apiData?.email || user?.email || ""),
-    telefone: String(stored?.telefone || apiData?.telefone || ""),
-    cidade: String(stored?.cidade || apiData?.cidade || ""),
-    estado: String(stored?.estado || apiData?.estado || ""),
-    especialidade: String(stored?.especialidade || apiData?.especialidade || ""),
-    registro: String(stored?.registro || apiData?.registro || ""),
-    tipoProfissional: String(stored?.tipoProfissional || apiData?.tipoProfissional || ""),
-    observacoes: String(stored?.observacoes || ""),
+    nome: String(apiData?.nome || apiData?.fullName || stored?.nome || user?.full_name || ""),
+    email: String(apiData?.email || stored?.email || user?.email || ""),
+    telefone: String(apiData?.telefone || apiData?.phone || stored?.telefone || ""),
+    cidade: String(apiData?.cidade || apiData?.city || stored?.cidade || ""),
+    estado: String(apiData?.estado || apiData?.uf || apiData?.state || stored?.estado || ""),
+    especialidade: String(apiData?.especialidade || apiData?.specialty || stored?.especialidade || ""),
+    registro: String(apiData?.registro || apiData?.licenseNumber || stored?.registro || ""),
+    tipoProfissional: String(apiData?.tipoProfissional || apiData?.professionalType || stored?.tipoProfissional || ""),
+    observacoes: String(apiData?.availabilityNotes || apiData?.disponibilidade || stored?.observacoes || ""),
   }
 }
 
@@ -61,6 +79,7 @@ export default function VoluntarioPerfilPage() {
 
   const [profile, setProfile] = useState<ManagedProfileData>({})
   const [initialProfile, setInitialProfile] = useState<ManagedProfileData>({})
+  const [apiProfile, setApiProfile] = useState<VolunteerProfile | null>(null)
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -81,6 +100,7 @@ export default function VoluntarioPerfilPage() {
         const stored = getStoredProfile("voluntario", user?.id)
         const baseProfile = buildBaseProfile(data, stored, user)
 
+        setApiProfile(data)
         setProfile(baseProfile)
         setInitialProfile(baseProfile)
       } catch (err) {
@@ -206,6 +226,7 @@ export default function VoluntarioPerfilPage() {
                     <CardTitle className="flex items-center gap-2">
                       {String(profile.nome || user?.full_name || "Voluntário")}
                       <Badge variant="outline">Perfil</Badge>
+                      {apiProfile?.status ? <Badge variant="secondary">{apiProfile.status}</Badge> : null}
                     </CardTitle>
 
                     <CardDescription>
@@ -298,6 +319,16 @@ export default function VoluntarioPerfilPage() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="vol-status">Status</Label>
+                  <Input id="vol-status" value={String(apiProfile?.status || "Não informado")} disabled />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="vol-country">País</Label>
+                  <Input id="vol-country" value={String(apiProfile?.country || "Brasil")} disabled />
+                </div>
+
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="vol-notes">Observações do perfil</Label>
                   <Textarea
@@ -345,6 +376,21 @@ export default function VoluntarioPerfilPage() {
                   <span className="text-sm">
                     {String(profile.tipoProfissional || "Profissional voluntário")}
                   </span>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-md border bg-muted/50 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Casos ativos</p>
+                    <p className="text-lg font-semibold">{apiProfile?.stats?.activeCases ?? 0}</p>
+                  </div>
+                  <div className="rounded-md border bg-muted/50 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Concluidos</p>
+                    <p className="text-lg font-semibold">{apiProfile?.stats?.completedCases ?? 0}</p>
+                  </div>
+                  <div className="rounded-md border bg-muted/50 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Agendamentos</p>
+                    <p className="text-lg font-semibold">{apiProfile?.stats?.appointments ?? 0}</p>
+                  </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground">

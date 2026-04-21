@@ -4,20 +4,22 @@ import { asArray, asBoolean, asNumber, asObject, asString, javaApiFetch } from "
 
 function normalizeLead(raw: unknown): LeadBeneficiario {
   const data = asObject(raw)
-  const escolaParceira = asObject(data.escolaParceira)
 
   return {
     id: asNumber(data.id) || 0,
-    nome: asString(data.nome) || "Lead sem nome",
+    nome: asString(data.nome) || asString(data.fullName) || "Beneficiario sem nome",
     cpf: asString(data.cpf) || "",
-    dataNascimento: asString(data.dataNascimento) || "",
-    responsavelNome: asString(data.responsavelNome) || "",
-    telefone: asString(data.telefone) || "",
+    dataNascimento: asString(data.dataNascimento) || asString(data.birthDate) || "",
+    responsavelNome: asString(data.responsavelNome) || asString(data.nome) || asString(data.fullName) || "",
+    telefone: asString(data.telefone) || asString(data.phone) || "",
     email: asString(data.email),
-    escolaParceira: asString(escolaParceira.nome) || asString(data.escolaParceira),
-    status: asString(data.status) || "NOVO",
+    escolaParceira: undefined,
+    status: asString(data.status) || "EM_ANALISE",
     vulnerabilidadeSocial: asBoolean(data.vulnerabilidadeSocial) ?? false,
     observacoes: asString(data.observacoes),
+    cidade: asString(data.cidade) || asString(data.city),
+    estado: asString(data.estado) || asString(data.state),
+    programa: asString(data.programa) || asString(data.programCode),
   }
 }
 
@@ -37,56 +39,45 @@ function toLeadPayload(payload: LeadBeneficiarioPayload): Record<string, unknown
 }
 
 export async function listLeadBeneficiarios(): Promise<LeadBeneficiario[]> {
-  const response = await javaApiFetch<unknown>("/api/leads-beneficiarios", {}, getToken())
+  const response = await javaApiFetch<unknown>("/api/admin/beneficiarios-pendentes", {}, getToken())
   return asArray<unknown>(response).map(normalizeLead).filter((lead) => lead.id > 0)
 }
 
 export async function getLeadBeneficiario(id: number): Promise<LeadBeneficiario> {
-  const response = await javaApiFetch<unknown>(`/api/leads-beneficiarios/${id}`, {}, getToken())
-  return normalizeLead(response)
+  const leads = await listLeadBeneficiarios()
+  const lead = leads.find((item) => item.id === id)
+  if (!lead) {
+    throw new Error("Beneficiario nao encontrado entre os pendentes do backend Java.")
+  }
+  return lead
 }
 
 export async function createLeadBeneficiario(payload: LeadBeneficiarioPayload): Promise<LeadBeneficiario> {
-  const response = await javaApiFetch<unknown>(
-    "/api/leads-beneficiarios",
-    {
-      method: "POST",
-      body: JSON.stringify(toLeadPayload(payload)),
-    },
-    getToken(),
-  )
-
-  return normalizeLead(response)
+  void toLeadPayload(payload)
+  throw new Error("Cadastros centrais devem ser criados pelo backend Python.")
 }
 
 export async function updateLeadBeneficiario(id: number, payload: LeadBeneficiarioPayload): Promise<LeadBeneficiario> {
-  const response = await javaApiFetch<unknown>(
-    `/api/leads-beneficiarios/${id}`,
-    {
-      method: "PUT",
-      body: JSON.stringify(toLeadPayload(payload)),
-    },
-    getToken(),
-  )
-
-  return normalizeLead(response)
+  void id
+  void toLeadPayload(payload)
+  throw new Error("Dados centrais devem ser atualizados pelo backend Python.")
 }
 
 export async function deleteLeadBeneficiario(id: number): Promise<void> {
-  await javaApiFetch<void>(
-    `/api/leads-beneficiarios/${id}`,
-    {
-      method: "DELETE",
-    },
-    getToken(),
-  )
+  void id
+  throw new Error("Beneficiarios do core nao podem ser excluidos pelo backend Java.")
 }
 
 export async function converterLeadBeneficiario(id: number): Promise<LeadBeneficiario> {
   const response = await javaApiFetch<unknown>(
-    `/api/leads-beneficiarios/${id}/converter`,
+    "/api/habilitacoes",
     {
       method: "POST",
+      body: JSON.stringify({
+        tipoEntidadeCore: "BENEFICIARY",
+        idEntidadeCore: id,
+        observacoes: "Habilitacao iniciada pelo painel administrativo.",
+      }),
     },
     getToken(),
   )

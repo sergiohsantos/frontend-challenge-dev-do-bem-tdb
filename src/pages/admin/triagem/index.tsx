@@ -26,7 +26,7 @@ import {
   listLeadBeneficiarios,
   updateLeadBeneficiario,
 } from "@/services/java-api/lead-beneficiario.service"
-import { createTriagem, listTriagens, priorizarTriagem, sugerirEncaminhamento } from "@/services/java-api/triagem.service"
+import { createTriagem, listTriagens, priorizarTriagem, selecionarMatch, sugerirEncaminhamento } from "@/services/java-api/triagem.service"
 import type { EncaminhamentoSugerido, LeadBeneficiario, LeadBeneficiarioPayload, LeadStatus, Triagem } from "@/types/java-api"
 import { AlertCircle, ClipboardList, Pencil, Plus, Search, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -358,13 +358,42 @@ export default function AdminTriagemPage() {
 
     try {
       setActionLeadId(leadId)
-      const suggestion = await sugerirEncaminhamento(leadId)
+      const suggestion = await sugerirEncaminhamento(triagem.id, leadId)
       setSuggestions((current) => ({ ...current, [leadId]: suggestion }))
       toast.success("Sugestão de encaminhamento carregada.")
     } catch (suggestError) {
       toast.error(
         suggestError instanceof Error ? suggestError.message : "Não foi possível sugerir um encaminhamento agora.",
       )
+    } finally {
+      setActionLeadId(null)
+    }
+  }
+
+  async function handleSelectMatch(leadId: number) {
+    const suggestion = suggestions[leadId]
+    const triagemId = suggestion?.triagemId
+    const matchId = suggestion?.matchId
+
+    if (!triagemId || !matchId) {
+      toast.error("Gere uma sugestão válida antes de vincular o voluntário.")
+      return
+    }
+
+    try {
+      setActionLeadId(leadId)
+      const selected = await selecionarMatch(triagemId, matchId, leadId)
+      setSuggestions((current) => ({ ...current, [leadId]: selected }))
+      setLeads((current) =>
+        current.map((lead) =>
+          lead.id === leadId
+            ? { ...lead, status: "APTO_ATENDIMENTO" }
+            : lead,
+        ),
+      )
+      toast.success("Beneficiário vinculado ao voluntário selecionado.")
+    } catch (selectError) {
+      toast.error(selectError instanceof Error ? selectError.message : "Não foi possível confirmar o vínculo.")
     } finally {
       setActionLeadId(null)
     }
@@ -387,21 +416,6 @@ export default function AdminTriagemPage() {
         observacoes: triagemForm.observacoes.trim() || undefined,
       })
 
-      let nextLead = triagemLead
-      if (triagemLead.status !== "TRIADO") {
-        nextLead = await updateLeadBeneficiario(triagemLead.id, {
-          nome: triagemLead.nome,
-          cpf: triagemLead.cpf,
-          dataNascimento: triagemLead.dataNascimento,
-          responsavelNome: triagemLead.responsavelNome,
-          telefone: triagemLead.telefone,
-          email: triagemLead.email,
-          status: "TRIADO",
-          vulnerabilidadeSocial: triagemLead.vulnerabilidadeSocial,
-          observacoes: triagemLead.observacoes,
-        })
-      }
-
       setTriagens((current) => {
         const withoutCurrent = current.filter((item) => item.leadId !== triagemLead.id)
         return [created, ...withoutCurrent]
@@ -409,7 +423,7 @@ export default function AdminTriagemPage() {
       setLeads((current) =>
         current.map((lead) =>
           lead.id === triagemLead.id
-            ? nextLead
+            ? { ...lead, status: "TRIADO" }
             : lead,
         ),
       )
@@ -515,7 +529,7 @@ export default function AdminTriagemPage() {
                     className="pl-9"
                   />
                 </div>
-                <Button className="gap-2" onClick={openCreateDialog}>
+                <Button className="hidden gap-2" onClick={openCreateDialog}>
                   <Plus className="h-4 w-4" />
                   Novo lead
                 </Button>
@@ -556,7 +570,7 @@ export default function AdminTriagemPage() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => void openEditDialog(lead.id)} disabled={isBusy}>
+                          <Button className="hidden" variant="outline" size="sm" onClick={() => void openEditDialog(lead.id)} disabled={isBusy}>
                             <Pencil className="mr-1 h-4 w-4" />
                             Editar
                           </Button>
@@ -567,7 +581,7 @@ export default function AdminTriagemPage() {
                             disabled={isBusy || !triagem}
                           >
                             <Sparkles className="mr-1 h-4 w-4" />
-                            Encaminhar
+                            Sugerir voluntario
                           </Button>
                           {triagem ? (
                             <Button size="sm" onClick={() => void handlePrioritize(lead)} disabled={isBusy}>
@@ -578,7 +592,7 @@ export default function AdminTriagemPage() {
                               {isBusy ? "Processando..." : "Registrar triagem"}
                             </Button>
                           )}
-                          <Button variant="outline" size="sm" onClick={() => void handleDelete(lead.id)} disabled={isBusy}>
+                          <Button className="hidden" variant="outline" size="sm" onClick={() => void handleDelete(lead.id)} disabled={isBusy}>
                             <Trash2 className="mr-1 h-4 w-4" />
                             Excluir
                           </Button>
@@ -587,14 +601,32 @@ export default function AdminTriagemPage() {
 
                       {suggestion ? (
                         <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-                          <p className="font-medium text-foreground">Encaminhamento sugerido</p>
-                          <p className="mt-1 text-muted-foreground">{suggestion.sugestao}</p>
-                          {suggestion.destino ? (
-                            <p className="mt-2 text-muted-foreground">Destino sugerido: {suggestion.destino}</p>
-                          ) : null}
-                          {suggestion.observacoes ? (
-                            <p className="mt-1 text-muted-foreground">Observações: {suggestion.observacoes}</p>
-                          ) : null}
+                          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-medium text-foreground">Encaminhamento sugerido</p>
+                                {suggestion.status ? <Badge variant="outline">{suggestion.status}</Badge> : null}
+                                {suggestion.regiaoCompativel ? <Badge variant="secondary">Regiao compativel</Badge> : null}
+                                {suggestion.onlinePermitido ? <Badge variant="secondary">Online/psicologia</Badge> : null}
+                              </div>
+                              <p className="mt-1 text-muted-foreground">{suggestion.sugestao}</p>
+                              <p className="mt-2 text-muted-foreground">
+                                Voluntario sugerido: #{suggestion.volunteerId || suggestion.destino || "-"}
+                                {suggestion.score !== undefined ? ` - score ${suggestion.score}` : ""}
+                              </p>
+                              {suggestion.observacoes ? (
+                                <p className="mt-1 text-muted-foreground">Observacoes: {suggestion.observacoes}</p>
+                              ) : null}
+                            </div>
+
+                            <Button
+                              size="sm"
+                              onClick={() => void handleSelectMatch(lead.id)}
+                              disabled={isBusy || !suggestion.matchId || suggestion.status === "SELECIONADO"}
+                            >
+                              {suggestion.status === "SELECIONADO" ? "Vinculado" : "Vincular voluntario"}
+                            </Button>
+                          </div>
                         </div>
                       ) : null}
                     </div>

@@ -24,7 +24,7 @@ const DEFAULT_CHECKLIST: ChecklistValidationPayload = {
 }
 
 function isEligibleForOnboarding(lead: LeadBeneficiario): boolean {
-  return lead.status === "TRIADO"
+  return ["EM_ANALISE", "AGUARDANDO_TRIAGEM", "PENDENTE_HABILITACAO"].includes(lead.status)
 }
 
 function createChecklistState(leads: LeadBeneficiario[]): ChecklistState {
@@ -142,7 +142,7 @@ export default function AdminOnboardingPage() {
   async function handleConvert(leadId: number) {
     const validation = validationResults[leadId]
     if (!validation?.valido) {
-      toast.error("Valide o checklist com sucesso antes de converter o lead.")
+      toast.error("Valide o checklist com sucesso antes de habilitar o cadastro.")
       return
     }
 
@@ -294,7 +294,7 @@ export default function AdminOnboardingPage() {
                             {isBusy ? "Processando..." : "Validar checklist"}
                           </Button>
                           <Button size="sm" onClick={() => void handleConvert(lead.id)} disabled={isBusy || !validation?.valido}>
-                            {isBusy ? "Processando..." : "Converter em apto"}
+                            {isBusy ? "Processando..." : "Habilitar cadastro"}
                           </Button>
                         </div>
                       </div>

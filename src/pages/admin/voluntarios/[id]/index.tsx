@@ -13,11 +13,13 @@ type VolunteerDetail = {
   id: number
   nome: string
   especialidade?: string | null
+  tipoProfissional?: string | null
   registro?: string | null
   email?: string | null
   telefone?: string | null
   cidade?: string | null
   uf?: string | null
+  pais?: string | null
   status?: string | null
   avaliacao?: number | null
   availabilityNotes?: string | null
@@ -130,9 +132,11 @@ export default function AdminVolunteerDetailPage() {
                   </CardHeader>
                   <CardContent className="grid gap-4 sm:grid-cols-2">
                     <div><p className="text-xs text-muted-foreground">Nome</p><p className="font-medium">{detail.nome}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Tipo profissional</p><p className="font-medium">{detail.tipoProfissional || "-"}</p></div>
                     <div><p className="text-xs text-muted-foreground">Especialidade</p><p className="font-medium">{detail.especialidade || "-"}</p></div>
                     <div><p className="text-xs text-muted-foreground">Registro</p><p className="font-medium">{detail.registro || "-"}</p></div>
                     <div><p className="text-xs text-muted-foreground">Cidade/UF</p><p className="font-medium">{[detail.cidade, detail.uf].filter(Boolean).join("/") || "-"}</p></div>
+                    <div><p className="text-xs text-muted-foreground">País</p><p className="font-medium">{detail.pais || "-"}</p></div>
                     <div><p className="text-xs text-muted-foreground">E-mail</p><p className="font-medium">{detail.email || "-"}</p></div>
                     <div><p className="text-xs text-muted-foreground">Telefone</p><p className="font-medium">{detail.telefone || "-"}</p></div>
                     <div className="sm:col-span-2"><p className="text-xs text-muted-foreground">Disponibilidade</p><p className="text-sm">{detail.availabilityNotes || "Sem observações cadastradas"}</p></div>

@@ -20,6 +20,9 @@ export interface LeadBeneficiario {
   status: LeadStatus
   vulnerabilidadeSocial: boolean
   observacoes?: string
+  cidade?: string
+  estado?: string
+  programa?: string
 }
 
 export interface LeadBeneficiarioPayload {
@@ -42,12 +45,17 @@ export interface Triagem {
   encaminhamentoSugerido?: string
   observacoes?: string
   dataTriagem?: string
+  modalidade?: string
+  especialidadeDesejada?: string
 }
 
 export interface CreateTriagemPayload {
   leadId: number
   urgenciaOdontologica: number
   observacoes?: string
+  modalidade?: string
+  especialidadeDesejada?: string
+  programa?: string
 }
 
 export interface ChecklistValidationPayload {
@@ -65,10 +73,16 @@ export interface ChecklistValidationResult {
 }
 
 export interface EncaminhamentoSugerido {
+  matchId?: number
   leadId: number
+  triagemId?: number
+  volunteerId?: number
   sugestao: string
   destino?: string
   prioridade?: LeadPriority
   observacoes?: string
   status?: string
+  score?: number
+  regiaoCompativel?: boolean
+  onlinePermitido?: boolean
 }
