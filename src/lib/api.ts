@@ -1,7 +1,13 @@
 // API Helper for FastAPI Backend Integration
-// Base URL from environment variable or fallback to localhost
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
+function getApiBaseUrl(): string {
+  const configuredUrl = import.meta.env.VITE_API_URL
+  if (configuredUrl) return configuredUrl
+  if (import.meta.env.DEV) return "http://127.0.0.1:8000"
+  throw new Error("VITE_API_URL precisa ser configurada para o build de producao.")
+}
+
+export const API_BASE_URL = getApiBaseUrl()
 
 export interface ApiError {
   message: string

@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Smile,
   FileCheck,
+  UserRoundCheck,
   ClipboardList,
   MessageSquare
 } from "lucide-react"
@@ -33,6 +34,16 @@ const mainNavItems = [
     title: "Dashboard",
     href: "/admin",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Triagem",
+    href: "/admin/triagem",
+    icon: ClipboardList,
+  },
+  {
+    title: "Onboarding",
+    href: "/admin/onboarding",
+    icon: UserRoundCheck,
   },
   {
     title: "Análise Regional",

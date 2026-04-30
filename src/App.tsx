@@ -61,6 +61,8 @@ const AdminSatisfacaoPage = lazy(() => import('./pages/admin/satisfacao/index'))
 const AdminMensagensPage = lazy(() => import('./pages/admin/mensagens/index'))
 const AdminNotificacoesPage = lazy(() => import('./pages/admin/notificacoes/index'))
 const AdminConfiguracoesPage = lazy(() => import('./pages/admin/configuracoes/index'))
+const AdminTriagemPage = lazy(() => import('./pages/admin/triagem/index'))
+const AdminOnboardingPage = lazy(() => import('./pages/admin/onboarding/index'))
 
 function PageLoader() {
   return (
@@ -150,7 +152,8 @@ function App() {
         <Route path="/admin/mensagens" element={<RequireRole role="admin" loginPath="/admin/login"><AdminMensagensPage /></RequireRole>} />
         <Route path="/admin/notificacoes" element={<RequireRole role="admin" loginPath="/admin/login"><AdminNotificacoesPage /></RequireRole>} />
         <Route path="/admin/configuracoes" element={<RequireRole role="admin" loginPath="/admin/login"><AdminConfiguracoesPage /></RequireRole>} />
-
+        <Route path="/admin/triagem" element={<RequireRole role="admin" loginPath="/admin/login"><AdminTriagemPage /></RequireRole>} />
+        <Route path="/admin/onboarding" element={<RequireRole role="admin" loginPath="/admin/login"><AdminOnboardingPage /></RequireRole>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

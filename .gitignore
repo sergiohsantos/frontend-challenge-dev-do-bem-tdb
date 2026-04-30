@@ -7,9 +7,15 @@ trash/
 next.user-config.*
 
 # Environment variables
+.env
+.env.*
+!.env.example
 .env*.local
 
 # Common ignores
 node_modules/
 .next/
+dist/
+build/
+*.tsbuildinfo
 .DS_Store

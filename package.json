@@ -59,6 +59,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.60.2",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^22",
     "@types/react": "^18.3.12",
