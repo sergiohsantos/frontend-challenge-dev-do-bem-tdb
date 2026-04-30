@@ -1,4 +1,11 @@
-const JAVA_API_BASE_URL = import.meta.env.VITE_JAVA_API_URL || "http://localhost:8080"
+function getJavaApiBaseUrl(): string {
+  const configuredUrl = import.meta.env.VITE_JAVA_API_URL
+  if (configuredUrl) return configuredUrl
+  if (import.meta.env.DEV) return "http://localhost:8080"
+  throw new Error("VITE_JAVA_API_URL precisa ser configurada para o build de producao.")
+}
+
+const JAVA_API_BASE_URL = getJavaApiBaseUrl()
 
 type PrimitiveRecord = Record<string, unknown>
 

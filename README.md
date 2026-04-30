@@ -656,10 +656,21 @@ src/types/java-api.ts
 O frontend passou a considerar a URL da API Java por meio da variavel:
 
 ```bash
-VITE_JAVA_API_URL=http://localhost:8080
+VITE_JAVA_API_URL=https://<your-api-domain>/api-java
 ```
 
 Essa variavel e usada apenas para as telas administrativas novas integradas ao backend Java.
+
+### Variaveis de producao na Vercel
+
+Configure no painel da Vercel:
+
+```bash
+VITE_API_URL=https://<your-api-domain>/api-python
+VITE_JAVA_API_URL=https://<your-api-domain>/api-java
+```
+
+No ambiente de producao o build exige essas variaveis. Os fallbacks para `localhost` existem apenas em modo de desenvolvimento.
 
 ### Endpoints Java consumidos pelo frontend
 
