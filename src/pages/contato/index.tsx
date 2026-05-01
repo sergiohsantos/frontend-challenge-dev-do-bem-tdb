@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Phone, Mail, MapPin, CheckCircle2, Loader2, AlertCircle } from "lucide-react"
-import { apiFetch, type ContactPayload } from "@/lib/api"
+import { apiFetch } from "@/lib/api"
 
 type ContactFormValues = {
   name: string
@@ -251,7 +251,7 @@ export default function ContatoPage() {
                                 control={control}
                                 render={({ field }) => (
                                   <Select value={field.value} onValueChange={field.onChange}>
-                                    <SelectTrigger className="h-11 sm:h-10">
+                                    <SelectTrigger id="subject" className="h-11 sm:h-10">
                                       <SelectValue placeholder="Selecione" />
                                     </SelectTrigger>
                                     <SelectContent>
