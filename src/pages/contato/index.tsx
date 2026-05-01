@@ -243,9 +243,9 @@ export default function ContatoPage() {
                             </div>
 
                             <div className="space-y-1.5 sm:space-y-2">
-                              <Label id="subject-label" className="text-sm">
+                              <span id="subject-label" className="text-sm font-medium">
                                 Assunto
-                              </Label>
+                              </span>
                               <Controller
                                 name="subject"
                                 control={control}
