@@ -251,7 +251,7 @@ export default function ContatoPage() {
                                 control={control}
                                 render={({ field }) => (
                                   <Select value={field.value} onValueChange={field.onChange}>
-                                    <SelectTrigger className="h-11 sm:h-10">
+                                    <SelectTrigger id="subject" className="h-11 sm:h-10">
                                       <SelectValue placeholder="Selecione" />
                                     </SelectTrigger>
                                     <SelectContent>
