@@ -243,7 +243,7 @@ export default function ContatoPage() {
                             </div>
 
                             <div className="space-y-1.5 sm:space-y-2">
-                              <Label htmlFor="subject" className="text-sm">
+                              <Label id="subject-label" className="text-sm">
                                 Assunto
                               </Label>
                               <Controller
@@ -251,7 +251,7 @@ export default function ContatoPage() {
                                 control={control}
                                 render={({ field }) => (
                                   <Select value={field.value} onValueChange={field.onChange}>
-                                    <SelectTrigger id="subject" className="h-11 sm:h-10">
+                                    <SelectTrigger aria-labelledby="subject-label" className="h-11 sm:h-10">
                                       <SelectValue placeholder="Selecione" />
                                     </SelectTrigger>
                                     <SelectContent>
