@@ -264,7 +264,7 @@ export default function AdminIAPreditivaPage() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between rounded-lg bg-primary-foreground/10 p-3">
                     <span className="text-sm">Servico</span>
-                    <span className="font-semibold">{health?.service || "tdb-ai-sprint4"}</span>
+                    <span className="font-semibold">{health?.service || "tdb-chatbotAI"}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-lg bg-primary-foreground/10 p-3">
                     <span className="text-sm">Fonte atual</span>
