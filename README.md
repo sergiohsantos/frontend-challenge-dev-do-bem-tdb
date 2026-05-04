@@ -668,9 +668,12 @@ Configure no painel da Vercel:
 ```bash
 VITE_API_URL=https://<your-api-domain>/api-python
 VITE_JAVA_API_URL=https://<your-api-domain>/api-java
+VITE_AI_API_URL=https://apichatbot-devdobem.clinicarx.dev/ai
 ```
 
 No ambiente de producao o build exige essas variaveis. Os fallbacks para `localhost` existem apenas em modo de desenvolvimento.
+
+A pagina de IA em `/admin/ia-preditiva` consome a API de Chatbot IA publicada na EC2 por meio de `VITE_AI_API_URL`.
 
 ### Endpoints Java consumidos pelo frontend
 
