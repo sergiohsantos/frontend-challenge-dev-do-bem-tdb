@@ -18,7 +18,8 @@ import {
   FileCheck,
   UserRoundCheck,
   ClipboardList,
-  MessageSquare
+  MessageSquare,
+  BrainCircuit
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -44,6 +45,11 @@ const mainNavItems = [
     title: "Onboarding",
     href: "/admin/onboarding",
     icon: UserRoundCheck,
+  },
+  {
+    title: "IA Preditiva",
+    href: "/admin/ia-preditiva",
+    icon: BrainCircuit,
   },
   {
     title: "Análise Regional",
