@@ -142,6 +142,12 @@ export default function CadastroVoluntarioPage() {
     setErrors((prev) => ({ ...prev, [field]: "" }))
   }
 
+  const validateInlineField = (field: "email") => {
+    const value = formData[field]
+    const message = value.trim() && !isValidEmail(value) ? "Informe um e-mail valido." : ""
+    setErrors((prev) => ({ ...prev, [field]: message }))
+  }
+
   useEffect(() => {
     const cep = normalizeDigits(formData.cep)
     if (cep.length !== 8) {
@@ -591,6 +597,7 @@ export default function CadastroVoluntarioPage() {
                             maxLength={255}
                             value={formData.email}
                             onChange={(e) => handleInputChange("email", e.target.value)}
+                            onBlur={() => validateInlineField("email")}
                             className={`h-12 text-base ${errors.email ? "border-destructive" : ""}`}
                             required
                           />

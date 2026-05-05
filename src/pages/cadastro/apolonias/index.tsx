@@ -93,6 +93,12 @@ export default function CadastroApoloniasPage() {
     }
   }
 
+  const validateInlineField = (field: "email") => {
+    const value = formData[field]
+    const message = value.trim() && !isValidEmail(value) ? "Informe um e-mail valido." : ""
+    setErrors((prev) => ({ ...prev, [field]: message }))
+  }
+
   useEffect(() => {
     const cep = normalizeDigits(formData.cep)
     if (cep.length !== 8) {
@@ -534,8 +540,15 @@ export default function CadastroApoloniasPage() {
                                 maxLength={255}
                                 value={formData.email}
                                 onChange={(e) => handleInputChange("email", e.target.value)}
-                                className="h-12 text-base"
+                                onBlur={() => validateInlineField("email")}
+                                className={`h-12 text-base ${errors.email ? "border-destructive" : ""}`}
                               />
+                              {errors.email && (
+                                <p className="flex items-center gap-1 text-sm text-destructive">
+                                  <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                                  {errors.email}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
