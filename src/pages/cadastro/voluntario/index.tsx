@@ -10,9 +10,19 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Users, ArrowLeft, ArrowRight, CheckCircle2, Stethoscope, Briefcase, FileCheck, User, MapPin, AlertCircle, Key } from "lucide-react"
+import { Users, ArrowLeft, ArrowRight, CheckCircle2, Stethoscope, Briefcase, FileCheck, User, MapPin, AlertCircle, Key, Loader2 } from "lucide-react"
 import { apiFetch, normalizeDigits, normalizeEmail } from "@/lib/api"
 import { fetchAddressByCep } from "@/lib/viacep"
+import {
+  formatRegistrationField,
+  friendlyRegistrationError,
+  isValidBrazilPhone,
+  isValidCep,
+  isValidCpf,
+  isValidDate,
+  isValidEmail,
+  maskCep,
+} from "@/lib/registration-validation"
 
 // Response type for registration endpoint
 interface RegistrationSuccessResponse {
@@ -84,6 +94,8 @@ export default function CadastroVoluntarioPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isCepLoading, setIsCepLoading] = useState(false)
   const [cepFeedback, setCepFeedback] = useState<string | null>(null)
+  const [isClinicCepLoading, setIsClinicCepLoading] = useState(false)
+  const [clinicCepFeedback, setClinicCepFeedback] = useState<string | null>(null)
   const [registrationResponse, setRegistrationResponse] = useState<RegistrationSuccessResponse | null>(null)
   const [formData, setFormData] = useState({
     // Step 1
@@ -106,6 +118,13 @@ export default function CadastroVoluntarioPage() {
     crp: "",
     clinica: "",
     enderecoClinica: "",
+    cepClinica: "",
+    logradouroClinica: "",
+    bairroClinica: "",
+    cidadeClinica: "",
+    estadoClinica: "",
+    numeroClinica: "",
+    complementoClinica: "",
     tempoExperiencia: "",
     // Step 3
     diasDisponiveis: [] as string[],
@@ -118,7 +137,8 @@ export default function CadastroVoluntarioPage() {
   })
 
   const handleInputChange = (field: string, value: string | boolean | string[]) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    const nextValue = typeof value === "string" ? formatRegistrationField(field, value) : value
+    setFormData((prev) => ({ ...prev, [field]: nextValue }))
     setErrors((prev) => ({ ...prev, [field]: "" }))
   }
 
@@ -146,11 +166,11 @@ export default function CadastroVoluntarioPage() {
         }
         setFormData((prev) => ({
           ...prev,
-          cep: address.cep,
-          estado: address.estado,
-          cidade: address.cidade,
-          bairro: address.bairro,
-          endereco: address.endereco,
+          cep: maskCep(address.cep),
+          estado: prev.estado || address.estado,
+          cidade: prev.cidade || address.cidade,
+          bairro: prev.bairro || address.bairro,
+          endereco: prev.endereco || address.endereco,
         }))
       })
       .catch((error) => {
@@ -167,6 +187,53 @@ export default function CadastroVoluntarioPage() {
 
     return () => controller.abort()
   }, [formData.cep])
+
+  useEffect(() => {
+    const cep = normalizeDigits(formData.cepClinica)
+    if (cep.length !== 8) {
+      setIsClinicCepLoading(false)
+      setClinicCepFeedback(null)
+      return
+    }
+
+    const controller = new AbortController()
+    setIsClinicCepLoading(true)
+    setClinicCepFeedback(null)
+
+    fetchAddressByCep(cep, controller.signal)
+      .then((address) => {
+        if (!address) {
+          setClinicCepFeedback("CEP nao encontrado. Preencha o endereco manualmente.")
+          return
+        }
+
+        if (!address.endereco) {
+          setClinicCepFeedback("CEP encontrado, mas a rua nao foi informada. Preencha manualmente.")
+        }
+
+        setFormData((prev) => ({
+          ...prev,
+          cepClinica: maskCep(address.cep),
+          logradouroClinica: prev.logradouroClinica || address.endereco,
+          bairroClinica: prev.bairroClinica || address.bairro,
+          cidadeClinica: prev.cidadeClinica || address.cidade,
+          estadoClinica: prev.estadoClinica || address.estado,
+        }))
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.name === "AbortError") {
+          return
+        }
+        setClinicCepFeedback("Nao foi possivel consultar o CEP agora. Preencha manualmente.")
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsClinicCepLoading(false)
+        }
+      })
+
+    return () => controller.abort()
+  }, [formData.cepClinica])
 
   const handleDiaChange = (dia: string, checked: boolean) => {
     if (checked) {
@@ -187,6 +254,17 @@ export default function CadastroVoluntarioPage() {
   }
 
   const buildObservationsSummary = () => {
+    const clinicAddress = [
+      formData.logradouroClinica.trim(),
+      formData.numeroClinica.trim(),
+      formData.complementoClinica.trim(),
+      formData.bairroClinica.trim(),
+      formData.cidadeClinica.trim() && formData.estadoClinica.trim()
+        ? `${formData.cidadeClinica.trim()} - ${formData.estadoClinica.trim()}`
+        : formData.cidadeClinica.trim() || formData.estadoClinica.trim(),
+      formData.cepClinica ? `CEP ${normalizeDigits(formData.cepClinica)}` : "",
+    ].filter(Boolean).join(", ")
+
     const parts = [
       formData.dataNascimento ? `Data de nascimento: ${formData.dataNascimento}` : "",
       formData.cep ? `CEP: ${normalizeDigits(formData.cep)}` : "",
@@ -196,6 +274,7 @@ export default function CadastroVoluntarioPage() {
       formData.clinica ? `Clínica/consultório: ${formData.clinica.trim()}` : "",
       formData.enderecoClinica ? `Endereço da clínica: ${formData.enderecoClinica.trim()}` : "",
       formData.motivacao ? `Motivação: ${formData.motivacao.trim()}` : "",
+      clinicAddress ? `Endereco da clinica: ${clinicAddress}` : "",
       formData.comoConheceu ? `Como conheceu a TDB: ${COMO_CONHECEU_LABELS[formData.comoConheceu] ?? formData.comoConheceu}` : "",
       "Termos aceitos no frontend: política/uso e compromisso de voluntariado.",
     ]
@@ -228,7 +307,6 @@ export default function CadastroVoluntarioPage() {
       if (formData.profissao === "dentista" && !formData.cro.trim()) nextErrors.cro = "Informe o CRO."
       if (formData.profissao === "psicologo" && !formData.crp.trim()) nextErrors.crp = "Informe o CRP."
       if (!formData.tempoExperiencia.trim()) nextErrors.tempoExperiencia = "Informe o tempo de experiencia."
-      if (!formData.enderecoClinica.trim()) nextErrors.enderecoClinica = "Informe o endereco da clinica/consultorio."
     }
 
     if (step === 3) {
@@ -238,6 +316,39 @@ export default function CadastroVoluntarioPage() {
       if (!formData.motivacao.trim()) nextErrors.motivacao = "Informe sua motivacao."
       if (!formData.termos) nextErrors.termos = "Aceite os termos de uso."
       if (!formData.termosVoluntariado) nextErrors.termosVoluntariado = "Aceite o compromisso de voluntariado."
+    }
+
+    if (step === 1) {
+      if (formData.nomeCompleto.trim() && formData.nomeCompleto.trim().length < 3) {
+        nextErrors.nomeCompleto = "Informe o nome completo."
+      }
+      if (formData.dataNascimento && !isValidDate(formData.dataNascimento)) {
+        nextErrors.dataNascimento = "Informe uma data de nascimento valida."
+      }
+      if (formData.cpf.trim() && !isValidCpf(formData.cpf)) {
+        nextErrors.cpf = "CPF invalido. Verifique os dados informados."
+      }
+      if (formData.telefone.trim() && !isValidBrazilPhone(formData.telefone)) {
+        nextErrors.telefone = "Telefone invalido."
+      }
+      if (formData.email.trim() && !isValidEmail(formData.email)) {
+        nextErrors.email = "Informe um e-mail valido."
+      }
+      if (formData.cep.trim() && !isValidCep(formData.cep)) {
+        nextErrors.cep = "CEP invalido."
+      }
+    }
+
+    if (step === 2) {
+      delete nextErrors.enderecoClinica
+      if (!formData.cepClinica.trim()) nextErrors.cepClinica = "Informe o CEP da clinica/consultorio."
+      else if (!isValidCep(formData.cepClinica)) nextErrors.cepClinica = "CEP invalido."
+      if (!formData.logradouroClinica.trim()) nextErrors.logradouroClinica = "Informe a rua da clinica/consultorio."
+      if (!formData.bairroClinica.trim()) nextErrors.bairroClinica = "Informe o bairro da clinica/consultorio."
+      if (!formData.cidadeClinica.trim()) nextErrors.cidadeClinica = "Informe a cidade da clinica/consultorio."
+      if (!formData.estadoClinica.trim()) nextErrors.estadoClinica = "Informe a UF da clinica/consultorio."
+      else if (formData.estadoClinica.trim().length !== 2) nextErrors.estadoClinica = "Selecione uma UF valida."
+      if (!formData.numeroClinica.trim()) nextErrors.numeroClinica = "Informe o numero da clinica/consultorio."
     }
 
     setErrors(nextErrors)
@@ -296,7 +407,7 @@ export default function CadastroVoluntarioPage() {
       setRegistrationResponse(response)
       setCurrentStep(4) // Success state
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Erro ao enviar cadastro. Tente novamente.")
+      setSubmitError(friendlyRegistrationError(err))
     } finally {
       setIsSubmitting(false)
     }
@@ -446,6 +557,7 @@ export default function CadastroVoluntarioPage() {
                           <Input
                             id="cpf"
                             placeholder="000.000.000-00"
+                            maxLength={14}
                             value={formData.cpf}
                             onChange={(e) => handleInputChange("cpf", e.target.value)}
                             className={`h-12 text-base ${errors.cpf ? "border-destructive" : ""}`}
@@ -462,6 +574,7 @@ export default function CadastroVoluntarioPage() {
                             id="telefone"
                             type="tel"
                             placeholder="(00) 00000-0000"
+                            maxLength={15}
                             value={formData.telefone}
                             onChange={(e) => handleInputChange("telefone", e.target.value)}
                             className={`h-12 text-base ${errors.telefone ? "border-destructive" : ""}`}
@@ -475,6 +588,7 @@ export default function CadastroVoluntarioPage() {
                             id="email"
                             type="email"
                             placeholder="seu@email.com"
+                            maxLength={255}
                             value={formData.email}
                             onChange={(e) => handleInputChange("email", e.target.value)}
                             className={`h-12 text-base ${errors.email ? "border-destructive" : ""}`}
@@ -490,6 +604,7 @@ export default function CadastroVoluntarioPage() {
                           <Input
                             id="cep"
                             placeholder="00000-000"
+                            maxLength={9}
                             value={formData.cep}
                             onChange={(e) => handleInputChange("cep", e.target.value)}
                             className={`h-12 text-base ${errors.cep ? "border-destructive" : ""}`}
@@ -509,7 +624,7 @@ export default function CadastroVoluntarioPage() {
                             value={formData.estado} 
                             onValueChange={(value) => handleInputChange("estado", value)}
                           >
-                            <SelectTrigger className={`h-12 text-base ${errors.estado ? "border-destructive" : ""}`}>
+                            <SelectTrigger id="estado" className={`h-12 text-base ${errors.estado ? "border-destructive" : ""}`}>
                               <SelectValue placeholder="Selecione" />
                             </SelectTrigger>
                             <SelectContent>
@@ -612,7 +727,7 @@ export default function CadastroVoluntarioPage() {
                           value={formData.profissao} 
                           onValueChange={(value) => handleInputChange("profissao", value)}
                         >
-                          <SelectTrigger className={`h-12 text-base ${errors.profissao ? "border-destructive" : ""}`}>
+                          <SelectTrigger id="profissao" className={`h-12 text-base ${errors.profissao ? "border-destructive" : ""}`}>
                             <SelectValue placeholder="Selecione sua profissão" />
                           </SelectTrigger>
                           <SelectContent>
@@ -647,7 +762,7 @@ export default function CadastroVoluntarioPage() {
                                 value={formData.especialidade} 
                                 onValueChange={(value) => handleInputChange("especialidade", value)}
                               >
-                                <SelectTrigger className="h-12 text-base">
+                                <SelectTrigger id="especialidade" className="h-12 text-base">
                                   <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -688,7 +803,7 @@ export default function CadastroVoluntarioPage() {
                               value={formData.especialidade} 
                               onValueChange={(value) => handleInputChange("especialidade", value)}
                             >
-                              <SelectTrigger className="h-12 text-base">
+                              <SelectTrigger id="especialidade" className="h-12 text-base">
                                 <SelectValue placeholder="Selecione" />
                               </SelectTrigger>
                               <SelectContent>
@@ -711,7 +826,7 @@ export default function CadastroVoluntarioPage() {
                           value={formData.tempoExperiencia} 
                           onValueChange={(value) => handleInputChange("tempoExperiencia", value)}
                         >
-                          <SelectTrigger className={`h-12 text-base ${errors.tempoExperiencia ? "border-destructive" : ""}`}>
+                          <SelectTrigger id="tempoExperiencia" className={`h-12 text-base ${errors.tempoExperiencia ? "border-destructive" : ""}`}>
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                           <SelectContent>
@@ -738,16 +853,114 @@ export default function CadastroVoluntarioPage() {
                       </div>
 
                       <div className="space-y-2">
+                        <Label htmlFor="cepClinica" className="text-base">
+                          CEP da clinica/consultorio *
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="cepClinica"
+                            placeholder="00000-000"
+                            maxLength={9}
+                            value={formData.cepClinica}
+                            onChange={(e) => handleInputChange("cepClinica", e.target.value)}
+                            className={`h-12 pr-10 text-base ${errors.cepClinica ? "border-destructive" : ""}`}
+                            required
+                          />
+                          {isClinicCepLoading && (
+                            <Loader2 className="absolute right-3 top-3.5 h-5 w-5 animate-spin text-muted-foreground" aria-hidden="true" />
+                          )}
+                        </div>
+                        {clinicCepFeedback && <p className="text-sm text-muted-foreground">{clinicCepFeedback}</p>}
+                        {errors.cepClinica && <p className="text-sm text-destructive">{errors.cepClinica}</p>}
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="logradouroClinica" className="text-base">Rua da clinica *</Label>
+                          <Input
+                            id="logradouroClinica"
+                            placeholder="Rua, avenida, travessa..."
+                            value={formData.logradouroClinica}
+                            onChange={(e) => handleInputChange("logradouroClinica", e.target.value)}
+                            className={`h-12 text-base ${errors.logradouroClinica ? "border-destructive" : ""}`}
+                            required
+                          />
+                          {errors.logradouroClinica && <p className="text-sm text-destructive">{errors.logradouroClinica}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="numeroClinica" className="text-base">Numero *</Label>
+                          <Input
+                            id="numeroClinica"
+                            placeholder="Numero"
+                            maxLength={20}
+                            value={formData.numeroClinica}
+                            onChange={(e) => handleInputChange("numeroClinica", e.target.value)}
+                            className={`h-12 text-base ${errors.numeroClinica ? "border-destructive" : ""}`}
+                            required
+                          />
+                          {errors.numeroClinica && <p className="text-sm text-destructive">{errors.numeroClinica}</p>}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="bairroClinica" className="text-base">Bairro *</Label>
+                          <Input
+                            id="bairroClinica"
+                            value={formData.bairroClinica}
+                            onChange={(e) => handleInputChange("bairroClinica", e.target.value)}
+                            className={`h-12 text-base ${errors.bairroClinica ? "border-destructive" : ""}`}
+                            required
+                          />
+                          {errors.bairroClinica && <p className="text-sm text-destructive">{errors.bairroClinica}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="cidadeClinica" className="text-base">Cidade *</Label>
+                          <Input
+                            id="cidadeClinica"
+                            value={formData.cidadeClinica}
+                            onChange={(e) => handleInputChange("cidadeClinica", e.target.value)}
+                            className={`h-12 text-base ${errors.cidadeClinica ? "border-destructive" : ""}`}
+                            required
+                          />
+                          {errors.cidadeClinica && <p className="text-sm text-destructive">{errors.cidadeClinica}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="estadoClinica" className="text-base">UF *</Label>
+                          <Input
+                            id="estadoClinica"
+                            placeholder="SP"
+                            maxLength={2}
+                            value={formData.estadoClinica}
+                            onChange={(e) => handleInputChange("estadoClinica", e.target.value)}
+                            className={`h-12 text-base ${errors.estadoClinica ? "border-destructive" : ""}`}
+                            required
+                          />
+                          {errors.estadoClinica && <p className="text-sm text-destructive">{errors.estadoClinica}</p>}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="complementoClinica" className="text-base">Complemento da clinica</Label>
+                        <Input
+                          id="complementoClinica"
+                          placeholder="Sala, andar, bloco..."
+                          value={formData.complementoClinica}
+                          onChange={(e) => handleInputChange("complementoClinica", e.target.value)}
+                          className="h-12 text-base"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
                         <Label htmlFor="enderecoClinica" className="text-base">
-                          Endereço da clínica/consultório *
+                          Observacao do endereco da clinica
                         </Label>
                         <Input
                           id="enderecoClinica"
-                          placeholder="Endereço completo onde realizará os atendimentos"
+                          placeholder="Referencia ou orientacao de acesso"
                           value={formData.enderecoClinica}
                           onChange={(e) => handleInputChange("enderecoClinica", e.target.value)}
                           className={`h-12 text-base ${errors.enderecoClinica ? "border-destructive" : ""}`}
-                          required
                         />
                         {errors.enderecoClinica && <p className="text-sm text-destructive">{errors.enderecoClinica}</p>}
                       </div>
@@ -787,7 +1000,7 @@ export default function CadastroVoluntarioPage() {
                           value={formData.horariosDisponiveis} 
                           onValueChange={(value) => handleInputChange("horariosDisponiveis", value)}
                         >
-                          <SelectTrigger className={`h-12 text-base ${errors.horariosDisponiveis ? "border-destructive" : ""}`}>
+                          <SelectTrigger id="horariosDisponiveis" className={`h-12 text-base ${errors.horariosDisponiveis ? "border-destructive" : ""}`}>
                             <SelectValue placeholder="Selecione o período" />
                           </SelectTrigger>
                           <SelectContent>
@@ -809,7 +1022,7 @@ export default function CadastroVoluntarioPage() {
                           value={formData.quantidadeAtendimentos} 
                           onValueChange={(value) => handleInputChange("quantidadeAtendimentos", value)}
                         >
-                          <SelectTrigger className={`h-12 text-base ${errors.quantidadeAtendimentos ? "border-destructive" : ""}`}>
+                          <SelectTrigger id="quantidadeAtendimentos" className={`h-12 text-base ${errors.quantidadeAtendimentos ? "border-destructive" : ""}`}>
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                           <SelectContent>
@@ -845,7 +1058,7 @@ export default function CadastroVoluntarioPage() {
                           value={formData.comoConheceu} 
                           onValueChange={(value) => handleInputChange("comoConheceu", value)}
                         >
-                          <SelectTrigger className="h-12 text-base">
+                          <SelectTrigger id="comoConheceu" className="h-12 text-base">
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                           <SelectContent>

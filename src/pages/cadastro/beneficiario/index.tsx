@@ -16,6 +16,16 @@ import { ContextualHelp } from "@/components/ui/contextual-help"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { apiFetch, normalizeDigits, normalizeEmail } from "@/lib/api"
 import { fetchAddressByCep } from "@/lib/viacep"
+import {
+  formatRegistrationField,
+  friendlyRegistrationError,
+  isValidBrazilPhone,
+  isValidCep,
+  isValidCpf,
+  isValidDate,
+  isValidEmail,
+  maskCep,
+} from "@/lib/registration-validation"
 
 // Response type for registration endpoint
 interface RegistrationSuccessResponse {
@@ -75,7 +85,8 @@ export default function CadastroBeneficiarioPage() {
   })
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    const nextValue = typeof value === "string" ? formatRegistrationField(field, value) : value
+    setFormData((prev) => ({ ...prev, [field]: nextValue }))
     // Limpa erro ao digitar
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }))
@@ -106,11 +117,11 @@ export default function CadastroBeneficiarioPage() {
         }
         setFormData((prev) => ({
           ...prev,
-          cep: address.cep,
-          estado: address.estado,
-          cidade: address.cidade,
-          bairro: address.bairro,
-          endereco: address.endereco,
+          cep: maskCep(address.cep),
+          estado: prev.estado || address.estado,
+          cidade: prev.cidade || address.cidade,
+          bairro: prev.bairro || address.bairro,
+          endereco: prev.endereco || address.endereco,
         }))
       })
       .catch((error) => {
@@ -157,6 +168,36 @@ export default function CadastroBeneficiarioPage() {
       if (!formData.termos) newErrors.termos = "Você deve aceitar os termos"
     }
     
+    if (step === 1) {
+      if (formData.nomeCompleto.trim() && formData.nomeCompleto.trim().length < 3) {
+        newErrors.nomeCompleto = "Informe o nome completo."
+      }
+      if (formData.dataNascimento && !isValidDate(formData.dataNascimento)) {
+        newErrors.dataNascimento = "Informe uma data de nascimento valida."
+      }
+      if (formData.cpf.trim() && !isValidCpf(formData.cpf)) {
+        newErrors.cpf = "CPF invalido. Verifique os dados informados."
+      }
+      if (formData.telefone.trim() && !isValidBrazilPhone(formData.telefone)) {
+        newErrors.telefone = "Telefone invalido."
+      }
+      if (formData.email && !isValidEmail(formData.email)) {
+        newErrors.email = "Informe um e-mail valido."
+      }
+      if (formData.telefoneResponsavel.trim() && !isValidBrazilPhone(formData.telefoneResponsavel)) {
+        newErrors.telefoneResponsavel = "Telefone invalido."
+      }
+    }
+
+    if (step === 2) {
+      if (formData.cep.trim() && !isValidCep(formData.cep)) {
+        newErrors.cep = "CEP invalido."
+      }
+      if (formData.estado.trim() && formData.estado.trim().length !== 2) {
+        newErrors.estado = "Selecione uma UF valida."
+      }
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -206,7 +247,7 @@ export default function CadastroBeneficiarioPage() {
       setRegistrationResponse(response)
       setCurrentStep(4) // Success state
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Erro ao enviar cadastro. Tente novamente.")
+      setSubmitError(friendlyRegistrationError(err))
       setCurrentStep(3) // Go back to last step to show error
     } finally {
       setIsSubmitting(false)
@@ -343,7 +384,7 @@ export default function CadastroBeneficiarioPage() {
                             value={formData.genero} 
                             onValueChange={(value) => handleInputChange("genero", value)}
                           >
-                            <SelectTrigger className={`h-12 text-base ${errors.genero ? "border-destructive" : ""}`}>
+                            <SelectTrigger id="genero" className={`h-12 text-base ${errors.genero ? "border-destructive" : ""}`}>
                               <SelectValue placeholder="Selecione" />
                             </SelectTrigger>
                             <SelectContent>
@@ -368,6 +409,7 @@ export default function CadastroBeneficiarioPage() {
                           <Input
                             id="cpf"
                             placeholder="000.000.000-00"
+                            maxLength={14}
                             value={formData.cpf}
                             onChange={(e) => handleInputChange("cpf", e.target.value)}
                             className={`h-12 text-base ${errors.cpf ? "border-destructive" : ""}`}
@@ -399,6 +441,7 @@ export default function CadastroBeneficiarioPage() {
                             id="telefone"
                             type="tel"
                             placeholder="(00) 00000-0000"
+                            maxLength={15}
                             value={formData.telefone}
                             onChange={(e) => handleInputChange("telefone", e.target.value)}
                             className={`h-12 text-base ${errors.telefone ? "border-destructive" : ""}`}
@@ -417,6 +460,7 @@ export default function CadastroBeneficiarioPage() {
                             id="email"
                             type="email"
                             placeholder="exemplo@email.com"
+                            maxLength={255}
                             value={formData.email}
                             onChange={(e) => handleInputChange("email", e.target.value)}
                             className="h-12 text-base"
@@ -461,6 +505,7 @@ export default function CadastroBeneficiarioPage() {
                                 id="telefoneResponsavel"
                                 type="tel"
                                 placeholder="(00) 00000-0000"
+                                maxLength={15}
                                 value={formData.telefoneResponsavel}
                                 onChange={(e) => handleInputChange("telefoneResponsavel", e.target.value)}
                                 className={`h-12 text-base ${errors.telefoneResponsavel ? "border-destructive" : ""}`}
@@ -479,7 +524,7 @@ export default function CadastroBeneficiarioPage() {
                                 value={formData.parentesco} 
                                 onValueChange={(value) => handleInputChange("parentesco", value)}
                               >
-                                <SelectTrigger className={`h-12 text-base ${errors.parentesco ? "border-destructive" : ""}`}>
+                                <SelectTrigger id="parentesco" className={`h-12 text-base ${errors.parentesco ? "border-destructive" : ""}`}>
                                   <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -513,6 +558,7 @@ export default function CadastroBeneficiarioPage() {
                           <Input
                             id="cep"
                             placeholder="00000-000"
+                            maxLength={9}
                             value={formData.cep}
                             onChange={(e) => handleInputChange("cep", e.target.value)}
                             className={`h-12 text-base ${errors.cep ? "border-destructive" : ""}`}
@@ -532,7 +578,7 @@ export default function CadastroBeneficiarioPage() {
                             value={formData.estado} 
                             onValueChange={(value) => handleInputChange("estado", value)}
                           >
-                            <SelectTrigger className={`h-12 text-base ${errors.estado ? "border-destructive" : ""}`}>
+                            <SelectTrigger id="estado" className={`h-12 text-base ${errors.estado ? "border-destructive" : ""}`}>
                               <SelectValue placeholder="Selecione o estado" />
                             </SelectTrigger>
                             <SelectContent>
@@ -656,7 +702,7 @@ export default function CadastroBeneficiarioPage() {
                             value={formData.serie} 
                             onValueChange={(value) => handleInputChange("serie", value)}
                           >
-                            <SelectTrigger className="h-12 text-base">
+                            <SelectTrigger id="serie" className="h-12 text-base">
                               <SelectValue placeholder="Selecione" />
                             </SelectTrigger>
                             <SelectContent>
@@ -681,7 +727,7 @@ export default function CadastroBeneficiarioPage() {
                           value={formData.rendaFamiliar} 
                           onValueChange={(value) => handleInputChange("rendaFamiliar", value)}
                         >
-                          <SelectTrigger className={`h-12 text-base ${errors.rendaFamiliar ? "border-destructive" : ""}`}>
+                          <SelectTrigger id="rendaFamiliar" className={`h-12 text-base ${errors.rendaFamiliar ? "border-destructive" : ""}`}>
                             <SelectValue placeholder="Selecione a faixa de renda" />
                           </SelectTrigger>
                           <SelectContent>
@@ -707,7 +753,7 @@ export default function CadastroBeneficiarioPage() {
                           value={formData.comoConheceu} 
                           onValueChange={(value) => handleInputChange("comoConheceu", value)}
                         >
-                          <SelectTrigger className="h-12 text-base">
+                          <SelectTrigger id="comoConheceu" className="h-12 text-base">
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                           <SelectContent>

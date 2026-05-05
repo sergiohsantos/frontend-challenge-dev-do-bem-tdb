@@ -17,6 +17,16 @@ import { ContextualHelp } from "@/components/ui/contextual-help"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { apiFetch, normalizeDigits } from "@/lib/api"
 import { fetchAddressByCep } from "@/lib/viacep"
+import {
+  formatRegistrationField,
+  friendlyRegistrationError,
+  isValidBrazilPhone,
+  isValidCep,
+  isValidCpf,
+  isValidDate,
+  isValidEmail,
+  maskCep,
+} from "@/lib/registration-validation"
 
 // Response type for the Apolônias registration endpoint
 interface ApoloniasRegistrationResponse {
@@ -76,7 +86,8 @@ export default function CadastroApoloniasPage() {
   })
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    const nextValue = typeof value === "string" ? formatRegistrationField(field, value) : value
+    setFormData((prev) => ({ ...prev, [field]: nextValue }))
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }))
     }
@@ -106,11 +117,11 @@ export default function CadastroApoloniasPage() {
         }
         setFormData((prev) => ({
           ...prev,
-          cep: address.cep,
-          endereco: address.endereco,
-          bairro: address.bairro,
-          cidade: address.cidade,
-          estado: address.estado,
+          cep: maskCep(address.cep),
+          endereco: prev.endereco || address.endereco,
+          bairro: prev.bairro || address.bairro,
+          cidade: prev.cidade || address.cidade,
+          estado: prev.estado || address.estado,
         }))
       })
       .catch((error) => {
@@ -161,6 +172,33 @@ export default function CadastroApoloniasPage() {
       if (!formData.privacidade) newErrors.privacidade = "Você deve aceitar a política de privacidade"
     }
     
+    if (step === 1) {
+      if (formData.nomeCompleto.trim() && formData.nomeCompleto.trim().length < 3) {
+        newErrors.nomeCompleto = "Informe o nome completo."
+      }
+      if (formData.dataNascimento && !isValidDate(formData.dataNascimento)) {
+        newErrors.dataNascimento = "Informe uma data de nascimento valida."
+      }
+      if (formData.cpf.trim() && !isValidCpf(formData.cpf)) {
+        newErrors.cpf = "CPF invalido. Verifique os dados informados."
+      }
+      if (formData.telefone.trim() && !isValidBrazilPhone(formData.telefone)) {
+        newErrors.telefone = "Telefone invalido."
+      }
+      if (formData.email && !isValidEmail(formData.email)) {
+        newErrors.email = "Informe um e-mail valido."
+      }
+    }
+
+    if (step === 2) {
+      if (formData.cep.trim() && !isValidCep(formData.cep)) {
+        newErrors.cep = "CEP invalido."
+      }
+      if (formData.estado.trim() && formData.estado.trim().length !== 2) {
+        newErrors.estado = "Selecione uma UF valida."
+      }
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -233,7 +271,7 @@ export default function CadastroApoloniasPage() {
       setRegistrationResponse(response)
       setCurrentStep(5) // Success state
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Erro ao enviar cadastro. Tente novamente.")
+      setSubmitError(friendlyRegistrationError(error))
     } finally {
       setIsSubmitting(false)
     }
@@ -423,6 +461,7 @@ export default function CadastroApoloniasPage() {
                               <Input
                                 id="cpf"
                                 placeholder="000.000.000-00"
+                                maxLength={14}
                                 value={formData.cpf}
                                 onChange={(e) => handleInputChange("cpf", e.target.value)}
                                 className={`h-12 text-base ${errors.cpf ? "border-destructive" : ""}`}
@@ -448,7 +487,7 @@ export default function CadastroApoloniasPage() {
                               value={formData.identidadeGenero}
                               onValueChange={(value) => handleInputChange("identidadeGenero", value)}
                             >
-                              <SelectTrigger className="h-12 text-base">
+                              <SelectTrigger id="identidadeGenero" className="h-12 text-base">
                                 <SelectValue placeholder="Selecione" />
                               </SelectTrigger>
                               <SelectContent>
@@ -471,6 +510,7 @@ export default function CadastroApoloniasPage() {
                                 id="telefone"
                                 type="tel"
                                 placeholder="(00) 00000-0000"
+                                maxLength={15}
                                 value={formData.telefone}
                                 onChange={(e) => handleInputChange("telefone", e.target.value)}
                                 className={`h-12 text-base ${errors.telefone ? "border-destructive" : ""}`}
@@ -491,6 +531,7 @@ export default function CadastroApoloniasPage() {
                                 id="email"
                                 type="email"
                                 placeholder="seu@email.com"
+                                maxLength={255}
                                 value={formData.email}
                                 onChange={(e) => handleInputChange("email", e.target.value)}
                                 className="h-12 text-base"
@@ -518,6 +559,7 @@ export default function CadastroApoloniasPage() {
                               <Input
                                 id="cep"
                                 placeholder="00000-000"
+                                maxLength={9}
                                 value={formData.cep}
                                 onChange={(e) => handleInputChange("cep", e.target.value)}
                                 className={`h-12 text-base ${errors.cep ? "border-destructive" : ""}`}
@@ -609,7 +651,7 @@ export default function CadastroApoloniasPage() {
                                 value={formData.estado}
                                 onValueChange={(value) => handleInputChange("estado", value)}
                               >
-                                <SelectTrigger className={`h-12 text-base ${errors.estado ? "border-destructive" : ""}`}>
+                                <SelectTrigger id="estado" className={`h-12 text-base ${errors.estado ? "border-destructive" : ""}`}>
                                   <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -685,7 +727,7 @@ export default function CadastroApoloniasPage() {
                               value={formData.tempoOcorrencia}
                               onValueChange={(value) => handleInputChange("tempoOcorrencia", value)}
                             >
-                              <SelectTrigger className="h-12 text-base">
+                              <SelectTrigger id="tempoOcorrencia" className="h-12 text-base">
                                 <SelectValue placeholder="Selecione" />
                               </SelectTrigger>
                               <SelectContent>
@@ -765,7 +807,7 @@ export default function CadastroApoloniasPage() {
                               value={formData.acompanhamentoAssistencial}
                               onValueChange={(value) => handleInputChange("acompanhamentoAssistencial", value)}
                             >
-                              <SelectTrigger className="h-12 text-base">
+                              <SelectTrigger id="acompanhamentoAssistencial" className="h-12 text-base">
                                 <SelectValue placeholder="Selecione" />
                               </SelectTrigger>
                               <SelectContent>
