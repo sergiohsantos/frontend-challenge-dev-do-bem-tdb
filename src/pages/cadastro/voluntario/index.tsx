@@ -646,21 +646,21 @@ export default function CadastroVoluntarioPage() {
                               <SelectItem value="PA">Pará</SelectItem>
                               <SelectItem value="SC">Santa Catarina</SelectItem>
                               <SelectItem value="GO">Goiás</SelectItem>
-                              <SelectItem value="MA">MaranhÃ£o</SelectItem>
+                              <SelectItem value="MA">Maranhão</SelectItem>
                               <SelectItem value="AM">Amazonas</SelectItem>
-                              <SelectItem value="ES">EspÃ­rito Santo</SelectItem>
-                              <SelectItem value="PB">ParaÃ­ba</SelectItem>
+                              <SelectItem value="ES">Espírito Santo</SelectItem>
+                              <SelectItem value="PB">Paraíba</SelectItem>
                               <SelectItem value="RN">Rio Grande do Norte</SelectItem>
                               <SelectItem value="MT">Mato Grosso</SelectItem>
                               <SelectItem value="AL">Alagoas</SelectItem>
-                              <SelectItem value="PI">PiauÃ­</SelectItem>
+                              <SelectItem value="PI">Piauí</SelectItem>
                               <SelectItem value="DF">Distrito Federal</SelectItem>
                               <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
                               <SelectItem value="SE">Sergipe</SelectItem>
-                              <SelectItem value="RO">RondÃ´nia</SelectItem>
+                              <SelectItem value="RO">Rondânia</SelectItem>
                               <SelectItem value="TO">Tocantins</SelectItem>
                               <SelectItem value="AC">Acre</SelectItem>
-                              <SelectItem value="AP">AmapÃ¡</SelectItem>
+                              <SelectItem value="AP">Amapá</SelectItem>
                               <SelectItem value="RR">Roraima</SelectItem>
                             </SelectContent>
                           </Select>

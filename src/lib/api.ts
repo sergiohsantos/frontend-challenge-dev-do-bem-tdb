@@ -582,6 +582,7 @@ export async function apiDownload(
 
 export interface Program {
   id: number
+  code?: string
   name: string
   slug?: string
   description: string
