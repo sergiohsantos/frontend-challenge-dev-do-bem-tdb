@@ -406,10 +406,10 @@ export default function AdminConfiguracoesPage() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <MessageCircle className="h-5 w-5 text-primary" />
-                          <p className="font-medium">NotificaÃ§Ãµes WhatsApp</p>
+                          <p className="font-medium">Notificações WhatsApp</p>
                         </div>
                         <p className="max-w-2xl text-sm text-muted-foreground">
-                          Ativa ou pausa os disparos automÃ¡ticos de WhatsApp para aprovaÃ§Ãµes, agendamentos, confirmaÃ§Ãµes e reagendamentos.
+                          Ativa ou pausa os disparos automáticos de WhatsApp para aprovações, agendamentos, confirmações e reagendamentos.
                         </p>
                       </div>
                       <Switch checked={settings.notifications.whatsappEnabled} onCheckedChange={(checked) => updateNotifications("whatsappEnabled", checked)} />

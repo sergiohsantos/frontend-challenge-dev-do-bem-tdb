@@ -102,7 +102,7 @@ export default function CadastroBeneficiarioPage() {
         }
 
         if (!address.endereco) {
-          setCepFeedback("CEP encontrado, mas a rua nÃ£o foi informada. Preencha o endereÃ§o manualmente.")
+          setCepFeedback("CEP encontrado, mas a rua nÃ£o foi informada. Preencha o endereço manualmente.")
         }
         setFormData((prev) => ({
           ...prev,
