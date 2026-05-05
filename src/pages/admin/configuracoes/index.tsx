@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Settings, Loader2, Save, Bell, Mail, Shield, Globe, User } from "lucide-react"
+import { Settings, Loader2, Save, Bell, Shield, Globe, User, MessageCircle, Send } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { getToken, getUser } from "@/lib/auth"
 import { getStoredProfile, mergeProfile, saveStoredProfile, type ManagedProfileData } from "@/lib/profile-storage"
@@ -30,6 +30,7 @@ interface AdminSettingsState {
     systemAlerts: boolean
     dailyDigest: boolean
     weeklyReport: boolean
+    whatsappEnabled: boolean
   }
   security: {
     twoFactorEnabled: boolean
@@ -47,6 +48,23 @@ interface AdminSettingsState {
   }
 }
 
+interface WhatsAppStatus {
+  enabled: boolean
+  configured: boolean
+  enabledByEnv: boolean
+  enabledByAdmin: boolean
+  messageMode: string
+  templateDefaultPresent: boolean
+  templateDefault?: string | null
+  templateLanguage: string
+  forceRecipientPresent: boolean
+  defaultRecipientPresent: boolean
+  adminRecipientPresent: boolean
+  webhookConfigured: boolean
+  webhookCallbackUrl: string
+  warning?: string | null
+}
+
 const defaultSettings: AdminSettingsState = {
   notifications: {
     emailAlerts: true,
@@ -54,6 +72,7 @@ const defaultSettings: AdminSettingsState = {
     systemAlerts: true,
     dailyDigest: false,
     weeklyReport: true,
+    whatsappEnabled: true,
   },
   security: {
     twoFactorEnabled: false,
@@ -82,6 +101,7 @@ function normalizeAdminSettings(raw: Record<string, unknown> | null | undefined)
       systemAlerts: Boolean((raw.notifications as Record<string, unknown> | undefined)?.systemAlerts ?? defaultSettings.notifications.systemAlerts),
       dailyDigest: Boolean((raw.notifications as Record<string, unknown> | undefined)?.dailyDigest ?? defaultSettings.notifications.dailyDigest),
       weeklyReport: Boolean((raw.notifications as Record<string, unknown> | undefined)?.weeklyReport ?? defaultSettings.notifications.weeklyReport),
+      whatsappEnabled: Boolean((raw.notifications as Record<string, unknown> | undefined)?.whatsappEnabled ?? defaultSettings.notifications.whatsappEnabled),
     },
     security: {
       ...defaultSettings.security,
@@ -108,7 +128,9 @@ export default function AdminConfiguracoesPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
+  const [testingWhatsApp, setTestingWhatsApp] = useState(false)
   const [settings, setSettings] = useState<AdminSettingsState>(defaultSettings)
+  const [whatsAppStatus, setWhatsAppStatus] = useState<WhatsAppStatus | null>(null)
   const [profile, setProfile] = useState<ManagedProfileData>({})
   const user = getUser()
 
@@ -120,11 +142,13 @@ export default function AdminConfiguracoesPage() {
     setLoading(true)
     try {
       const token = getToken()
-      const [rawSettings, rawProfile] = await Promise.all([
+      const [rawSettings, rawProfile, rawWhatsAppStatus] = await Promise.all([
         apiFetch<Record<string, unknown>>("/api/admin/settings", {}, token),
         apiFetch<AdminProfile>("/api/admin/profile", {}, token),
+        apiFetch<WhatsAppStatus>("/api/admin/whatsapp/status", {}, token),
       ])
       setSettings(normalizeAdminSettings(rawSettings))
+      setWhatsAppStatus(rawWhatsAppStatus)
       const stored = getStoredProfile("admin", user?.id)
       const mergedProfile = mergeProfile({
         nome: rawProfile.nome || user?.full_name || "",
@@ -203,6 +227,35 @@ export default function AdminConfiguracoesPage() {
 
   function updateProfile<K extends keyof ManagedProfileData>(key: K, value: ManagedProfileData[K]) {
     setProfile((prev) => ({ ...prev, [key]: value }))
+  }
+
+  async function handleWhatsAppTest() {
+    setTestingWhatsApp(true)
+    try {
+      const token = getToken()
+      const result = await apiFetch<{ success: boolean; message_id?: string | null; detail?: string }>("/api/admin/whatsapp/test", {
+        method: "POST",
+        body: JSON.stringify({
+          recipientName: profile.nome || "Admin TDB",
+          notificationType: "Teste de integração",
+          reference: "TESTE-WHATSAPP",
+          relatedPerson: "Dev do Bem",
+          message: "Teste de integração WhatsApp pelo painel Admin.",
+        }),
+      }, token)
+      if (result.success) {
+        toast.success(result.message_id ? `Teste aceito pela Meta: ${result.message_id}` : "Teste aceito pela Meta")
+      } else {
+        toast.error(result.detail || "Teste de WhatsApp não enviado")
+      }
+      const updatedStatus = await apiFetch<WhatsAppStatus>("/api/admin/whatsapp/status", {}, token)
+      setWhatsAppStatus(updatedStatus)
+    } catch (error) {
+      console.error("Erro ao testar WhatsApp:", error)
+      toast.error("Erro ao enviar teste de WhatsApp")
+    } finally {
+      setTestingWhatsApp(false)
+    }
   }
 
   if (loading) {
@@ -348,6 +401,50 @@ export default function AdminConfiguracoesPage() {
                       <Switch checked={settings.notifications[key]} onCheckedChange={(checked) => updateNotifications(key, checked)} />
                     </div>
                   ))}
+                  <div className="rounded-lg border p-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <MessageCircle className="h-5 w-5 text-primary" />
+                          <p className="font-medium">NotificaÃ§Ãµes WhatsApp</p>
+                        </div>
+                        <p className="max-w-2xl text-sm text-muted-foreground">
+                          Ativa ou pausa os disparos automÃ¡ticos de WhatsApp para aprovaÃ§Ãµes, agendamentos, confirmaÃ§Ãµes e reagendamentos.
+                        </p>
+                      </div>
+                      <Switch checked={settings.notifications.whatsappEnabled} onCheckedChange={(checked) => updateNotifications("whatsappEnabled", checked)} />
+                    </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {([
+                        ["Ambiente habilitado", whatsAppStatus?.enabledByEnv],
+                        ["Configuração completa", whatsAppStatus?.configured],
+                        ["Template configurado", whatsAppStatus?.templateDefaultPresent],
+                        ["Webhook configurado", whatsAppStatus?.webhookConfigured],
+                        ["Número forçado ativo", whatsAppStatus?.forceRecipientPresent],
+                      ] as Array<[string, boolean | undefined]>).map(([label, active]) => (
+                        <div key={label} className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
+                          <span className="text-muted-foreground">{label}</span>
+                          <span className={active ? "font-medium text-emerald-600" : "font-medium text-muted-foreground"}>{active ? "Sim" : "Não"}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
+                        <span className="text-muted-foreground">Modo atual</span>
+                        <span className="font-medium">{whatsAppStatus?.messageMode || "indefinido"}</span>
+                      </div>
+                    </div>
+                    {whatsAppStatus?.templateDefault ? (
+                      <p className="mt-3 text-sm text-muted-foreground">Template: {whatsAppStatus.templateDefault} ({whatsAppStatus.templateLanguage})</p>
+                    ) : null}
+                    {whatsAppStatus?.warning ? (
+                      <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        {whatsAppStatus.warning}
+                      </div>
+                    ) : null}
+                    <Button type="button" variant="outline" onClick={() => void handleWhatsAppTest()} disabled={testingWhatsApp} className="mt-4 gap-2">
+                      {testingWhatsApp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      Enviar teste
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
