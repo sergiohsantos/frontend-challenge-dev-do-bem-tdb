@@ -656,7 +656,7 @@ src/types/java-api.ts
 O frontend passou a considerar a URL da API Java por meio da variavel:
 
 ```bash
-VITE_JAVA_API_URL=https://<your-api-domain>/api-java
+VITE_JAVA_API_URL=https://apionboarding-devdobem.clinicarx.dev
 ```
 
 Essa variavel e usada apenas para as telas administrativas novas integradas ao backend Java.
@@ -666,8 +666,8 @@ Essa variavel e usada apenas para as telas administrativas novas integradas ao b
 Configure no painel da Vercel:
 
 ```bash
-VITE_API_URL=https://<your-api-domain>/api-python
-VITE_JAVA_API_URL=https://<your-api-domain>/api-java
+VITE_API_URL=https://apicore-devdobem.clinicarx.dev
+VITE_JAVA_API_URL=https://apionboarding-devdobem.clinicarx.dev
 VITE_AI_API_URL=https://apichatbot-devdobem.clinicarx.dev/ai
 ```
 
