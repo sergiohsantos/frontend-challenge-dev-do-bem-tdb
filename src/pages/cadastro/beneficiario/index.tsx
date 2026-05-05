@@ -24,6 +24,7 @@ import {
   isValidCpf,
   isValidDate,
   isValidEmail,
+  isValidRg,
   maskCep,
 } from "@/lib/registration-validation"
 
@@ -91,6 +92,21 @@ export default function CadastroBeneficiarioPage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }))
     }
+  }
+
+  const validateInlineField = (field: "email" | "rg") => {
+    const value = formData[field]
+    let message = ""
+
+    if (field === "email" && value.trim() && !isValidEmail(value)) {
+      message = "Informe um e-mail valido."
+    }
+
+    if (field === "rg" && value.trim() && !isValidRg(value)) {
+      message = "Informe um RG valido."
+    }
+
+    setErrors((prev) => ({ ...prev, [field]: message }))
   }
 
   useEffect(() => {
@@ -183,6 +199,9 @@ export default function CadastroBeneficiarioPage() {
       }
       if (formData.email && !isValidEmail(formData.email)) {
         newErrors.email = "Informe um e-mail valido."
+      }
+      if (formData.rg && !isValidRg(formData.rg)) {
+        newErrors.rg = "Informe um RG valido."
       }
       if (formData.telefoneResponsavel.trim() && !isValidBrazilPhone(formData.telefoneResponsavel)) {
         newErrors.telefoneResponsavel = "Telefone invalido."
@@ -427,10 +446,18 @@ export default function CadastroBeneficiarioPage() {
                           <Input
                             id="rg"
                             placeholder="Digite o RG"
+                            maxLength={12}
                             value={formData.rg}
                             onChange={(e) => handleInputChange("rg", e.target.value)}
-                            className="h-12 text-base"
+                            onBlur={() => validateInlineField("rg")}
+                            className={`h-12 text-base ${errors.rg ? "border-destructive" : ""}`}
                           />
+                          {errors.rg && (
+                            <p className="flex items-center gap-1 text-sm text-destructive">
+                              <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                              {errors.rg}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -463,8 +490,15 @@ export default function CadastroBeneficiarioPage() {
                             maxLength={255}
                             value={formData.email}
                             onChange={(e) => handleInputChange("email", e.target.value)}
-                            className="h-12 text-base"
+                            onBlur={() => validateInlineField("email")}
+                            className={`h-12 text-base ${errors.email ? "border-destructive" : ""}`}
                           />
+                          {errors.email && (
+                            <p className="flex items-center gap-1 text-sm text-destructive">
+                              <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                              {errors.email}
+                            </p>
+                          )}
                         </div>
                       </div>
 

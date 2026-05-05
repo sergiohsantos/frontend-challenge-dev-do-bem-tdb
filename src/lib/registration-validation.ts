@@ -25,17 +25,34 @@ export function maskCep(value: string): string {
   return digits.replace(/^(\d{5})(\d)/, "$1-$2")
 }
 
+export function normalizeRg(value: string): string {
+  return value.toUpperCase().replace(/[^0-9X]/g, "").slice(0, 9)
+}
+
+export function maskRg(value: string): string {
+  const rg = normalizeRg(value)
+  if (rg.length <= 2) return rg
+  if (rg.length <= 5) return rg.replace(/^(\d{2})(\w+)/, "$1.$2")
+  if (rg.length <= 8) return rg.replace(/^(\d{2})(\d{3})(\w+)/, "$1.$2.$3")
+  return rg.replace(/^(\d{2})(\d{3})(\d{3})([\dX])$/, "$1.$2.$3-$4")
+}
+
+export function maskEmail(value: string): string {
+  return value.trim().toLowerCase().replace(/\s/g, "").slice(0, 255)
+}
+
 export function limitText(value: string, maxLength: number): string {
   return value.slice(0, maxLength)
 }
 
 export function formatRegistrationField(field: string, value: string): string {
   if (field.toLowerCase().includes("cpf")) return maskCpf(value)
+  if (field === "rg") return maskRg(value)
   if (field.toLowerCase().includes("cep")) return maskCep(value)
   if (field.toLowerCase().includes("telefone")) return maskPhone(value)
   if (field === "estado" || field === "estadoClinica") return value.toUpperCase().slice(0, 2)
   if (field === "numero" || field === "numeroClinica") return limitText(value, 20)
-  if (field === "email") return limitText(value, 255)
+  if (field === "email") return maskEmail(value)
   if (field.toLowerCase().includes("nome")) return limitText(value, 255)
   if (field.toLowerCase().includes("observacoes")) return limitText(value, 2000)
   return value
@@ -66,6 +83,14 @@ export function isValidBrazilPhone(value: string): boolean {
 
 export function isValidCep(value: string): boolean {
   return normalizeDigits(value).length === 8
+}
+
+export function isValidRg(value: string): boolean {
+  if (!value.trim()) return true
+  const rg = normalizeRg(value)
+  if (rg.length < 7 || rg.length > 9) return false
+  if (!/^\d{7,8}[\dX]?$/.test(rg)) return false
+  return !/^(\d)\1+$/.test(rg)
 }
 
 export function isValidEmail(value: string): boolean {
