@@ -116,7 +116,12 @@ function mapApiProgramToDisplay(apiProgram: Program, index: number): DisplayProg
   const icons = [Smile, Heart, Brain]
   const colors = ["bg-primary", "bg-accent", "bg-success"]
   const textColors = ["text-primary", "text-accent", "text-success"]
-  const slug = apiProgram.slug || normalizeProgramKey(apiProgram.name)
+  const programCodeFallbackIds: Record<string, string> = {
+    dentistas_do_bem: "dentista-do-bem",
+    apolonias_do_bem: "apolonias-do-bem",
+    psicologos_para_o_bem: "psicologo-do-bem",
+  }
+  const slug = (apiProgram.code && programCodeFallbackIds[apiProgram.code]) || apiProgram.slug || normalizeProgramKey(apiProgram.name)
   const fallback = (fallbackPrograms as DisplayProgram[]).find((item) => item.id === slug || normalizeProgramKey(item.title) === slug)
 
   return {
