@@ -154,11 +154,6 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="sm:hidden">
-          <Search className="h-5 w-5" />
-          <span className="sr-only">Buscar</span>
-        </Button>
-
         <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
           {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           <span className="sr-only">Alternar tema</span>

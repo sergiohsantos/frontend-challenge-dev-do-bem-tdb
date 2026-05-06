@@ -277,16 +277,16 @@ export default function AdminDashboardPage() {
           return (
             <Card key={kpi.key} className="relative overflow-hidden">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
                   <div className={`rounded-lg p-2 ${kpi.bgColor}`}>
                     <kpi.icon className={`h-5 w-5 ${kpi.color}`} aria-hidden="true" />
                   </div>
-                </div>
-                <div className="mt-3">
-                  <p className="text-2xl font-bold">
-                    {value !== undefined ? value.toLocaleString("pt-BR") : "-"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{kpi.title}</p>
+                  <div className="min-w-0">
+                    <p className="text-2xl font-bold leading-tight">
+                      {value !== undefined ? value.toLocaleString("pt-BR") : "-"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{kpi.title}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -342,12 +342,12 @@ export default function AdminDashboardPage() {
 
         {/* Regional Performance */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Desempenho Regional</CardTitle>
               <CardDescription>Atendimentos por região</CardDescription>
             </div>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
               <Link to="/admin/regional">
                 Ver detalhes
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -495,12 +495,12 @@ export default function AdminDashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Programs */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Desempenho por Programa</CardTitle>
               <CardDescription>Comparativo entre os programas ativos</CardDescription>
             </div>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
               <Link to="/admin/programas">
                 Ver análise completa
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -588,7 +588,7 @@ export default function AdminDashboardPage() {
 
       {/* Regional Coverage Map placeholder */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
@@ -598,7 +598,7 @@ export default function AdminDashboardPage() {
               Visualização da presença da Turma do Bem no Brasil
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
             <Link to="/admin/regional">
               Explorar mapa
               <ArrowRight className="ml-2 h-4 w-4" />

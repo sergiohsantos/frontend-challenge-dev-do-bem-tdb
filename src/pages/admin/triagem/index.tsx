@@ -442,7 +442,7 @@ export default function AdminTriagemPage() {
         <AdminSidebar collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
         <div className="flex min-h-screen flex-1 flex-col">
           <AdminHeader />
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-4 sm:p-6">
             <PageLoader message="Carregando dados da triagem..." />
           </main>
         </div>
@@ -457,7 +457,7 @@ export default function AdminTriagemPage() {
       <div className="flex min-h-screen flex-1 flex-col">
         <AdminHeader />
 
-        <main className="flex-1 space-y-6 p-6">
+        <main className="flex-1 space-y-6 p-4 sm:p-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Triagem</h1>
             <p className="text-muted-foreground">Gestão inicial de leads e priorização de atendimento.</p>
@@ -476,32 +476,40 @@ export default function AdminTriagemPage() {
 
           <div className="grid gap-4 md:grid-cols-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Total de leads</CardTitle>
-                <CardDescription>Leads recebidos do backend Java</CardDescription>
-              </CardHeader>
-              <CardContent className="text-3xl font-bold">{stats.total}</CardContent>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">Total de leads</p>
+                  <p className="text-sm text-muted-foreground">Leads recebidos do backend Java</p>
+                </div>
+                <p className="shrink-0 text-3xl font-bold">{stats.total}</p>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader>
-                <CardTitle>Em análise</CardTitle>
-                <CardDescription>Casos em avaliação</CardDescription>
-              </CardHeader>
-              <CardContent className="text-3xl font-bold">{stats.emAnalise}</CardContent>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">Em análise</p>
+                  <p className="text-sm text-muted-foreground">Casos em avaliação</p>
+                </div>
+                <p className="shrink-0 text-3xl font-bold">{stats.emAnalise}</p>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader>
-                <CardTitle>Triados</CardTitle>
-                <CardDescription>Prontos para onboarding</CardDescription>
-              </CardHeader>
-              <CardContent className="text-3xl font-bold">{stats.triados}</CardContent>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">Triados</p>
+                  <p className="text-sm text-muted-foreground">Prontos para onboarding</p>
+                </div>
+                <p className="shrink-0 text-3xl font-bold">{stats.triados}</p>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader>
-                <CardTitle>Aptos</CardTitle>
-                <CardDescription>Convertidos pelo fluxo Java</CardDescription>
-              </CardHeader>
-              <CardContent className="text-3xl font-bold">{stats.aptos}</CardContent>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">Aptos</p>
+                  <p className="text-sm text-muted-foreground">Convertidos pelo fluxo Java</p>
+                </div>
+                <p className="shrink-0 text-3xl font-bold">{stats.aptos}</p>
+              </CardContent>
             </Card>
           </div>
 
