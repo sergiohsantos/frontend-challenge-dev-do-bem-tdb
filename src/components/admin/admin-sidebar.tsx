@@ -28,6 +28,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface AdminSidebarProps {
   collapsed?: boolean
   onToggle?: () => void
+  onNavigate?: () => void
+  variant?: "desktop" | "drawer"
 }
 
 const mainNavItems = [
@@ -109,13 +111,15 @@ const systemItems = [
   },
 ]
 
-export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps) {
+export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant = "desktop" }: AdminSidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const pathname = location.pathname
+  const isDrawer = variant === "drawer"
 
   const handleLogout = () => {
     clearAuth()
+    onNavigate?.()
     navigate("/admin/login")
   }
 
@@ -125,6 +129,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
     const linkContent = (
       <Link
         to={item.href}
+        onClick={onNavigate}
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
           isActive
@@ -165,8 +170,9 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
     <TooltipProvider>
       <aside
         className={cn(
-          "flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
-          collapsed ? "w-16" : "w-64"
+          "tdb-admin-sidebar h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
+          isDrawer ? "flex w-full" : "hidden shrink-0 lg:flex",
+          !isDrawer && (collapsed ? "w-16" : "w-64")
         )}
       >
         {/* Logo */}
@@ -243,21 +249,23 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
           "border-t border-sidebar-border p-3 space-y-2",
           collapsed && "flex flex-col items-center"
         )}>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggle}
-            className={cn(
-              "w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-              collapsed && "w-auto justify-center px-2"
-            )}
-          >
-            <ChevronLeft className={cn(
-              "h-4 w-4 transition-transform",
-              collapsed && "rotate-180"
-            )} />
-            {!collapsed && <span className="ml-2">Recolher menu</span>}
-          </Button>
+          {!isDrawer && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggle}
+              className={cn(
+                "w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                collapsed && "w-auto justify-center px-2"
+              )}
+            >
+              <ChevronLeft className={cn(
+                "h-4 w-4 transition-transform",
+                collapsed && "rotate-180"
+              )} />
+              {!collapsed && <span className="ml-2">Recolher menu</span>}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

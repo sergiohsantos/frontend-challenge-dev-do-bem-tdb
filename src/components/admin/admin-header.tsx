@@ -41,6 +41,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const [notifications, setNotifications] = useState<HeaderNotification[]>([])
   const [isMarking, setIsMarking] = useState(false)
   const [openingId, setOpeningId] = useState<string | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -130,17 +131,17 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background px-4 lg:px-6">
       <div className="flex items-center gap-4">
-        <Sheet>
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
               <Menu className="h-5 w-5" />
               <span className="sr-only">Abrir menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
+          <SheetContent side="left" className="w-72 max-w-[85vw] p-0">
             <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
             <SheetDescription className="sr-only">Navegue pelas opções do painel administrativo</SheetDescription>
-            <AdminSidebar />
+            <AdminSidebar variant="drawer" onNavigate={() => setMobileMenuOpen(false)} />
           </SheetContent>
         </Sheet>
 
