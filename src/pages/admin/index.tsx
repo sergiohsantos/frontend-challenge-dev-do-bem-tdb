@@ -7,8 +7,6 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
   MapPin,
   Heart,
@@ -16,17 +14,12 @@ import {
   Brain,
   ArrowRight,
   Activity,
-  Target,
-  Timer,
-  UserX,
-  Loader2
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ChartContainer,
@@ -120,15 +113,17 @@ export default function AdminDashboardPage() {
     setIsAuthenticated(true)
   }, [navigate])
 
-  // Load dashboard data only if authenticated
+  // Load dashboard data only if authenticated.
+  // Os filtros abaixo ficam prontos para evolução da API. Por segurança, o endpoint atual é mantido sem query params
+  // para não quebrar o contrato existente caso o backend ainda não implemente period/program/region.
   useEffect(() => {
     if (!isAuthenticated) return
-    
+
     const loadDashboard = async () => {
       try {
         const token = getToken()
         if (!token) return
-        
+
         const data = await apiFetch<AdminDashboard>("/api/admin/dashboard", {}, token)
         setApiData(data)
       } catch (err) {
@@ -138,7 +133,7 @@ export default function AdminDashboardPage() {
         setIsLoading(false)
       }
     }
-    
+
     loadDashboard()
   }, [isAuthenticated])
 
@@ -152,11 +147,11 @@ export default function AdminDashboardPage() {
     ...item,
     stage: item.stage ?? `Etapa ${index + 1}`,
     count: Number(item.count ?? 0),
-    __key: `${String(item.stage ?? 'stage')}-${index}`,
+    __key: `${String(item.stage ?? "stage")}-${index}`,
   }))
   const regional = (apiData?.regional || []).map((item) => ({
     ...item,
-    region: item.region ?? 'Não definida',
+    region: item.region ?? "Não definida",
     count: Number(item.count ?? 0),
   }))
   const programs = (apiData?.programs || []).map((item) => ({
@@ -165,13 +160,13 @@ export default function AdminDashboardPage() {
   }))
   const alerts = (apiData?.alerts || []).map((item, index) => ({
     id: item.id ?? index + 1,
-    type: item.type ?? 'info',
-    message: item.message ?? 'Alerta',
+    type: item.type ?? "info",
+    message: item.message ?? "Alerta",
   }))
   const insights = (apiData?.insights || []).map((item, index) => ({
     id: item.id ?? index + 1,
-    title: item.title ?? 'Insight',
-    description: item.description ?? '',
+    title: item.title ?? "Insight",
+    description: item.description ?? "",
   }))
   const satisfaction = (apiData?.satisfaction || []).map((item) => ({
     ...item,
@@ -184,7 +179,7 @@ export default function AdminDashboardPage() {
       <div className="flex items-center justify-center py-24">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Verificando autenticacao...</p>
+          <p className="text-muted-foreground">Verificando autenticação...</p>
         </div>
       </div>
     )
@@ -203,428 +198,435 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="p-4 sm:p-6">
+        <main className="overflow-x-hidden p-4 sm:p-6">
           <div className="space-y-6">
-      {/* Page Header with Filters */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-            Dashboard Executivo
-          </h1>
-          <p className="text-muted-foreground">
-            Visão geral do impacto e desempenho da Turma do Bem
-          </p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Últimos 7 dias</SelectItem>
-              <SelectItem value="30d">Últimos 30 dias</SelectItem>
-              <SelectItem value="90d">Últimos 90 dias</SelectItem>
-              <SelectItem value="12m">Últimos 12 meses</SelectItem>
-              <SelectItem value="ytd">Ano atual</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={program} onValueChange={setProgram}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Programa" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os programas</SelectItem>
-              <SelectItem value="dentistas">Dentistas do Bem</SelectItem>
-              <SelectItem value="apolonias">Apolônias do Bem</SelectItem>
-              <SelectItem value="psicologos">Psicólogos Para o Bem</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={region} onValueChange={setRegion}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Região" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as regiões</SelectItem>
-              <SelectItem value="sudeste">Sudeste</SelectItem>
-              <SelectItem value="sul">Sul</SelectItem>
-              <SelectItem value="nordeste">Nordeste</SelectItem>
-              <SelectItem value="centro-oeste">Centro-Oeste</SelectItem>
-              <SelectItem value="norte">Norte</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Error State */}
-      {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
-
-      {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {kpiDefinitions.map((kpi) => {
-          const value = kpis[kpi.key as keyof typeof kpis]
-          return (
-            <Card key={kpi.key} className="relative overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`rounded-lg p-2 ${kpi.bgColor}`}>
-                    <kpi.icon className={`h-5 w-5 ${kpi.color}`} aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-2xl font-bold leading-tight">
-                      {value !== undefined ? value.toLocaleString("pt-BR") : "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{kpi.title}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* Charts Row 1 */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Trend Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tendência de Crescimento</CardTitle>
-            <CardDescription>Evolução de atendimentos nos últimos meses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {trends.length > 0 ? (
-              <div className="overflow-x-auto">
-                <ChartContainer
-                  config={{
-                    value: { label: "Atendimentos", color: "hsl(var(--chart-1))" },
-                  }}
-                  className="h-[300px] min-w-[520px]"
-                >
-                  <AreaChart width={520} height={300} data={trends}>
-                    <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="month" className="text-xs" />
-                    <YAxis className="text-xs" />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="hsl(var(--chart-1))"
-                      strokeWidth={2}
-                      fill="url(#colorValue)"
-                    />
-                  </AreaChart>
-                </ChartContainer>
+            {/* Page Header with Filters */}
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+                  Dashboard Executivo
+                </h1>
+                <p className="text-sm text-muted-foreground sm:text-base">
+                  Visão geral do impacto e desempenho da Turma do Bem
+                </p>
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                <p>Sem dados de tendência disponíveis</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Regional Performance */}
-        <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle>Desempenho Regional</CardTitle>
-              <CardDescription>Atendimentos por região</CardDescription>
+              <div className="grid w-full gap-2 sm:grid-cols-3 xl:w-auto xl:flex xl:items-center">
+                <Select value={period} onValueChange={setPeriod}>
+                  <SelectTrigger className="w-full xl:w-[140px]">
+                    <SelectValue placeholder="Período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                    <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                    <SelectItem value="90d">Últimos 90 dias</SelectItem>
+                    <SelectItem value="12m">Últimos 12 meses</SelectItem>
+                    <SelectItem value="ytd">Ano atual</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={program} onValueChange={setProgram}>
+                  <SelectTrigger className="w-full xl:w-[180px]">
+                    <SelectValue placeholder="Programa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os programas</SelectItem>
+                    <SelectItem value="dentistas">Dentistas do Bem</SelectItem>
+                    <SelectItem value="apolonias">Apolônias do Bem</SelectItem>
+                    <SelectItem value="psicologos">Psicólogos Para o Bem</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={region} onValueChange={setRegion}>
+                  <SelectTrigger className="w-full xl:w-[160px]">
+                    <SelectValue placeholder="Região" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as regiões</SelectItem>
+                    <SelectItem value="sudeste">Sudeste</SelectItem>
+                    <SelectItem value="sul">Sul</SelectItem>
+                    <SelectItem value="nordeste">Nordeste</SelectItem>
+                    <SelectItem value="centro-oeste">Centro-Oeste</SelectItem>
+                    <SelectItem value="norte">Norte</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
-              <Link to="/admin/regional">
-                Ver detalhes
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {regional.length > 0 ? (
-              <div className="overflow-x-auto">
-                <ChartContainer
-                  config={{
-                    count: { label: "Atendimentos", color: "hsl(var(--chart-1))" },
-                  }}
-                  className="h-[300px] min-w-[520px]"
-                >
-                  <BarChart width={520} height={300} data={regional} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis type="number" className="text-xs" />
-                    <YAxis type="category" dataKey="region" className="text-xs" width={110} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ChartContainer>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                <p>Sem dados regionais disponíveis</p>
+
+            {/* Error State */}
+            {error && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                <span className="min-w-0">{error}</span>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Pipeline Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Status dos Atendimentos</CardTitle>
-            <CardDescription>Distribuição atual do pipeline</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {pipeline.length > 0 ? (
-              <div className="space-y-4">
-                {pipeline.map((item, index) => (
-                  <div key={item.__key} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: `hsl(var(--chart-${(index % 5) + 1}))` }}
-                      />
-                      <span className="text-sm">{item.stage}</span>
-                    </div>
-                    <span className="font-medium">{(item.count ?? 0).toLocaleString("pt-BR")}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <p>Sem dados de pipeline disponíveis</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Satisfaction */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Satisfação Geral</CardTitle>
-            <CardDescription>NPS e tendência</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {satisfaction.length > 0 ? (
-              <>
-                <div className="mb-4 flex items-center justify-center">
-                  <div className="relative flex h-32 w-32 items-center justify-center rounded-full border-8 border-success">
-                    <div className="text-center">
-                      <span className="text-3xl font-bold text-success">
-                        {satisfaction[satisfaction.length - 1]?.score || "-"}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">NPS Score</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <ChartContainer
-                    config={{
-                      score: { label: "Satisfação", color: "hsl(var(--chart-3))" },
-                    }}
-                    className="h-[100px] min-w-[180px]"
-                  >
-                    <LineChart width={180} height={100} data={satisfaction}>
-                      <Line
-                        type="monotone"
-                        dataKey="score"
-                        stroke="hsl(var(--chart-3))"
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                      />
-                    </LineChart>
-                  </ChartContainer>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center py-12 text-muted-foreground">
-                <p>Sem dados de satisfação</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Quick Insights */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Insights Executivos</CardTitle>
-            <CardDescription>Métricas chave de desempenho</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {insights.length > 0 ? (
-              <div className="space-y-4">
-                {insights.map((insight) => (
-                  <div key={insight.id} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-lg bg-background p-2">
-                        <Activity className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{insight.title}</p>
-                        <p className="text-xs text-muted-foreground">{insight.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <p>Sem insights disponíveis</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Program Performance + Alerts */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Programs */}
-        <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle>Desempenho por Programa</CardTitle>
-              <CardDescription>Comparativo entre os programas ativos</CardDescription>
-            </div>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
-              <Link to="/admin/programas">
-                Ver análise completa
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {programs.length > 0 ? (
-              <div className="space-y-4">
-                {programs.map((prog, index) => {
-                  const definition = programDefinitions[index] || { icon: Heart, color: "bg-muted" }
-                  const IconComp = definition.icon
-                  return (
-                    <div key={prog.name} className="rounded-lg border border-border p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`rounded-lg p-2 ${definition.color}/10`}>
-                            <IconComp className={`h-5 w-5 ${definition.color.replace('bg-', 'text-')}`} />
-                          </div>
-                          <span className="font-medium">{prog.name}</span>
+            {/* KPI Cards */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              {kpiDefinitions.map((kpi) => {
+                const value = kpis[kpi.key as keyof typeof kpis]
+                return (
+                  <Card key={kpi.key} className="min-w-0 overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className={`shrink-0 rounded-lg p-2 ${kpi.bgColor}`}>
+                          <kpi.icon className={`h-5 w-5 ${kpi.color}`} aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-2xl font-bold leading-tight">
+                            {value !== undefined ? value.toLocaleString("pt-BR") : "-"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{kpi.title}</p>
                         </div>
                       </div>
-                      <div className="text-center">
-                        <p className="text-lg font-semibold">{(prog.count ?? 0).toLocaleString("pt-BR")}</p>
-                        <p className="text-xs text-muted-foreground">Atendimentos</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <p>Sem dados de programas disponíveis</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
 
-        {/* Alerts */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              Pontos de Atenção
-            </CardTitle>
-            <CardDescription>Alertas que requerem ação da gestão</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {alerts.length > 0 ? (
-              <div className="space-y-3">
-                {alerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className={`flex items-center justify-between rounded-lg p-4 ${
-                      alert.type === "alert" || alert.type === "error"
-                        ? "bg-destructive/10 border border-destructive/20"
-                        : alert.type === "warning"
-                        ? "bg-warning/10 border border-warning/20"
-                        : "bg-muted"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <AlertTriangle
-                        className={`h-5 w-5 ${
-                          alert.type === "alert" || alert.type === "error"
-                            ? "text-destructive"
-                            : alert.type === "warning"
-                            ? "text-warning"
-                            : "text-muted-foreground"
-                        }`}
-                      />
-                      <p className="text-sm font-medium">{alert.message}</p>
+            {/* Charts Row 1 */}
+            <div className="grid min-w-0 gap-6 lg:grid-cols-2">
+              {/* Trend Chart */}
+              <Card className="min-w-0">
+                <CardHeader className="space-y-1 p-4 sm:p-6">
+                  <CardTitle>Tendência de Crescimento</CardTitle>
+                  <CardDescription>Evolução de atendimentos nos últimos meses</CardDescription>
+                </CardHeader>
+                <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0">
+                  {trends.length > 0 ? (
+                    <div className="min-w-0">
+                      <ChartContainer
+                        config={{
+                          value: { label: "Atendimentos", color: "hsl(var(--chart-1))" },
+                        }}
+                        className="h-[220px] w-full sm:h-[260px] lg:h-[300px]"
+                      >
+                        <AreaChart data={trends} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis dataKey="month" className="text-xs" tick={{ fontSize: 11 }} />
+                          <YAxis className="text-xs" tick={{ fontSize: 11 }} width={34} />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke="hsl(var(--chart-1))"
+                            strokeWidth={2}
+                            fill="url(#colorValue)"
+                          />
+                        </AreaChart>
+                      </ChartContainer>
                     </div>
+                  ) : (
+                    <div className="flex h-[220px] items-center justify-center text-center text-sm text-muted-foreground sm:h-[300px]">
+                      <p>Sem dados de tendência disponíveis</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Regional Performance */}
+              <Card className="min-w-0">
+                <CardHeader className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                  <div className="min-w-0">
+                    <CardTitle>Desempenho Regional</CardTitle>
+                    <CardDescription>Atendimentos por região</CardDescription>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <p>Nenhum alerta no momento</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  <Button variant="outline" size="sm" className="w-full shrink-0 sm:w-auto" asChild>
+                    <Link to="/admin/regional">
+                      Ver detalhes
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0">
+                  {regional.length > 0 ? (
+                    <div className="min-w-0">
+                      <ChartContainer
+                        config={{
+                          count: { label: "Atendimentos", color: "hsl(var(--chart-1))" },
+                        }}
+                        className="h-[240px] w-full sm:h-[280px] lg:h-[300px]"
+                      >
+                        <BarChart data={regional} layout="vertical" margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis type="number" className="text-xs" tick={{ fontSize: 11 }} />
+                          <YAxis
+                            type="category"
+                            dataKey="region"
+                            className="text-xs"
+                            width={90}
+                            tick={{ fontSize: 11 }}
+                            tickFormatter={(value) =>
+                              String(value).length > 14 ? `${String(value).slice(0, 13)}…` : String(value)
+                            }
+                          />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ChartContainer>
+                    </div>
+                  ) : (
+                    <div className="flex h-[220px] items-center justify-center text-center text-sm text-muted-foreground sm:h-[300px]">
+                      <p>Sem dados regionais disponíveis</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-      {/* Regional Coverage Map placeholder */}
-      <Card>
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Cobertura Geográfica
-            </CardTitle>
-            <CardDescription>
-              Visualização da presença da Turma do Bem no Brasil
-            </CardDescription>
-          </div>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
-            <Link to="/admin/regional">
-              Explorar mapa
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {regional.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-              {regional.map((region) => (
-                <div key={region.region} className="rounded-lg border border-border p-4 text-center">
-                  <h4 className="font-medium">{region.region}</h4>
-                  <p className="text-2xl font-bold text-primary">
-                    {(region.count ?? 0).toLocaleString("pt-BR")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">atendimentos</p>
+            {/* Charts Row 2 */}
+            <div className="grid min-w-0 gap-6 lg:grid-cols-3">
+              {/* Pipeline Status */}
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle>Status dos Atendimentos</CardTitle>
+                  <CardDescription>Distribuição atual do pipeline</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {pipeline.length > 0 ? (
+                    <div className="space-y-4">
+                      {pipeline.map((item, index) => (
+                        <div key={item.__key} className="flex min-w-0 items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div
+                              className="h-3 w-3 shrink-0 rounded-full"
+                              style={{ backgroundColor: `hsl(var(--chart-${(index % 5) + 1}))` }}
+                            />
+                            <span className="min-w-0 truncate text-sm">{item.stage}</span>
+                          </div>
+                          <span className="shrink-0 font-medium">{(item.count ?? 0).toLocaleString("pt-BR")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center py-8 text-center text-sm text-muted-foreground">
+                      <p>Sem dados de pipeline disponíveis</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Satisfaction */}
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle>Satisfação Geral</CardTitle>
+                  <CardDescription>NPS e tendência</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {satisfaction.length > 0 ? (
+                    <>
+                      <div className="mb-4 flex items-center justify-center">
+                        <div className="relative flex h-28 w-28 items-center justify-center rounded-full border-8 border-success sm:h-32 sm:w-32">
+                          <div className="text-center">
+                            <span className="text-2xl font-bold text-success sm:text-3xl">
+                              {satisfaction[satisfaction.length - 1]?.score || "-"}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">NPS Score</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <ChartContainer
+                          config={{
+                            score: { label: "Satisfação", color: "hsl(var(--chart-3))" },
+                          }}
+                          className="h-[100px] w-full"
+                        >
+                          <LineChart data={satisfaction} margin={{ top: 8, right: 12, left: 12, bottom: 8 }}>
+                            <Line
+                              type="monotone"
+                              dataKey="score"
+                              stroke="hsl(var(--chart-3))"
+                              strokeWidth={2}
+                              dot={{ r: 4 }}
+                            />
+                          </LineChart>
+                        </ChartContainer>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center py-12 text-center text-sm text-muted-foreground">
+                      <p>Sem dados de satisfação</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Quick Insights */}
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle>Insights Executivos</CardTitle>
+                  <CardDescription>Métricas chave de desempenho</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {insights.length > 0 ? (
+                    <div className="space-y-4">
+                      {insights.map((insight) => (
+                        <div key={insight.id} className="flex min-w-0 items-center justify-between rounded-lg bg-muted/50 p-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="shrink-0 rounded-lg bg-background p-2">
+                              <Activity className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">{insight.title}</p>
+                              <p className="line-clamp-2 text-xs text-muted-foreground">{insight.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center py-8 text-center text-sm text-muted-foreground">
+                      <p>Sem insights disponíveis</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Program Performance + Alerts */}
+            <div className="grid min-w-0 gap-6 lg:grid-cols-2">
+              {/* Programs */}
+              <Card className="min-w-0">
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <CardTitle>Desempenho por Programa</CardTitle>
+                    <CardDescription>Comparativo entre os programas ativos</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full shrink-0 sm:w-auto" asChild>
+                    <Link to="/admin/programas">
+                      Ver análise completa
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {programs.length > 0 ? (
+                    <div className="space-y-4">
+                      {programs.map((prog, index) => {
+                        const definition = programDefinitions[index] || { icon: Heart, color: "bg-muted" }
+                        const IconComp = definition.icon
+                        return (
+                          <div key={prog.name} className="min-w-0 rounded-lg border border-border p-4">
+                            <div className="mb-3 flex min-w-0 items-center justify-between">
+                              <div className="flex min-w-0 items-center gap-3">
+                                <div className={`shrink-0 rounded-lg p-2 ${definition.color}/10`}>
+                                  <IconComp className={`h-5 w-5 ${definition.color.replace("bg-", "text-")}`} />
+                                </div>
+                                <span className="min-w-0 truncate font-medium">{prog.name}</span>
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-lg font-semibold">{(prog.count ?? 0).toLocaleString("pt-BR")}</p>
+                              <p className="text-xs text-muted-foreground">Atendimentos</p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center py-8 text-center text-sm text-muted-foreground">
+                      <p>Sem dados de programas disponíveis</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Alerts */}
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-warning" />
+                    Pontos de Atenção
+                  </CardTitle>
+                  <CardDescription>Alertas que requerem ação da gestão</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {alerts.length > 0 ? (
+                    <div className="space-y-3">
+                      {alerts.map((alert) => (
+                        <div
+                          key={alert.id}
+                          className={`flex min-w-0 items-start justify-between rounded-lg p-4 ${alert.type === "alert" || alert.type === "error"
+                              ? "border border-destructive/20 bg-destructive/10"
+                              : alert.type === "warning"
+                                ? "border border-warning/20 bg-warning/10"
+                                : "bg-muted"
+                            }`}
+                        >
+                          <div className="flex min-w-0 items-start gap-3">
+                            <AlertTriangle
+                              className={`mt-0.5 h-5 w-5 shrink-0 ${alert.type === "alert" || alert.type === "error"
+                                  ? "text-destructive"
+                                  : alert.type === "warning"
+                                    ? "text-warning"
+                                    : "text-muted-foreground"
+                                }`}
+                            />
+                            <p className="min-w-0 text-sm font-medium">{alert.message}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center py-8 text-center text-sm text-muted-foreground">
+                      <p>Nenhum alerta no momento</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Regional Coverage Map placeholder */}
+            <Card className="min-w-0">
+              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Cobertura Geográfica
+                  </CardTitle>
+                  <CardDescription>
+                    Visualização da presença da Turma do Bem no Brasil
+                  </CardDescription>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center py-8 text-muted-foreground">
-              <p>Sem dados regionais disponíveis</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <Button variant="outline" size="sm" className="w-full shrink-0 sm:w-auto" asChild>
+                  <Link to="/admin/regional">
+                    Explorar mapa
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {regional.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    {regional.map((region) => (
+                      <div key={region.region} className="min-w-0 rounded-lg border border-border p-4 text-center">
+                        <h4 className="truncate font-medium">{region.region}</h4>
+                        <p className="text-2xl font-bold text-primary">
+                          {(region.count ?? 0).toLocaleString("pt-BR")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">atendimentos</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-8 text-center text-sm text-muted-foreground">
+                    <p>Sem dados regionais disponíveis</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>
