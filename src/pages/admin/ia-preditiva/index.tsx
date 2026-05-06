@@ -4,17 +4,19 @@ import {
   AlertTriangle,
   BarChart3,
   Brain,
+  CalendarClock,
   CheckCircle2,
   Clock3,
   Database,
+  Eye,
   Gauge,
   Loader2,
   MessageCircle,
-  Radar,
+  RefreshCcw,
   ShieldCheck,
   Sparkles,
-  Target,
   TrendingUp,
+  Users,
 } from "lucide-react"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
@@ -25,8 +27,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getAIHealth, getAIModelStatus, getAIReady, predictNoShowRisk } from "@/services/aiApi"
+import { getAIReminderPreview, getAIRiskDashboard } from "@/services/java-api/ai-risk.service"
 import type { AIHealthResponse, AIModelStatusResponse, AIReadyResponse, PredictRequest, PredictResponse } from "@/types/ai"
+import type { AIReminderPreviewResponse, AIRiskDashboardParams, AIRiskDashboardResponse, AIRiskItem } from "@/types/java-api"
 
 const INITIAL_FORM: PredictRequest = {
   idade: 15,
@@ -46,36 +51,29 @@ const INITIAL_FORM: PredictRequest = {
   carga_voluntario: 18,
 }
 
-const futureCards = [
-  "Faltas por periodo",
-  "Risco medio por regiao",
-  "Beneficiarios com maior prioridade",
-  "Especialidades com maior risco",
-  "Efetividade de lembretes",
-  "Evolucao do modelo com dados reais",
-]
+const INITIAL_FILTERS: AIRiskDashboardParams = {
+  days: 14,
+  limit: 50,
+  classification: "all",
+  program: "all",
+  region: "all",
+}
 
-const processCards = [
-  {
-    title: "Identifica risco",
-    text: "O modelo analisa dados de agendamento, historico e comunicacao.",
-    icon: Radar,
-  },
-  {
-    title: "Prioriza acao",
-    text: "Beneficiarios com maior risco podem receber atencao antecipada.",
-    icon: Target,
-  },
-  {
-    title: "Apoia contato",
-    text: "A recomendacao pode orientar lembretes, WhatsApp e acompanhamento do admin.",
-    icon: MessageCircle,
-  },
-]
-
-function formatPercent(value?: number): string {
+function formatPercent(value?: number | null): string {
   if (typeof value !== "number" || !Number.isFinite(value)) return "-"
   return `${Math.round(value * 100)}%`
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return "-"
+  const parts = value.split("-")
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+  return value
+}
+
+function formatTime(value?: string | null): string {
+  if (!value) return "-"
+  return value.slice(0, 5)
 }
 
 function formatDateTime(value?: string): string {
@@ -88,16 +86,13 @@ function formatDateTime(value?: string): string {
   }).format(date)
 }
 
-function sourceLabel(value?: string): string {
+function sourceLabel(value?: string | null): string {
   if (!value) return "Nao informado"
-  if (value === "database") return "database"
-  if (value === "api") return "api"
-  if (value === "csv") return "csv"
   return value
 }
 
-function riskPalette(classificacao?: string) {
-  const normalized = classificacao?.toUpperCase()
+function riskPalette(classification?: string | null) {
+  const normalized = classification?.toUpperCase()
   if (normalized === "ALTO") {
     return {
       card: "border-destructive/30 bg-destructive/5",
@@ -106,7 +101,7 @@ function riskPalette(classificacao?: string) {
       text: "text-destructive",
     }
   }
-  if (normalized === "MEDIO" || normalized === "MÉDIO") {
+  if (normalized === "MEDIO" || normalized === "MEDIO") {
     return {
       card: "border-warning/40 bg-warning/10",
       badge: "bg-warning text-warning-foreground",
@@ -122,15 +117,30 @@ function riskPalette(classificacao?: string) {
   }
 }
 
+function safeItems(response: AIRiskDashboardResponse | null): AIRiskItem[] {
+  return Array.isArray(response?.items) ? response.items : []
+}
+
+function statValue(value?: number | null): string {
+  if (value === null || value === undefined) return "-"
+  return value.toLocaleString("pt-BR")
+}
+
 export default function AdminIAPreditivaPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [health, setHealth] = useState<AIHealthResponse | null>(null)
   const [ready, setReady] = useState<AIReadyResponse | null>(null)
   const [modelStatus, setModelStatus] = useState<AIModelStatusResponse | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [dashboard, setDashboard] = useState<AIRiskDashboardResponse | null>(null)
+  const [dashboardError, setDashboardError] = useState<string | null>(null)
+  const [filters, setFilters] = useState<AIRiskDashboardParams>(INITIAL_FILTERS)
+  const [reminderPreview, setReminderPreview] = useState<AIReminderPreviewResponse | null>(null)
+  const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null)
   const [form, setForm] = useState<PredictRequest>(INITIAL_FORM)
   const [prediction, setPrediction] = useState<PredictResponse | null>(null)
   const [isStatusLoading, setIsStatusLoading] = useState(true)
+  const [isDashboardLoading, setIsDashboardLoading] = useState(true)
   const [isPredicting, setIsPredicting] = useState(false)
   const [predictError, setPredictError] = useState<string | null>(null)
 
@@ -155,15 +165,34 @@ export default function AdminIAPreditivaPage() {
     setIsStatusLoading(false)
   }
 
+  async function loadDashboard(nextFilters: AIRiskDashboardParams = filters) {
+    setIsDashboardLoading(true)
+    setDashboardError(null)
+
+    try {
+      const response = await getAIRiskDashboard(nextFilters)
+      setDashboard(response)
+    } catch (error) {
+      setDashboard(null)
+      setDashboardError(error instanceof Error ? error.message : "Nao foi possivel carregar a fila operacional de IA.")
+    } finally {
+      setIsDashboardLoading(false)
+    }
+  }
+
   useEffect(() => {
     void loadAIStatus()
+    void loadDashboard(INITIAL_FILTERS)
   }, [])
 
   const metadata = modelStatus?.metadata
   const metrics = metadata?.metrics
+  const summary = dashboard?.summary
+  const items = safeItems(dashboard)
+  const warnings = dashboard?.warnings || []
   const isApiOnline = health?.status === "ok"
   const isModelLoaded = Boolean(ready?.model_loaded || modelStatus?.model_loaded)
-  const dataSource = sourceLabel(ready?.data_source || metadata?.data_source)
+  const dataSource = sourceLabel(ready?.data_source || metadata?.data_source || summary?.modelSource)
   const rowsUsed = ready?.rows_used ?? metadata?.rows_used
 
   const metricCards = useMemo(() => [
@@ -171,9 +200,9 @@ export default function AdminIAPreditivaPage() {
     { label: "Treinamento", value: formatDateTime(ready?.trained_at || metadata?.trained_at), hint: "Data/hora da versao em uso." },
     { label: "Acuracia geral", value: formatPercent(metrics?.accuracy), hint: "Acertos gerais do modelo." },
     { label: "Precisao em risco", value: formatPercent(metrics?.precision_classe_1), hint: "Quando marca risco, indica a confianca desse alerta." },
-    { label: "Captura de faltas", value: formatPercent(metrics?.recall_classe_1), hint: "Quanto o modelo consegue capturar da classe de risco." },
+    { label: "Captura de faltas", value: formatPercent(metrics?.recall_classe_1), hint: "Quanto o modelo captura da classe de risco." },
     { label: "Equilibrio", value: formatPercent(metrics?.f1_classe_1), hint: "Balanceia precisao e recall." },
-    { label: "Separacao do modelo", value: formatPercent(metrics?.roc_auc), hint: "Capacidade de separar baixo e alto risco." },
+    { label: "Separacao", value: formatPercent(metrics?.roc_auc), hint: "Capacidade de separar baixo e alto risco." },
   ], [metadata, metrics, ready])
 
   function updateTextField(field: keyof PredictRequest, value: string) {
@@ -183,6 +212,10 @@ export default function AdminIAPreditivaPage() {
   function updateNumberField(field: keyof PredictRequest, value: string) {
     const parsed = Number(value)
     setForm((current) => ({ ...current, [field]: Number.isFinite(parsed) ? parsed : 0 }))
+  }
+
+  function updateFilter<K extends keyof AIRiskDashboardParams>(field: K, value: AIRiskDashboardParams[K]) {
+    setFilters((current) => ({ ...current, [field]: value }))
   }
 
   async function handlePredict() {
@@ -198,8 +231,24 @@ export default function AdminIAPreditivaPage() {
     }
   }
 
+  async function handleReminderPreview(appointmentId: number) {
+    try {
+      setPreviewLoadingId(appointmentId)
+      const response = await getAIReminderPreview(appointmentId)
+      setReminderPreview(response)
+    } catch (error) {
+      setReminderPreview({
+        appointmentId,
+        channel: "whatsapp",
+        message: error instanceof Error ? error.message : "Nao foi possivel gerar a pre-visualizacao agora.",
+      })
+    } finally {
+      setPreviewLoadingId(null)
+    }
+  }
+
   const riskPercent = Math.round((prediction?.risco_nao_comparecimento || 0) * 100)
-  const palette = riskPalette(prediction?.classificacao)
+  const predictionPalette = riskPalette(prediction?.classificacao)
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -209,338 +258,461 @@ export default function AdminIAPreditivaPage() {
         <AdminHeader />
 
         <main className="flex-1 space-y-6 p-4 sm:p-6">
-          <section className="overflow-hidden rounded-xl border border-primary/10 bg-card shadow-sm">
-            <div className="grid gap-6 p-6 lg:grid-cols-[1.5fr_1fr] lg:p-8">
-              <div className="space-y-5">
+          <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-3xl space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge className={isApiOnline ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"}>
-                    {isApiOnline ? "API Online" : "API Indisponivel"}
+                  <Badge className={summary?.aiAvailable ? "bg-success text-success-foreground" : "bg-warning text-warning-foreground"}>
+                    {summary?.aiAvailable ? "IA operacional disponivel" : "IA operacional em fallback"}
                   </Badge>
-                  <Badge className={isModelLoaded ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}>
-                    {isModelLoaded ? "Modelo Carregado" : "Modelo Nao Carregado"}
-                  </Badge>
-                  <Badge variant="outline">Sprint 4 Chatbot IA</Badge>
+                  <Badge variant="outline">Java orquestrador</Badge>
+                  <Badge variant="outline">FastAPI preservada</Badge>
                 </div>
-
                 <div>
-                  <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
-                    Analise Preditiva com IA
-                  </h1>
-                  <p className="mt-2 text-base text-muted-foreground sm:text-lg">
-                    Previsao de risco de nao comparecimento e apoio a decisao operacional
+                  <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Central de Priorizacao IA</h1>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
+                    Fila operacional de consultas com dados reais do banco, enriquecidas pelo Java e preditas pela API de IA.
                   </p>
-                </div>
-
-                <p className="max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  A IA estima o risco de nao comparecimento em atendimentos, apoiando o administrador na priorizacao de contatos, lembretes e acoes preventivas.
-                </p>
-
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
-                    <p className="text-xs font-medium uppercase text-muted-foreground">API independente</p>
-                    <p className="mt-1 text-sm text-foreground">Consumida pelo frontend, Python ou Java.</p>
-                  </div>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
-                    <p className="text-xs font-medium uppercase text-muted-foreground">Decisao preventiva</p>
-                    <p className="mt-1 text-sm text-foreground">Prioriza contato, WhatsApp e acompanhamento.</p>
-                  </div>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
-                    <p className="text-xs font-medium uppercase text-muted-foreground">Pronta para evoluir</p>
-                    <p className="mt-1 text-sm text-foreground">Pipeline funcional para dados reais do banco.</p>
-                  </div>
                 </div>
               </div>
 
-              <Card className="border-primary/20 bg-primary text-primary-foreground">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Brain className="h-5 w-5" />
-                    Observabilidade da IA
-                  </CardTitle>
-                  <CardDescription className="text-primary-foreground/80">
-                    Status consultado em tempo real na API publicada.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between rounded-lg bg-primary-foreground/10 p-3">
-                    <span className="text-sm">Servico</span>
-                    <span className="font-semibold">{health?.service || "tdb-chatbotAI"}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-primary-foreground/10 p-3">
-                    <span className="text-sm">Fonte atual</span>
-                    <span className="font-semibold">{dataSource}</span>
-                  </div>
-                  <Button variant="secondary" className="w-full" onClick={() => void loadAIStatus()} disabled={isStatusLoading}>
-                    {isStatusLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
-                    Atualizar indicadores
-                  </Button>
-                </CardContent>
-              </Card>
+              <Button variant="outline" onClick={() => { void loadDashboard(filters); void loadAIStatus() }} disabled={isDashboardLoading || isStatusLoading}>
+                {(isDashboardLoading || isStatusLoading) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+                Atualizar
+              </Button>
             </div>
           </section>
 
-          {statusError && (
-            <div className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
-              <AlertTriangle className="h-4 w-4" />
-              {statusError}
-            </div>
-          )}
+          <Tabs defaultValue="fila" className="space-y-5">
+            <TabsList className="grid h-auto w-full grid-cols-1 gap-1 sm:grid-cols-3 lg:w-[720px]">
+              <TabsTrigger value="fila" className="gap-2"><Users className="h-4 w-4" />Fila de Prioridade</TabsTrigger>
+              <TabsTrigger value="simulacao" className="gap-2"><Gauge className="h-4 w-4" />Simulacao Tecnica</TabsTrigger>
+              <TabsTrigger value="modelo" className="gap-2"><Brain className="h-4 w-4" />Modelo e Evidencias</TabsTrigger>
+            </TabsList>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {[
-              { title: "API de IA", value: isApiOnline ? "Online" : "Indisponivel", source: "GET /health", icon: Activity },
-              { title: "Modelo", value: isModelLoaded ? "Carregado" : "Nao carregado", source: "GET /ready", icon: ShieldCheck },
-              { title: "Fonte atual", value: dataSource, source: "GET /ready ou /model/status", icon: Database },
-              { title: "Registros usados", value: rowsUsed !== undefined ? rowsUsed.toLocaleString("pt-BR") : "-", source: "GET /ready ou /model/status", icon: BarChart3 },
-            ].map((item) => (
-              <Card key={item.title} className="border-border shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="rounded-lg bg-primary/10 p-2">
-                      <item.icon className="h-5 w-5 text-primary" />
-                    </div>
-                    {isStatusLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+            <TabsContent value="fila" className="space-y-5">
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {[
+                  { title: "Total analisado", value: statValue(summary?.totalAnalyzed), icon: BarChart3 },
+                  { title: "Alto risco", value: statValue(summary?.highRisk), icon: AlertTriangle },
+                  { title: "Medio risco", value: statValue(summary?.mediumRisk), icon: TrendingUp },
+                  { title: "Baixo risco", value: statValue(summary?.lowRisk), icon: CheckCircle2 },
+                  { title: "Media de risco", value: formatPercent(summary?.averageRisk), icon: Activity },
+                  { title: "Nao confirmados", value: statValue(summary?.unconfirmed), icon: Clock3 },
+                  { title: "Janela", value: `${summary?.nextDays ?? filters.days} dias`, icon: CalendarClock },
+                  { title: "Fonte do modelo", value: dataSource, icon: Database },
+                ].map((item) => (
+                  <Card key={item.title} className="shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="rounded-lg bg-primary/10 p-2">
+                          <item.icon className="h-5 w-5 text-primary" />
+                        </div>
+                        {isDashboardLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+                      </div>
+                      <p className="mt-4 text-sm text-muted-foreground">{item.title}</p>
+                      <p className="mt-1 text-2xl font-bold text-foreground">{item.value}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </section>
+
+              <Card className="shadow-sm">
+                <CardContent className="grid gap-4 p-4 md:grid-cols-5">
+                  <div className="space-y-2">
+                    <Label>Periodo</Label>
+                    <Select value={String(filters.days || 14)} onValueChange={(value) => updateFilter("days", Number(value))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">7 dias</SelectItem>
+                        <SelectItem value="14">14 dias</SelectItem>
+                        <SelectItem value="30">30 dias</SelectItem>
+                        <SelectItem value="60">60 dias</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <p className="mt-4 text-sm text-muted-foreground">{item.title}</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">{item.value}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">Fonte: {item.source}</p>
+                  <div className="space-y-2">
+                    <Label>Classificacao</Label>
+                    <Select value={filters.classification || "all"} onValueChange={(value) => updateFilter("classification", value)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas</SelectItem>
+                        <SelectItem value="ALTO">Alto</SelectItem>
+                        <SelectItem value="MEDIO">Medio</SelectItem>
+                        <SelectItem value="BAIXO">Baixo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="program-filter">Programa</Label>
+                    <Input id="program-filter" value={filters.program === "all" ? "" : filters.program || ""} onChange={(event) => updateFilter("program", event.target.value || "all")} placeholder="Todos" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="region-filter">Regiao</Label>
+                    <Input id="region-filter" value={filters.region === "all" ? "" : filters.region || ""} onChange={(event) => updateFilter("region", event.target.value || "all")} placeholder="Todas" />
+                  </div>
+                  <div className="flex items-end">
+                    <Button className="w-full" onClick={() => void loadDashboard(filters)} disabled={isDashboardLoading}>
+                      {isDashboardLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+                      Aplicar
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-            ))}
-          </section>
 
-          <div className="rounded-lg border border-accent/20 bg-accent/10 p-4 text-sm text-accent-foreground">
-            {dataSource === "csv"
-              ? "Fonte academica atual. Estrutura preparada para evolucao com dados reais do banco."
-              : dataSource === "database"
-                ? "Fonte integrada ao banco de dados."
-                : "Fonte atual informada pela API. A tela exibe a origem retornada sem simular banco real."}
-          </div>
+              {warnings.map((warning) => (
+                <div key={warning} className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+                  <AlertTriangle className="h-4 w-4" />
+                  {warning}
+                </div>
+              ))}
 
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-xl font-bold text-foreground">Metricas do modelo</h2>
-              <p className="text-sm text-muted-foreground">
-                Para este caso de uso, o recall da classe de risco e relevante porque ajuda a identificar beneficiarios que podem precisar de contato preventivo.
-              </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-              {metricCards.map((metric) => (
-                <Card key={metric.label} className="shadow-sm">
-                  <CardContent className="p-4">
-                    <p className="text-xs font-medium uppercase text-muted-foreground">{metric.label}</p>
-                    <p className="mt-2 text-xl font-bold text-foreground">{metric.value}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">{metric.hint}</p>
+              {dashboardError && (
+                <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  {dashboardError}
+                </div>
+              )}
+
+              {reminderPreview && (
+                <Card className="border-primary/20 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <MessageCircle className="h-5 w-5 text-primary" />
+                      Pre-visualizacao de lembrete
+                    </CardTitle>
+                    <CardDescription>Este endpoint apenas sugere a mensagem. O Java nao envia WhatsApp nesta etapa.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="rounded-lg border border-border bg-muted/30 p-4 text-sm leading-6 text-foreground">{reminderPreview.message}</p>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          </section>
+              )}
 
-          <section className="grid gap-4 lg:grid-cols-3">
-            {processCards.map((item) => (
-              <Card key={item.title} className="border-primary/10 shadow-sm">
-                <CardHeader>
-                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/20">
-                    <item.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <CardTitle>{item.title}</CardTitle>
-                  <CardDescription>{item.text}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </section>
+              <section className="space-y-4">
+                {isDashboardLoading && !items.length ? (
+                  <Card className="shadow-sm">
+                    <CardContent className="flex min-h-[260px] flex-col items-center justify-center p-6 text-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                      <p className="mt-3 font-medium text-foreground">Carregando fila operacional</p>
+                    </CardContent>
+                  </Card>
+                ) : null}
 
-          <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Gauge className="h-5 w-5 text-primary" />
-                  Simular previsao
-                </CardTitle>
-                <CardDescription>
-                  Preencha os dados do atendimento para estimar o risco de nao comparecimento.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="idade">Idade</Label>
-                    <Input id="idade" type="number" value={form.idade} onChange={(event) => updateNumberField("idade", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Programa</Label>
-                    <Select value={form.programa} onValueChange={(value) => updateTextField("programa", value)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Dentista do Bem">Dentista do Bem</SelectItem>
-                        <SelectItem value="Apolonias do Bem">Apolonias do Bem</SelectItem>
-                        <SelectItem value="Psicologos para o Bem">Psicologos para o Bem</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="regiao">Regiao</Label>
-                    <Input id="regiao" value={form.regiao} onChange={(event) => updateTextField("regiao", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tipo-procedimento">Tipo de procedimento</Label>
-                    <Input id="tipo-procedimento" value={form.tipo_procedimento} onChange={(event) => updateTextField("tipo_procedimento", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="especialidade">Especialidade</Label>
-                    <Input id="especialidade" value={form.especialidade} onChange={(event) => updateTextField("especialidade", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="urgencia">Urgencia clinica</Label>
-                    <Input id="urgencia" type="number" min={1} max={5} value={form.urgencia_clinica} onChange={(event) => updateNumberField("urgencia_clinica", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dias-consulta">Dias ate consulta</Label>
-                    <Input id="dias-consulta" type="number" value={form.dias_ate_consulta} onChange={(event) => updateNumberField("dias_ate_consulta", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="faltas">Faltas anteriores</Label>
-                    <Input id="faltas" type="number" value={form.faltas_anteriores} onChange={(event) => updateNumberField("faltas_anteriores", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="remarcacoes">Remarcacoes</Label>
-                    <Input id="remarcacoes" type="number" value={form.qtd_remarcacoes} onChange={(event) => updateNumberField("qtd_remarcacoes", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tempo-resposta">Tempo medio resposta (h)</Label>
-                    <Input id="tempo-resposta" type="number" value={form.tempo_medio_resposta_horas} onChange={(event) => updateNumberField("tempo_medio_resposta_horas", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Canal preferido</Label>
-                    <Select value={form.canal_preferido} onValueChange={(value) => updateTextField("canal_preferido", value)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                        <SelectItem value="Telefone">Telefone</SelectItem>
-                        <SelectItem value="E-mail">E-mail</SelectItem>
-                        <SelectItem value="SMS">SMS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lembretes">Lembretes enviados</Label>
-                    <Input id="lembretes" type="number" value={form.lembretes_enviados} onChange={(event) => updateNumberField("lembretes_enviados", event.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Documentos pendentes</Label>
-                    <Select value={String(form.documentos_pendentes)} onValueChange={(value) => updateNumberField("documentos_pendentes", value)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">Nao</SelectItem>
-                        <SelectItem value="1">Sim</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Status aprovacao</Label>
-                    <Select value={form.status_aprovacao} onValueChange={(value) => updateTextField("status_aprovacao", value)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Aprovado">Aprovado</SelectItem>
-                        <SelectItem value="Pendente">Pendente</SelectItem>
-                        <SelectItem value="Em analise">Em analise</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="carga-voluntario">Carga voluntario</Label>
-                    <Input id="carga-voluntario" type="number" value={form.carga_voluntario} onChange={(event) => updateNumberField("carga_voluntario", event.target.value)} />
-                  </div>
-                </div>
+                {!isDashboardLoading && !items.length && !dashboardError ? (
+                  <Card className="shadow-sm">
+                    <CardContent className="flex min-h-[260px] flex-col items-center justify-center p-6 text-center">
+                      <CheckCircle2 className="h-10 w-10 text-success" />
+                      <p className="mt-4 font-medium text-foreground">Nenhuma consulta na fila</p>
+                      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                        Nao ha consultas futuras com os filtros atuais ou ainda nao existem dados reais suficientes para priorizacao.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : null}
 
-                {predictError && (
-                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    {predictError}
-                  </div>
-                )}
+                {items.map((item) => {
+                  const palette = riskPalette(item.classification)
+                  const risk = item.risk !== null && item.risk !== undefined ? Math.round(item.risk * 100) : null
 
-                <Button className="w-full sm:w-auto" onClick={() => void handlePredict()} disabled={isPredicting}>
-                  {isPredicting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  {isPredicting ? "Analisando risco..." : "Calcular risco"}
-                </Button>
-              </CardContent>
-            </Card>
+                  return (
+                    <Card key={item.appointmentId} className={`shadow-sm ${palette.card}`}>
+                      <CardContent className="space-y-4 p-4 sm:p-5">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge className={palette.badge}>{item.classification || "Sem predicao"}</Badge>
+                              <Badge variant="outline">{item.appointmentStatus || "Status nao informado"}</Badge>
+                              {!item.confirmed ? <Badge variant="outline">Nao confirmado</Badge> : null}
+                            </div>
+                            <div>
+                              <h2 className="text-lg font-bold text-foreground">{item.beneficiaryName}</h2>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(item.appointmentDate)} as {formatTime(item.appointmentTime)} · {item.programa || "Programa nao informado"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-left lg:text-right">
+                            <p className="text-sm text-muted-foreground">Risco estimado</p>
+                            <p className={`text-3xl font-bold ${palette.text}`}>{risk === null ? "-" : `${risk}%`}</p>
+                          </div>
+                        </div>
 
-            <Card className={`shadow-sm ${prediction ? palette.card : "border-primary/10"}`}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Resultado da predicao
-                </CardTitle>
-                <CardDescription>
-                  O resultado abaixo vem do POST /predict da API real.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {prediction ? (
-                  <>
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground">Risco estimado</p>
-                      <p className={`mt-1 text-5xl font-bold ${palette.text}`}>{riskPercent}%</p>
-                      <Badge className={`mt-3 ${palette.badge}`}>Classificacao: {prediction.classificacao}</Badge>
-                    </div>
+                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                          <div className="rounded-lg border border-border bg-background/70 p-3">
+                            <p className="text-xs uppercase text-muted-foreground">Voluntario</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">{item.volunteerName || "Nao vinculado"}</p>
+                          </div>
+                          <div className="rounded-lg border border-border bg-background/70 p-3">
+                            <p className="text-xs uppercase text-muted-foreground">Regiao</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">{item.regiao || "-"}</p>
+                          </div>
+                          <div className="rounded-lg border border-border bg-background/70 p-3">
+                            <p className="text-xs uppercase text-muted-foreground">Procedimento</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">{item.procedureTitle || "-"}</p>
+                          </div>
+                          <div className="rounded-lg border border-border bg-background/70 p-3">
+                            <p className="text-xs uppercase text-muted-foreground">Solicitacao</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">{item.approvalRequestId || "-"}</p>
+                          </div>
+                        </div>
 
-                    <div className="space-y-2">
-                      <div className="h-3 overflow-hidden rounded-full bg-muted">
-                        <div className={`h-full rounded-full ${palette.bar}`} style={{ width: `${Math.min(riskPercent, 100)}%` }} />
+                        <div className="rounded-lg border border-border bg-background/70 p-3">
+                          <p className="text-sm font-semibold text-foreground">Motivos operacionais</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {item.reasons.map((reason) => (
+                              <Badge key={reason} variant="outline">{reason}</Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-border bg-background/70 p-3">
+                          <p className="text-sm font-semibold text-foreground">Recomendacao</p>
+                          <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.recommendation || "Acompanhar o caso na fila operacional."}</p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={`/admin/beneficiarios/${item.beneficiaryId}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Ver beneficiario
+                            </a>
+                          </Button>
+                          <Button variant="outline" size="sm" asChild>
+                            <a href="/admin/mensagens">
+                              <MessageCircle className="mr-2 h-4 w-4" />
+                              Abrir mensagens
+                            </a>
+                          </Button>
+                          <Button size="sm" onClick={() => void handleReminderPreview(item.appointmentId)} disabled={previewLoadingId === item.appointmentId}>
+                            {previewLoadingId === item.appointmentId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                            Pre-visualizar lembrete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </section>
+            </TabsContent>
+
+            <TabsContent value="simulacao" className="space-y-5">
+              <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+                <Card className="shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Gauge className="h-5 w-5 text-primary" />
+                      Simular previsao tecnica
+                    </CardTitle>
+                    <CardDescription>
+                      Formulario mantido para chamar diretamente o POST /predict da FastAPI de IA.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="idade">Idade</Label>
+                        <Input id="idade" type="number" value={form.idade} onChange={(event) => updateNumberField("idade", event.target.value)} />
                       </div>
-                      <Progress value={riskPercent} className="sr-only" />
+                      <div className="space-y-2">
+                        <Label>Programa</Label>
+                        <Select value={form.programa} onValueChange={(value) => updateTextField("programa", value)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Dentista do Bem">Dentista do Bem</SelectItem>
+                            <SelectItem value="Apolonias do Bem">Apolonias do Bem</SelectItem>
+                            <SelectItem value="Psicologos para o Bem">Psicologos para o Bem</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="regiao">Regiao</Label>
+                        <Input id="regiao" value={form.regiao} onChange={(event) => updateTextField("regiao", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="tipo-procedimento">Tipo de procedimento</Label>
+                        <Input id="tipo-procedimento" value={form.tipo_procedimento} onChange={(event) => updateTextField("tipo_procedimento", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="especialidade">Especialidade</Label>
+                        <Input id="especialidade" value={form.especialidade} onChange={(event) => updateTextField("especialidade", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="urgencia">Urgencia clinica</Label>
+                        <Input id="urgencia" type="number" min={1} max={5} value={form.urgencia_clinica} onChange={(event) => updateNumberField("urgencia_clinica", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dias-consulta">Dias ate consulta</Label>
+                        <Input id="dias-consulta" type="number" value={form.dias_ate_consulta} onChange={(event) => updateNumberField("dias_ate_consulta", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="faltas">Faltas anteriores</Label>
+                        <Input id="faltas" type="number" value={form.faltas_anteriores} onChange={(event) => updateNumberField("faltas_anteriores", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="remarcacoes">Remarcacoes</Label>
+                        <Input id="remarcacoes" type="number" value={form.qtd_remarcacoes} onChange={(event) => updateNumberField("qtd_remarcacoes", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="tempo-resposta">Tempo medio resposta (h)</Label>
+                        <Input id="tempo-resposta" type="number" value={form.tempo_medio_resposta_horas} onChange={(event) => updateNumberField("tempo_medio_resposta_horas", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Canal preferido</Label>
+                        <Select value={form.canal_preferido} onValueChange={(value) => updateTextField("canal_preferido", value)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                            <SelectItem value="Telefone">Telefone</SelectItem>
+                            <SelectItem value="E-mail">E-mail</SelectItem>
+                            <SelectItem value="SMS">SMS</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lembretes">Lembretes enviados</Label>
+                        <Input id="lembretes" type="number" value={form.lembretes_enviados} onChange={(event) => updateNumberField("lembretes_enviados", event.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Documentos pendentes</Label>
+                        <Select value={String(form.documentos_pendentes)} onValueChange={(value) => updateNumberField("documentos_pendentes", value)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">Nao</SelectItem>
+                            <SelectItem value="1">Sim</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Status aprovacao</Label>
+                        <Select value={form.status_aprovacao} onValueChange={(value) => updateTextField("status_aprovacao", value)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Aprovado">Aprovado</SelectItem>
+                            <SelectItem value="Pendente">Pendente</SelectItem>
+                            <SelectItem value="Em analise">Em analise</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="carga-voluntario">Carga voluntario</Label>
+                        <Input id="carga-voluntario" type="number" value={form.carga_voluntario} onChange={(event) => updateNumberField("carga_voluntario", event.target.value)} />
+                      </div>
                     </div>
 
-                    <div className="rounded-lg border border-border bg-card p-4">
-                      <p className="text-sm font-semibold text-foreground">Recomendacao operacional</p>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{prediction.recomendacao}</p>
-                    </div>
+                    {predictError && (
+                      <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        {predictError}
+                      </div>
+                    )}
 
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      A predicao apoia decisoes preventivas, como priorizacao de contato, lembrete via WhatsApp e acompanhamento pelo administrador.
-                    </p>
-                  </>
-                ) : (
-                  <div className="flex min-h-[360px] flex-col items-center justify-center rounded-lg border border-dashed border-border p-6 text-center">
-                    <Clock3 className="h-10 w-10 text-muted-foreground" />
-                    <p className="mt-4 font-medium text-foreground">Aguardando simulacao</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Execute uma previsao para visualizar risco, classificacao e recomendacao operacional.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </section>
+                    <Button className="w-full sm:w-auto" onClick={() => void handlePredict()} disabled={isPredicting}>
+                      {isPredicting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                      {isPredicting ? "Analisando risco..." : "Calcular risco"}
+                    </Button>
+                  </CardContent>
+                </Card>
 
-          <section className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-sm">
-            <div className="max-w-4xl">
-              <h2 className="text-xl font-bold text-foreground">Preparado para evolucao com dados reais</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                A arquitetura ja permite alternar a fonte de dados da IA entre CSV academico, API interna e banco de dados. A medida que o historico real de agendamentos, faltas, remarcacoes, confirmacoes e mensagens for populado, o painel podera apresentar metricas mais robustas e apoiar decisoes operacionais com maior precisao.
-              </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                A versao atual demonstra o pipeline funcional da Sprint 4. A arquitetura esta pronta para evoluir com dados reais do banco conforme o historico operacional for populado.
-              </p>
-            </div>
+                <Card className={`shadow-sm ${prediction ? predictionPalette.card : "border-primary/10"}`}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      Resultado da predicao
+                    </CardTitle>
+                    <CardDescription>Resultado vindo diretamente do POST /predict da FastAPI IA.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    {prediction ? (
+                      <>
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Risco estimado</p>
+                          <p className={`mt-1 text-5xl font-bold ${predictionPalette.text}`}>{riskPercent}%</p>
+                          <Badge className={`mt-3 ${predictionPalette.badge}`}>Classificacao: {prediction.classificacao}</Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-3 overflow-hidden rounded-full bg-muted">
+                            <div className={`h-full rounded-full ${predictionPalette.bar}`} style={{ width: `${Math.min(riskPercent, 100)}%` }} />
+                          </div>
+                          <Progress value={riskPercent} className="sr-only" />
+                        </div>
+                        <div className="rounded-lg border border-border bg-card p-4">
+                          <p className="text-sm font-semibold text-foreground">Recomendacao operacional</p>
+                          <p className="mt-2 text-sm leading-6 text-muted-foreground">{prediction.recomendacao}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex min-h-[360px] flex-col items-center justify-center rounded-lg border border-dashed border-border p-6 text-center">
+                        <Clock3 className="h-10 w-10 text-muted-foreground" />
+                        <p className="mt-4 font-medium text-foreground">Aguardando simulacao</p>
+                        <p className="mt-2 text-sm text-muted-foreground">Execute uma previsao para visualizar risco, classificacao e recomendacao.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </section>
+            </TabsContent>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {futureCards.map((title) => (
-                <div key={title} className="rounded-lg border border-border bg-muted/20 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-foreground">{title}</p>
-                      <p className="mt-2 text-sm text-muted-foreground">Aguardando historico real.</p>
-                    </div>
-                    <Badge variant="outline">Em preparacao</Badge>
-                  </div>
+            <TabsContent value="modelo" className="space-y-5">
+              {statusError && (
+                <div className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+                  <AlertTriangle className="h-4 w-4" />
+                  {statusError}
                 </div>
-              ))}
-            </div>
-          </section>
+              )}
+
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {[
+                  { title: "API de IA", value: isApiOnline ? "Online" : "Indisponivel", source: "GET /health", icon: Activity },
+                  { title: "Modelo", value: isModelLoaded ? "Carregado" : "Nao carregado", source: "GET /ready", icon: ShieldCheck },
+                  { title: "Fonte atual", value: dataSource, source: "GET /ready ou /model/status", icon: Database },
+                  { title: "Registros usados", value: rowsUsed !== undefined ? rowsUsed.toLocaleString("pt-BR") : "-", source: "GET /ready ou /model/status", icon: BarChart3 },
+                ].map((item) => (
+                  <Card key={item.title} className="border-border shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="rounded-lg bg-primary/10 p-2">
+                          <item.icon className="h-5 w-5 text-primary" />
+                        </div>
+                        {isStatusLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+                      </div>
+                      <p className="mt-4 text-sm text-muted-foreground">{item.title}</p>
+                      <p className="mt-1 text-2xl font-bold text-foreground">{item.value}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">Fonte: {item.source}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </section>
+
+              <div className="rounded-lg border border-accent/20 bg-accent/10 p-4 text-sm text-accent-foreground">
+                {dataSource === "csv"
+                  ? "Fonte academica atual retornada pela API. Esta tela nao afirma treinamento com banco real enquanto /model/status informar data_source=csv."
+                  : dataSource === "database"
+                    ? "Fonte integrada ao banco de dados conforme informada pela API."
+                    : "Fonte atual exibida exatamente como retornada pela API de IA."}
+              </div>
+
+              <section className="space-y-4">
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">Metricas do modelo</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Indicadores retornados pela FastAPI IA. Os motivos da fila operacional sao regras deterministicas do Java.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+                  {metricCards.map((metric) => (
+                    <Card key={metric.label} className="shadow-sm">
+                      <CardContent className="p-4">
+                        <p className="text-xs font-medium uppercase text-muted-foreground">{metric.label}</p>
+                        <p className="mt-2 text-xl font-bold text-foreground">{metric.value}</p>
+                        <p className="mt-2 text-xs text-muted-foreground">{metric.hint}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
     </div>
