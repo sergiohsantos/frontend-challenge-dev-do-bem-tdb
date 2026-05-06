@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react"
+import { useLocation } from "react-router-dom"
 
 declare global {
   interface Window {
@@ -10,11 +11,17 @@ declare global {
 }
 
 export function VLibrasWidget() {
+  const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith("/admin")
   const containerRef = useRef<HTMLDivElement | null>(null)
   const accessButtonRef = useRef<HTMLDivElement | null>(null)
   const pluginWrapperRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
+    if (isAdminRoute) {
+      return
+    }
+
     containerRef.current?.setAttribute("vw", "")
     accessButtonRef.current?.setAttribute("vw-access-button", "")
     pluginWrapperRef.current?.setAttribute("vw-plugin-wrapper", "")
@@ -68,7 +75,11 @@ export function VLibrasWidget() {
     return () => {
       script.removeEventListener("load", initializeWidget)
     }
-  }, [])
+  }, [isAdminRoute])
+
+  if (isAdminRoute) {
+    return null
+  }
 
   return (
     <div ref={containerRef} className="enabled notranslate">

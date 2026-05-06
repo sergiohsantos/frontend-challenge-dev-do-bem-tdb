@@ -304,14 +304,16 @@ export default function AdminIAPreditivaPage() {
                 ].map((item) => (
                   <Card key={item.title} className="shadow-sm">
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
                         <div className="rounded-lg bg-primary/10 p-2">
                           <item.icon className="h-5 w-5 text-primary" />
                         </div>
-                        {isDashboardLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-muted-foreground">{item.title}</p>
+                          <p className="truncate text-2xl font-bold leading-tight text-foreground">{item.value}</p>
+                        </div>
+                        {isDashboardLoading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" /> : null}
                       </div>
-                      <p className="mt-4 text-sm text-muted-foreground">{item.title}</p>
-                      <p className="mt-1 text-2xl font-bold text-foreground">{item.value}</p>
                     </CardContent>
                   </Card>
                 ))}

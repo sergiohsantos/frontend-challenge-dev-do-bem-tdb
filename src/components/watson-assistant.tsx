@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { useLocation } from "react-router-dom"
 
 declare global {
   interface Window {
@@ -17,7 +18,21 @@ declare global {
 const WATSON_NAMESPACE = "tdb-admin-chat"
 
 export function WatsonAssistant() {
+  const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith("/admin")
+
   useEffect(() => {
+    const container = document.querySelector<HTMLElement>(`[data-namespace="${WATSON_NAMESPACE}"]`)
+    if (container) {
+      container.style.display = isAdminRoute ? "none" : ""
+    }
+  }, [isAdminRoute])
+
+  useEffect(() => {
+    if (isAdminRoute) {
+      return
+    }
+
     if (window.tdbWatsonLoaded) {
       return
     }
@@ -49,7 +64,7 @@ export function WatsonAssistant() {
     script.async = true
     script.dataset.watsonAssistant = WATSON_NAMESPACE
     document.head.appendChild(script)
-  }, [])
+  }, [isAdminRoute])
 
   return null
 }

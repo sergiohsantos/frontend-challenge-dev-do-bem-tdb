@@ -174,7 +174,7 @@ export default function AdminOnboardingPage() {
         <AdminSidebar collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
         <div className="flex min-h-screen flex-1 flex-col">
           <AdminHeader />
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-4 sm:p-6">
             <PageLoader message="Carregando dados do onboarding..." />
           </main>
         </div>
@@ -189,7 +189,7 @@ export default function AdminOnboardingPage() {
       <div className="flex min-h-screen flex-1 flex-col">
         <AdminHeader />
 
-        <main className="flex-1 space-y-6 p-6">
+        <main className="flex-1 space-y-6 p-4 sm:p-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Onboarding</h1>
             <p className="text-muted-foreground">Validação documental e preparação para atendimento.</p>
@@ -208,32 +208,40 @@ export default function AdminOnboardingPage() {
 
           <div className="grid gap-4 md:grid-cols-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Total</CardTitle>
-                <CardDescription>Leads elegíveis para onboarding</CardDescription>
-              </CardHeader>
-              <CardContent className="text-3xl font-bold">{summary.total}</CardContent>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">Total</p>
+                  <p className="text-sm text-muted-foreground">Leads elegíveis para onboarding</p>
+                </div>
+                <p className="shrink-0 text-3xl font-bold">{summary.total}</p>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader>
-                <CardTitle>Checklist completo</CardTitle>
-                <CardDescription>Tudo marcado localmente</CardDescription>
-              </CardHeader>
-              <CardContent className="text-3xl font-bold">{summary.completos}</CardContent>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">Checklist completo</p>
+                  <p className="text-sm text-muted-foreground">Tudo marcado localmente</p>
+                </div>
+                <p className="shrink-0 text-3xl font-bold">{summary.completos}</p>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader>
-                <CardTitle>Validados</CardTitle>
-                <CardDescription>Confirmados pelo backend Java</CardDescription>
-              </CardHeader>
-              <CardContent className="text-3xl font-bold">{summary.validados}</CardContent>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">Validados</p>
+                  <p className="text-sm text-muted-foreground">Confirmados pelo backend Java</p>
+                </div>
+                <p className="shrink-0 text-3xl font-bold">{summary.validados}</p>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader>
-                <CardTitle>Pendentes</CardTitle>
-                <CardDescription>Itens faltando no checklist</CardDescription>
-              </CardHeader>
-              <CardContent className="text-3xl font-bold">{summary.pendentes}</CardContent>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">Pendentes</p>
+                  <p className="text-sm text-muted-foreground">Itens faltando no checklist</p>
+                </div>
+                <p className="shrink-0 text-3xl font-bold">{summary.pendentes}</p>
+              </CardContent>
             </Card>
           </div>
 
