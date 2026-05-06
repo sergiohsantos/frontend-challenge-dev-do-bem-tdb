@@ -150,8 +150,30 @@ export default function BeneficiarioPerfilPage() {
   const handleSave = async () => {
     try {
       setIsSaving(true)
-      saveStoredProfile("beneficiario", profile, user?.id)
-      setInitialProfile(profile)
+      const token = getToken()
+      if (!token) {
+        navigate("/login")
+        return
+      }
+
+      const savedProfile = await apiFetch<BeneficiaryProfile>("/api/beneficiaries/me/profile", {
+        method: "PUT",
+        body: JSON.stringify({
+          nome: profile.nome,
+          email: profile.email,
+          telefone: profile.telefone,
+          cidade: profile.cidade,
+          estado: profile.estado,
+          endereco: profile.endereco,
+          responsavel: profile.responsavel,
+          telefoneResponsavel: profile.telefoneResponsavel,
+          observacoes: profile.observacoes,
+        }),
+      }, token)
+      const updatedProfile = buildBaseProfile(savedProfile, profile, dashboard, user)
+      saveStoredProfile("beneficiario", updatedProfile, user?.id)
+      setProfile(updatedProfile)
+      setInitialProfile(updatedProfile)
       setIsEditing(false)
       toast.success("Perfil do beneficiário atualizado")
     } catch (err) {
