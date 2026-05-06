@@ -44,25 +44,48 @@ interface SettingsData {
   privacy?: Record<string, boolean>
 }
 
+interface BeneficiaryProfile {
+  id: number
+  nome?: string
+  fullName?: string
+  email?: string
+  telefone?: string
+  phone?: string
+  cidade?: string
+  city?: string
+  estado?: string
+  uf?: string
+  state?: string
+  endereco?: string
+  address?: string
+  responsavel?: string
+  guardianName?: string
+  telefoneResponsavel?: string
+  guardianPhone?: string
+  observacoes?: string
+  notes?: string
+}
+
 function humanizeBoolean(value?: boolean) {
   return value ? "Ativado" : "Desativado"
 }
 
 function buildBaseProfile(
+  apiData?: BeneficiaryProfile | null,
   stored: ManagedProfileData | null | undefined,
   dashboardData?: DashboardData | null,
   user?: { full_name?: string | null; email?: string | null } | null,
 ): ManagedProfileData {
   return {
-    nome: stored?.nome || dashboardData?.name || user?.full_name || "",
-    email: stored?.email || user?.email || "",
-    telefone: stored?.telefone || "",
-    cidade: stored?.cidade || "",
-    estado: stored?.estado || "",
-    endereco: stored?.endereco || "",
-    responsavel: stored?.responsavel || "",
-    telefoneResponsavel: stored?.telefoneResponsavel || "",
-    observacoes: stored?.observacoes || "",
+    nome: apiData?.nome || apiData?.fullName || stored?.nome || dashboardData?.name || user?.full_name || "",
+    email: apiData?.email || stored?.email || user?.email || "",
+    telefone: apiData?.telefone || apiData?.phone || stored?.telefone || "",
+    cidade: apiData?.cidade || apiData?.city || stored?.cidade || "",
+    estado: apiData?.estado || apiData?.uf || apiData?.state || stored?.estado || "",
+    endereco: apiData?.endereco || apiData?.address || stored?.endereco || "",
+    responsavel: apiData?.responsavel || apiData?.guardianName || stored?.responsavel || "",
+    telefoneResponsavel: apiData?.telefoneResponsavel || apiData?.guardianPhone || stored?.telefoneResponsavel || "",
+    observacoes: apiData?.observacoes || apiData?.notes || stored?.observacoes || "",
   }
 }
 
@@ -90,16 +113,17 @@ export default function BeneficiarioPerfilPage() {
           return
         }
 
-        const [dashboardData, settingsData] = await Promise.all([
+        const [dashboardData, settingsData, profileData] = await Promise.all([
           apiFetch<DashboardData>("/api/beneficiaries/me/dashboard", {}, token),
           apiFetch<SettingsData>("/api/beneficiaries/me/settings", {}, token),
+          apiFetch<BeneficiaryProfile>("/api/beneficiaries/me/profile", {}, token).catch(() => null),
         ])
 
         setDashboard(dashboardData)
         setSettings(settingsData)
 
         const stored = getStoredProfile("beneficiario", user?.id)
-        const baseProfile = buildBaseProfile(stored, dashboardData, user)
+        const baseProfile = buildBaseProfile(profileData, stored, dashboardData, user)
 
         setProfile(baseProfile)
         setInitialProfile(baseProfile)
