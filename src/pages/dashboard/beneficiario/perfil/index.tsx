@@ -71,7 +71,7 @@ function humanizeBoolean(value?: boolean) {
 }
 
 function buildBaseProfile(
-  apiData?: BeneficiaryProfile | null,
+  apiData: BeneficiaryProfile | null | undefined,
   stored: ManagedProfileData | null | undefined,
   dashboardData?: DashboardData | null,
   user?: { full_name?: string | null; email?: string | null } | null,
