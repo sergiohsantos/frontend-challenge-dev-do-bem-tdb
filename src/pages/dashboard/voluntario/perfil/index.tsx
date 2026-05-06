@@ -126,8 +126,30 @@ export default function VoluntarioPerfilPage() {
   const handleSave = async () => {
     try {
       setIsSaving(true)
-      saveStoredProfile("voluntario", profile, user?.id)
-      setInitialProfile(profile)
+      const token = getToken()
+      if (!token) {
+        navigate("/login")
+        return
+      }
+
+      const savedProfile = await apiFetch<VolunteerProfile>("/api/volunteers/me/profile", {
+        method: "PUT",
+        body: JSON.stringify({
+          nome: profile.nome,
+          telefone: profile.telefone,
+          cidade: profile.cidade,
+          estado: profile.estado,
+          especialidade: profile.especialidade,
+          registro: profile.registro,
+          tipoProfissional: profile.tipoProfissional,
+          observacoes: profile.observacoes,
+        }),
+      }, token)
+      const updatedProfile = buildBaseProfile(savedProfile, profile, user)
+      saveStoredProfile("voluntario", updatedProfile, user?.id)
+      setApiProfile(savedProfile)
+      setProfile(updatedProfile)
+      setInitialProfile(updatedProfile)
       setIsEditing(false)
       toast.success("Perfil do voluntário atualizado")
     } catch (err) {
@@ -254,8 +276,7 @@ export default function VoluntarioPerfilPage() {
                     id="vol-email"
                     type="email"
                     value={String(profile.email || "")}
-                    onChange={(e) => updateField("email", e.target.value)}
-                    disabled={!isEditing}
+                    disabled
                   />
                 </div>
 
