@@ -16,6 +16,8 @@ import { fetchAddressByCep } from "@/lib/viacep"
 import {
   formatRegistrationField,
   friendlyRegistrationError,
+  isValidCro,
+  isValidCrp,
   isValidBrazilPhone,
   isValidCep,
   isValidCpf,
@@ -346,6 +348,12 @@ export default function CadastroVoluntarioPage() {
     }
 
     if (step === 2) {
+      if (formData.profissao === "dentista" && formData.cro.trim() && !isValidCro(formData.cro)) {
+        nextErrors.cro = "Informe o CRO no formato CRO/SP 12345."
+      }
+      if (formData.profissao === "psicologo" && formData.crp.trim() && !isValidCrp(formData.crp)) {
+        nextErrors.crp = "Informe o CRP no formato CRP 06/12345."
+      }
       delete nextErrors.enderecoClinica
       if (!formData.cepClinica.trim()) nextErrors.cepClinica = "Informe o CEP da clinica/consultorio."
       else if (!isValidCep(formData.cepClinica)) nextErrors.cepClinica = "CEP invalido."
@@ -753,9 +761,10 @@ export default function CadastroVoluntarioPage() {
                               <Label htmlFor="cro" className="text-base">CRO *</Label>
                               <Input
                                 id="cro"
-                                placeholder="Número do CRO"
+                                placeholder="CRO/SP 12345"
                                 value={formData.cro}
                                 onChange={(e) => handleInputChange("cro", e.target.value)}
+                                maxLength={12}
                                 className={`h-12 text-base ${errors.cro ? "border-destructive" : ""}`}
                                 required
                               />
@@ -794,9 +803,10 @@ export default function CadastroVoluntarioPage() {
                             <Label htmlFor="crp" className="text-base">CRP *</Label>
                             <Input
                               id="crp"
-                              placeholder="Número do CRP"
+                              placeholder="CRP 06/12345"
                               value={formData.crp}
                               onChange={(e) => handleInputChange("crp", e.target.value)}
+                              maxLength={12}
                               className={`h-12 text-base ${errors.crp ? "border-destructive" : ""}`}
                               required
                             />

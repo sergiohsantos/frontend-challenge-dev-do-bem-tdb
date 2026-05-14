@@ -23,6 +23,10 @@ import {
 import { apiFetch } from "@/lib/api"
 import { getToken, getUser } from "@/lib/auth"
 import { getStoredProfile, saveStoredProfile, type ManagedProfileData } from "@/lib/profile-storage"
+import {
+  formatProfessionalRegistration,
+  professionalRegistrationError,
+} from "@/lib/registration-validation"
 import { toast } from "sonner"
 
 interface VolunteerProfile {
@@ -85,6 +89,7 @@ export default function VoluntarioPerfilPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     ;(async () => {
@@ -115,17 +120,34 @@ export default function VoluntarioPerfilPage() {
     key: K,
     value: ManagedProfileData[K],
   ) => {
-    setProfile((prev) => ({ ...prev, [key]: value }))
+    const nextValue =
+      key === "registro" && typeof value === "string"
+        ? formatProfessionalRegistration(profile.tipoProfissional, value)
+        : value
+    setProfile((prev) => ({ ...prev, [key]: nextValue }))
+    setFieldErrors((prev) => ({ ...prev, [key]: "" }))
   }
 
   const handleCancelEdit = () => {
     setProfile(initialProfile)
+    setFieldErrors({})
     setIsEditing(false)
   }
 
   const handleSave = async () => {
     try {
+      const registrationMessage = professionalRegistrationError(
+        profile.tipoProfissional,
+        String(profile.registro || ""),
+      )
+      if (registrationMessage) {
+        setFieldErrors((prev) => ({ ...prev, registro: registrationMessage }))
+        setError(registrationMessage)
+        return
+      }
+
       setIsSaving(true)
+      setError(null)
       const token = getToken()
       if (!token) {
         navigate("/login")
@@ -327,7 +349,11 @@ export default function VoluntarioPerfilPage() {
                     value={String(profile.registro || "")}
                     onChange={(e) => updateField("registro", e.target.value)}
                     disabled={!isEditing}
+                    placeholder="CRO/SP 12345 ou CRP 06/12345"
+                    maxLength={12}
+                    className={fieldErrors.registro ? "border-destructive" : ""}
                   />
+                  {fieldErrors.registro && <p className="text-sm text-destructive">{fieldErrors.registro}</p>}
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
