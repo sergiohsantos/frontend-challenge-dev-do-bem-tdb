@@ -7,6 +7,7 @@ import { JourneyTimeline } from "@/components/ui/journey-timeline"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DashboardSkeleton } from "@/components/ui/page-loader"
 import { AlertBanner } from "@/components/ui/alert-banner"
 import { PageContainer, SectionHeader } from "@/components/ui/page-section"
@@ -27,7 +28,8 @@ import {
   HelpCircle,
   Loader2,
   Heart,
-  Sparkles
+  Sparkles,
+  Star
 } from "lucide-react"
 import { ProgressIndicator } from "@/components/ui/progress-indicator"
 import { LocationIndicator } from "@/components/ui/breadcrumb-nav"
@@ -152,6 +154,10 @@ export default function BeneficiarioDashboardPage() {
   const [pendingConfirmationAppointment, setPendingConfirmationAppointment] = useState<DashboardAppointment | null>(null)
   const [isSendingMessage, setIsSendingMessage] = useState(false)
   const [isRequestingReschedule, setIsRequestingReschedule] = useState(false)
+  const [showSatisfactionDialog, setShowSatisfactionDialog] = useState(false)
+  const [satisfactionScore, setSatisfactionScore] = useState<number | null>(null)
+  const [satisfactionComment, setSatisfactionComment] = useState("")
+  const [isSubmittingSatisfaction, setIsSubmittingSatisfaction] = useState(false)
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -249,6 +255,42 @@ export default function BeneficiarioDashboardPage() {
       setError(err instanceof Error ? err.message : "Erro ao solicitar reagendamento")
     } finally {
       setIsRequestingReschedule(false)
+    }
+  }
+
+  const handleSubmitSatisfaction = async () => {
+    if (!Number.isInteger(satisfactionScore) || satisfactionScore === null || satisfactionScore < 0 || satisfactionScore > 10) {
+      setError("Informe uma nota inteira de 0 a 10 antes de enviar.")
+      return
+    }
+
+    try {
+      setIsSubmittingSatisfaction(true)
+      setError(null)
+      const token = getToken()
+      if (!token) {
+        navigate("/login")
+        return
+      }
+
+      await apiFetch("/api/beneficiaries/me/satisfaction", {
+        method: "POST",
+        body: JSON.stringify({
+          caseId: userData?.satisfaction?.caseId || userData?.caseId,
+          score: satisfactionScore,
+          comment: satisfactionComment.trim() || undefined,
+        }),
+      }, token)
+
+      setShowSatisfactionDialog(false)
+      setSatisfactionScore(null)
+      setSatisfactionComment("")
+      await loadDashboard()
+      setError("Avaliação registrada com sucesso. Obrigado pelo feedback!")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao registrar avaliação")
+    } finally {
+      setIsSubmittingSatisfaction(false)
     }
   }
 
@@ -532,6 +574,30 @@ export default function BeneficiarioDashboardPage() {
 
             {/* Right Column - Sidebar */}
             <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Star className="h-5 w-5 text-primary" aria-hidden="true" />
+                    Avaliar experiência
+                  </CardTitle>
+                  <CardDescription>
+                    Sua nota ajuda a Turma do Bem a acompanhar a qualidade do atendimento.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {userData?.satisfaction?.canSubmit !== false ? (
+                    <Button className="w-full gap-2" onClick={() => setShowSatisfactionDialog(true)} disabled={!userData?.caseId}>
+                      <Star className="h-4 w-4" aria-hidden="true" />
+                      Avaliar atendimento
+                    </Button>
+                  ) : (
+                    <div className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+                      Avaliação registrada com nota {userData?.satisfaction?.latestScore}/10.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Reminders */}
               <Card>
                 <CardHeader>
@@ -642,6 +708,46 @@ export default function BeneficiarioDashboardPage() {
           </div>
         </PageContainer>
       </main>
+
+      <Dialog open={showSatisfactionDialog} onOpenChange={setShowSatisfactionDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Avaliar atendimento</DialogTitle>
+            <DialogDescription>
+              Escolha uma nota de 0 a 10 para sua experiência. O comentário é opcional.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-6 gap-2">
+              {Array.from({ length: 11 }, (_, score) => (
+                <Button
+                  key={score}
+                  type="button"
+                  variant={satisfactionScore === score ? "default" : "outline"}
+                  className="h-10"
+                  onClick={() => setSatisfactionScore(score)}
+                >
+                  {score}
+                </Button>
+              ))}
+            </div>
+            <Textarea
+              value={satisfactionComment}
+              onChange={(event) => setSatisfactionComment(event.target.value)}
+              placeholder="Conte como foi sua experiência, se desejar."
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSatisfactionDialog(false)} disabled={isSubmittingSatisfaction}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmitSatisfaction} disabled={isSubmittingSatisfaction || satisfactionScore === null}>
+              {isSubmittingSatisfaction ? "Enviando..." : "Enviar avaliação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <HelpButton />
     </div>

@@ -244,6 +244,13 @@ export interface BeneficiaryDashboard {
     type?: string
     date: string
   }>
+  satisfaction?: {
+    canSubmit: boolean
+    caseId?: number
+    latestScore?: number | null
+    latestComment?: string | null
+    createdAt?: string | null
+  } | null
 }
 
 export interface VolunteerDashboard {
