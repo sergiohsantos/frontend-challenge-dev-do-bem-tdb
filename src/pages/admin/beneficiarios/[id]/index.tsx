@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertBanner } from "@/components/ui/alert-banner"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DocumentUploadPanel, getFriendlyUploadError, type DocumentUploadFormState } from "@/components/shared/document-upload-panel"
 import { apiFetch, apiUpload } from "@/lib/api"
 import { downloadFromApi } from "@/lib/file-download"
 import { getToken } from "@/lib/auth"
+import { listAdminVolunteerOptions, type AdminVolunteerOption } from "@/services/admin-volunteers.service"
 import { ArrowLeft, Calendar, Download, FileText, Loader2, Mail, MapPin, Phone, UserCheck } from "lucide-react"
 
 type BeneficiaryDetail = {
@@ -106,6 +108,9 @@ export default function AdminBeneficiarioDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [detail, setDetail] = useState<BeneficiaryDetail | null>(null)
   const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [volunteers, setVolunteers] = useState<AdminVolunteerOption[]>([])
+  const [selectedVolunteerId, setSelectedVolunteerId] = useState("")
+  const [isAssigningVolunteer, setIsAssigningVolunteer] = useState(false)
   const [uploadState, setUploadState] = useState<DocumentUploadFormState>(initialUploadState)
 
   useEffect(() => {
@@ -113,13 +118,22 @@ export default function AdminBeneficiarioDetailPage() {
       try {
         const token = getToken()
         if (!token) return
-        const [data, docs] = await Promise.all([
+        const [detailResult, docsResult, volunteersResult] = await Promise.allSettled([
           apiFetch<BeneficiaryDetail>(`/api/admin/beneficiaries/${params.id}`, {}, token),
           apiFetch<unknown>(`/api/admin/beneficiaries/${params.id}/documents`, {}, token),
+          listAdminVolunteerOptions(),
         ])
+        if (detailResult.status === "rejected") {
+          throw detailResult.reason
+        }
+        const data = detailResult.value
+        const docs = docsResult.status === "fulfilled" ? docsResult.value : []
+        const volunteerOptions = volunteersResult.status === "fulfilled" ? volunteersResult.value : []
         const source = Array.isArray(docs) ? docs : (docs && typeof docs === 'object' && ('documents' in docs || 'items' in docs)) ? ((docs as { documents?: unknown[]; items?: unknown[] }).documents || (docs as { items?: unknown[] }).items || []) : []
         setDetail(data)
+        setSelectedVolunteerId(data.voluntario?.id ? String(data.voluntario.id) : "")
         setDocuments(source.map((item) => normalizeDocument(item as Record<string, unknown>)).filter((item) => item.id > 0))
+        setVolunteers(volunteerOptions.filter((volunteer) => volunteer.status !== "inativo"))
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar beneficiário")
       } finally {
@@ -169,6 +183,31 @@ export default function AdminBeneficiarioDetailPage() {
       setError(err instanceof Error ? err.message : "Erro ao baixar documento")
     } finally {
       setDownloadingId(null)
+    }
+  }
+
+  const handleAssignVolunteer = async () => {
+    if (!params.id || !selectedVolunteerId) return
+
+    try {
+      setIsAssigningVolunteer(true)
+      setError(null)
+      const token = getToken()
+      if (!token) return
+      const updated = await apiFetch<BeneficiaryDetail>(
+        `/api/admin/beneficiaries/${params.id}/volunteer`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ volunteerId: Number(selectedVolunteerId) }),
+        },
+        token,
+      )
+      setDetail(updated)
+      setSelectedVolunteerId(updated.voluntario?.id ? String(updated.voluntario.id) : "")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao vincular voluntario")
+    } finally {
+      setIsAssigningVolunteer(false)
     }
   }
 
@@ -231,9 +270,43 @@ export default function AdminBeneficiarioDetailPage() {
 
                 <TabsContent value="voluntario">
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-primary" />Voluntário vinculado</CardTitle>
-                      <CardDescription>Profissional associado ao caso</CardDescription>
+                    <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-primary" />Voluntário vinculado</CardTitle>
+                        <CardDescription>Profissional associado ao caso</CardDescription>
+                      </div>
+                      <div className="flex w-full flex-col gap-2 sm:w-[360px]">
+                        <Select
+                          value={selectedVolunteerId}
+                          onValueChange={setSelectedVolunteerId}
+                          disabled={volunteers.length === 0 || isAssigningVolunteer}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder={volunteers.length ? "Selecionar voluntário" : "Nenhum voluntário ativo"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {volunteers.map((volunteer) => (
+                              <SelectItem key={volunteer.id} value={String(volunteer.id)}>
+                                {[volunteer.nome, volunteer.especialidade].filter(Boolean).join(" - ")}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          onClick={() => void handleAssignVolunteer()}
+                          disabled={
+                            isAssigningVolunteer ||
+                            !selectedVolunteerId ||
+                            selectedVolunteerId === String(detail.voluntario?.id ?? "")
+                          }
+                        >
+                          {isAssigningVolunteer
+                            ? "Salvando..."
+                            : detail.voluntario
+                              ? "Trocar voluntário"
+                              : "Vincular voluntário"}
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       {!detail.voluntario ? <p className="text-sm text-muted-foreground">Nenhum voluntário vinculado.</p> : (
