@@ -36,10 +36,22 @@
         var appUrl = "https://vlibras.gov.br/app"
         var scriptId = "vlibras-plugin-script"
         var cacheResetKey = "tdb-vlibras-unity-cache-reset-20260510"
+        var widgetSelector = "[vw]"
 
         function warn(message, error) {
           if (window.console && typeof window.console.warn === "function") {
             window.console.warn("[VLibras]", message, error || "")
+          }
+        }
+
+        function isAdminRoute() {
+          return window.location.pathname === "/admin" || window.location.pathname.indexOf("/admin/") === 0
+        }
+
+        function setVlibrasVisibility() {
+          var widget = document.querySelector(widgetSelector)
+          if (widget) {
+            widget.style.display = isAdminRoute() ? "none" : ""
           }
         }
 
@@ -109,6 +121,10 @@
 
         function initializeVlibras() {
           try {
+            if (isAdminRoute()) {
+              setVlibrasVisibility()
+              return
+            }
             if (window.__vlibrasLoaded) return
             if (!window.VLibras || !window.VLibras.Widget) {
               warn("Script carregado, mas window.VLibras.Widget nao esta disponivel.")
@@ -125,6 +141,8 @@
 
         function loadVlibrasScript() {
           try {
+            setVlibrasVisibility()
+            if (isAdminRoute()) return
             if (window.__vlibrasLoaded) return
 
             var existingScript = document.getElementById(scriptId)
@@ -151,7 +169,35 @@
           }
         }
 
-        resetVlibrasUnityCacheOnce().then(loadVlibrasScript).catch(loadVlibrasScript)
+        function handleRouteChange() {
+          setVlibrasVisibility()
+          if (!isAdminRoute()) {
+            resetVlibrasUnityCacheOnce().then(loadVlibrasScript).catch(loadVlibrasScript)
+          }
+        }
+
+        function watchRouteChanges() {
+          var originalPushState = window.history.pushState
+          var originalReplaceState = window.history.replaceState
+
+          window.history.pushState = function () {
+            var result = originalPushState.apply(this, arguments)
+            window.setTimeout(handleRouteChange, 0)
+            return result
+          }
+
+          window.history.replaceState = function () {
+            var result = originalReplaceState.apply(this, arguments)
+            window.setTimeout(handleRouteChange, 0)
+            return result
+          }
+
+          window.addEventListener("popstate", handleRouteChange)
+        }
+
+        setVlibrasVisibility()
+        watchRouteChanges()
+        handleRouteChange()
       })()
     </script>
   </body>
