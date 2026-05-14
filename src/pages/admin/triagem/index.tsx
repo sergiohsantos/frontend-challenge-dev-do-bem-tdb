@@ -46,6 +46,7 @@ type LeadFormState = {
 
 type TriagemFormState = {
   urgenciaOdontologica: string
+  tipoAtendimento: string
   observacoes: string
 }
 
@@ -63,6 +64,7 @@ const EMPTY_FORM: LeadFormState = {
 
 const EMPTY_TRIAGEM_FORM: TriagemFormState = {
   urgenciaOdontologica: "3",
+  tipoAtendimento: "NAO_DEFINIDO",
   observacoes: "",
 }
 
@@ -80,6 +82,14 @@ const URGENCY_BY_STATUS: Record<string, number> = {
   TRIADO: 4,
   APTO_ATENDIMENTO: 5,
 }
+
+const ATENDIMENTO_OPTIONS = [
+  { value: "NAO_DEFINIDO", label: "Nao definido" },
+  { value: "ODONTOLOGIA", label: "Odontologia" },
+  { value: "PSICOLOGIA", label: "Psicologia" },
+  { value: "SERVICO_SOCIAL", label: "Servico social" },
+  { value: "OUTRO", label: "Outro" },
+]
 
 function getStatusLabel(status?: string): string {
   return STATUS_OPTIONS.find((option) => option.value === status)?.label || status || "Sem status"
@@ -130,8 +140,29 @@ function mapFormToPayload(form: LeadFormState): LeadBeneficiarioPayload {
 function buildTriagemForm(lead: LeadBeneficiario): TriagemFormState {
   return {
     urgenciaOdontologica: String(URGENCY_BY_STATUS[lead.status] || (lead.vulnerabilidadeSocial ? 4 : 3)),
+    tipoAtendimento: normalizeTipoAtendimento(lead.necessidadeInicial || lead.programa),
     observacoes: "",
   }
+}
+
+function normalizeTipoAtendimento(value?: string | null): string {
+  const normalized = String(value || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+
+  if (!normalized) return "NAO_DEFINIDO"
+  if (normalized.includes("ODONTO") || normalized.includes("DENT") || normalized.includes("APOLON")) return "ODONTOLOGIA"
+  if (normalized.includes("PSICO")) return "PSICOLOGIA"
+  if (normalized.includes("SERVICO SOCIAL") || normalized.includes("ASSISTENTE SOCIAL") || normalized === "SOCIAL") return "SERVICO_SOCIAL"
+  if (normalized.includes("NAO SEI") || normalized.includes("NAO_SEI") || normalized.includes("NAO DEFINIDO")) return "NAO_DEFINIDO"
+  if (normalized.includes("OUTRO")) return "OUTRO"
+  return "NAO_DEFINIDO"
+}
+
+function getTipoAtendimentoLabel(value?: string): string {
+  return ATENDIMENTO_OPTIONS.find((option) => option.value === value)?.label || "Nao definido"
 }
 
 export default function AdminTriagemPage() {
@@ -152,6 +183,7 @@ export default function AdminTriagemPage() {
   const [actionLeadId, setActionLeadId] = useState<number | null>(null)
   const [suggestions, setSuggestions] = useState<Record<number, EncaminhamentoSugerido>>({})
   const [volunteers, setVolunteers] = useState<AdminVolunteerOption[]>([])
+  const [tipoAtendimentoByLeadId, setTipoAtendimentoByLeadId] = useState<Record<number, string>>({})
 
   const triagemByLeadId = useMemo(() => {
     const map = new Map<number, Triagem>()
@@ -233,6 +265,19 @@ export default function AdminTriagemPage() {
   useEffect(() => {
     void loadData()
   }, [])
+
+  useEffect(() => {
+    setTipoAtendimentoByLeadId((current) => {
+      const next = { ...current }
+      leads.forEach((lead) => {
+        if (!next[lead.id]) {
+          const triagem = triagemByLeadId.get(lead.id)
+          next[lead.id] = normalizeTipoAtendimento(triagem?.especialidadeDesejada || lead.necessidadeInicial || lead.programa)
+        }
+      })
+      return next
+    })
+  }, [leads, triagemByLeadId])
 
   function resetDialog() {
     setEditingLeadId(null)
@@ -374,9 +419,15 @@ export default function AdminTriagemPage() {
       return
     }
 
+    const tipoAtendimento = tipoAtendimentoByLeadId[leadId] || normalizeTipoAtendimento(triagem.especialidadeDesejada)
+    if (tipoAtendimento === "NAO_DEFINIDO") {
+      toast.error("Selecione o tipo de atendimento antes de sugerir um voluntario.")
+      return
+    }
+
     try {
       setActionLeadId(leadId)
-      const suggestion = await sugerirEncaminhamento(triagem.id, leadId)
+      const suggestion = await sugerirEncaminhamento(triagem.id, leadId, { tipoAtendimento })
       setSuggestions((current) => ({ ...current, [leadId]: suggestion }))
       toast.success("Sugestão de encaminhamento carregada.")
     } catch (suggestError) {
@@ -431,6 +482,7 @@ export default function AdminTriagemPage() {
       const created = await createTriagem({
         leadId: triagemLead.id,
         urgenciaOdontologica,
+        especialidadeDesejada: triagemForm.tipoAtendimento === "NAO_DEFINIDO" ? undefined : triagemForm.tipoAtendimento,
         observacoes: triagemForm.observacoes.trim() || undefined,
       })
 
@@ -445,6 +497,10 @@ export default function AdminTriagemPage() {
             : lead,
         ),
       )
+      setTipoAtendimentoByLeadId((current) => ({
+        ...current,
+        [triagemLead.id]: triagemForm.tipoAtendimento,
+      }))
       toast.success("Triagem registrada com sucesso.")
       closeTriagemDialog()
     } catch (triagemError) {
@@ -568,6 +624,7 @@ export default function AdminTriagemPage() {
                   const triagem = triagemByLeadId.get(lead.id)
                   const suggestion = suggestions[lead.id]
                   const isBusy = actionLeadId === lead.id
+                  const tipoAtendimento = tipoAtendimentoByLeadId[lead.id] || normalizeTipoAtendimento(triagem?.especialidadeDesejada || lead.necessidadeInicial || lead.programa)
 
                   return (
                     <div key={lead.id} className="rounded-xl border border-border p-4">
@@ -595,7 +652,27 @@ export default function AdminTriagemPage() {
                           ) : null}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-end gap-2">
+                          {triagem ? (
+                            <div className="min-w-[220px] space-y-1">
+                              <Label className="text-xs">Tipo de atendimento para encaminhamento</Label>
+                              <Select
+                                value={tipoAtendimento}
+                                onValueChange={(value) => setTipoAtendimentoByLeadId((current) => ({ ...current, [lead.id]: value }))}
+                              >
+                                <SelectTrigger id={`tipo-atendimento-${lead.id}`} name={`tipoAtendimento-${lead.id}`} className="h-9">
+                                  <SelectValue placeholder="Selecione o tipo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {ATENDIMENTO_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ) : null}
                           <Button className="hidden" variant="outline" size="sm" onClick={() => void openEditDialog(lead.id)} disabled={isBusy}>
                             <Pencil className="mr-1 h-4 w-4" />
                             Editar
@@ -639,6 +716,9 @@ export default function AdminTriagemPage() {
                               <p className="mt-2 text-muted-foreground">
                                 Voluntario sugerido: {getSuggestedVolunteerLabel(suggestion)}
                                 {suggestion.score !== undefined ? ` - score ${suggestion.score}` : ""}
+                              </p>
+                              <p className="mt-1 text-muted-foreground">
+                                Tipo de atendimento: {getTipoAtendimentoLabel(tipoAtendimento)}
                               </p>
                               {suggestion.observacoes ? (
                                 <p className="mt-1 text-muted-foreground">Observacoes: {suggestion.observacoes}</p>
@@ -823,6 +903,25 @@ export default function AdminTriagemPage() {
                   <SelectItem value="3">3 - Moderada</SelectItem>
                   <SelectItem value="4">4 - Alta</SelectItem>
                   <SelectItem value="5">5 - Muito alta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo de atendimento para encaminhamento</Label>
+              <Select
+                value={triagemForm.tipoAtendimento}
+                onValueChange={(value) => setTriagemForm((current) => ({ ...current, tipoAtendimento: value }))}
+              >
+                <SelectTrigger id="triagem-tipo-atendimento" name="tipoAtendimento">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ATENDIMENTO_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

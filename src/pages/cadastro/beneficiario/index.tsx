@@ -46,6 +46,14 @@ const steps = [
   { id: 3, title: "Informações Adicionais", icon: FileText },
 ]
 
+const ATENDIMENTO_OPTIONS = [
+  { value: "ODONTOLOGIA", label: "Odontologia" },
+  { value: "PSICOLOGIA", label: "Psicologia" },
+  { value: "SERVICO_SOCIAL", label: "Servico social" },
+  { value: "OUTRO", label: "Outro" },
+  { value: "NAO_SEI_INFORMAR", label: "Nao sei informar" },
+]
+
 export default function CadastroBeneficiarioPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
@@ -78,6 +86,7 @@ export default function CadastroBeneficiarioPage() {
     // Step 3
     escola: "",
     serie: "",
+    necessidadeAtendimento: "",
     rendaFamiliar: "",
     comoConheceu: "",
     necessidadesEspeciais: "",
@@ -180,6 +189,7 @@ export default function CadastroBeneficiarioPage() {
     }
 
     if (step === 3) {
+      if (!formData.necessidadeAtendimento) newErrors.necessidadeAtendimento = "Informe o tipo de atendimento necessario."
       if (!formData.rendaFamiliar) newErrors.rendaFamiliar = "Renda familiar mensal é obrigatória"
       if (!formData.termos) newErrors.termos = "Você deve aceitar os termos"
     }
@@ -751,6 +761,33 @@ export default function CadastroBeneficiarioPage() {
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="necessidadeAtendimento" className="text-base">
+                          Qual tipo de atendimento voce precisa neste momento? *
+                        </Label>
+                        <Select
+                          value={formData.necessidadeAtendimento}
+                          onValueChange={(value) => handleInputChange("necessidadeAtendimento", value)}
+                        >
+                          <SelectTrigger id="necessidadeAtendimento" className={`h-12 text-base ${errors.necessidadeAtendimento ? "border-destructive" : ""}`}>
+                            <SelectValue placeholder="Selecione o tipo de atendimento" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ATENDIMENTO_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.necessidadeAtendimento && (
+                          <p className="flex items-center gap-1 text-sm text-destructive">
+                            <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                            {errors.necessidadeAtendimento}
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2">

@@ -23,6 +23,7 @@ export interface LeadBeneficiario {
   cidade?: string
   estado?: string
   programa?: string
+  necessidadeInicial?: string
 }
 
 export interface LeadBeneficiarioPayload {
@@ -35,6 +36,7 @@ export interface LeadBeneficiarioPayload {
   status: LeadStatus
   vulnerabilidadeSocial: boolean
   observacoes?: string
+  necessidadeInicial?: string
 }
 
 export interface Triagem {
@@ -85,6 +87,10 @@ export interface EncaminhamentoSugerido {
   score?: number
   regiaoCompativel?: boolean
   onlinePermitido?: boolean
+}
+
+export interface SugerirEncaminhamentoPayload {
+  tipoAtendimento?: string
 }
 
 export interface AIRiskSummary {
