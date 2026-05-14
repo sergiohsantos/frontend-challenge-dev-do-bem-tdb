@@ -20,6 +20,7 @@ function normalizeLead(raw: unknown): LeadBeneficiario {
     cidade: asString(data.cidade) || asString(data.city),
     estado: asString(data.estado) || asString(data.state),
     programa: asString(data.programa) || asString(data.programCode),
+    necessidadeInicial: asString(data.necessidadeInicial) || asString(data.necessidadeAtendimento),
   }
 }
 
@@ -35,6 +36,7 @@ function toLeadPayload(payload: LeadBeneficiarioPayload): Record<string, unknown
     status: payload.status,
     vulnerabilidadeSocial: payload.vulnerabilidadeSocial,
     observacoes: payload.observacoes || null,
+    necessidadeInicial: payload.necessidadeInicial || null,
   }
 }
 

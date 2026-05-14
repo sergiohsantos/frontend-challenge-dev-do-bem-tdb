@@ -47,6 +47,14 @@ const steps = [
   { id: 4, title: "Confirmação", icon: FileText },
 ]
 
+const ATENDIMENTO_OPTIONS = [
+  { value: "ODONTOLOGIA", label: "Odontologia" },
+  { value: "PSICOLOGIA", label: "Psicologia" },
+  { value: "SERVICO_SOCIAL", label: "Servico social" },
+  { value: "OUTRO", label: "Outro" },
+  { value: "NAO_SEI_INFORMAR", label: "Nao sei informar" },
+]
+
 export default function CadastroApoloniasPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
@@ -77,6 +85,7 @@ export default function CadastroApoloniasPage() {
     tempoOcorrencia: "",
     possuiBoletimOcorrencia: "",
     acompanhamentoAssistencial: "",
+    necessidadeAtendimento: "",
     descricaoDanos: "",
     impactoVida: "",
     // Confirmação
@@ -170,6 +179,7 @@ export default function CadastroApoloniasPage() {
     
     if (step === 3) {
       if (!formData.situacaoViolencia) newErrors.situacaoViolencia = "Este campo é obrigatório"
+      if (!formData.necessidadeAtendimento) newErrors.necessidadeAtendimento = "Informe o tipo de atendimento necessario."
       if (!formData.descricaoDanos.trim()) newErrors.descricaoDanos = "Descreva brevemente os danos"
     }
     
@@ -258,6 +268,7 @@ export default function CadastroApoloniasPage() {
         tempoOcorrencia: formData.tempoOcorrencia || "",
         possuiBoletimOcorrencia: formData.possuiBoletimOcorrencia || "",
         acompanhamentoAssistencial: formData.acompanhamentoAssistencial || "",
+        necessidadeAtendimento: formData.necessidadeAtendimento,
         descricaoDanos: formData.descricaoDanos.trim(),
         impactoVida: formData.impactoVida.trim() || "",
         // Confirmação
@@ -777,6 +788,33 @@ export default function CadastroApoloniasPage() {
                             <p className="text-sm text-muted-foreground">
                               Não ter B.O. não impede sua participação no programa.
                             </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="necessidadeAtendimento" className="text-base">
+                              Qual tipo de atendimento voce precisa neste momento? *
+                            </Label>
+                            <Select
+                              value={formData.necessidadeAtendimento}
+                              onValueChange={(value) => handleInputChange("necessidadeAtendimento", value)}
+                            >
+                              <SelectTrigger id="necessidadeAtendimento" className={`h-12 text-base ${errors.necessidadeAtendimento ? "border-destructive" : ""}`}>
+                                <SelectValue placeholder="Selecione o tipo de atendimento" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ATENDIMENTO_OPTIONS.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {errors.necessidadeAtendimento && (
+                              <p className="flex items-center gap-1 text-sm text-destructive">
+                                <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                                {errors.necessidadeAtendimento}
+                              </p>
+                            )}
                           </div>
 
                           <div className="space-y-2">

@@ -1,5 +1,5 @@
 import { getToken } from "@/lib/auth"
-import type { CreateTriagemPayload, EncaminhamentoSugerido, Triagem } from "@/types/java-api"
+import type { CreateTriagemPayload, EncaminhamentoSugerido, SugerirEncaminhamentoPayload, Triagem } from "@/types/java-api"
 import { asArray, asBoolean, asNumber, asObject, asString, javaApiFetch } from "./client"
 
 function normalizeTriagem(raw: unknown): Triagem {
@@ -92,11 +92,16 @@ export async function priorizarTriagem(id: number): Promise<Triagem> {
   return normalizeTriagem(response)
 }
 
-export async function sugerirEncaminhamento(triagemId: number, leadId: number): Promise<EncaminhamentoSugerido> {
+export async function sugerirEncaminhamento(
+  triagemId: number,
+  leadId: number,
+  payload?: SugerirEncaminhamentoPayload,
+): Promise<EncaminhamentoSugerido> {
   const response = await javaApiFetch<unknown>(
     `/api/triagens/${triagemId}/sugerir-vinculo`,
     {
       method: "POST",
+      body: payload ? JSON.stringify(payload) : undefined,
     },
     getToken(),
   )
