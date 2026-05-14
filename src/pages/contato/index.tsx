@@ -118,11 +118,11 @@ export default function ContatoPage() {
                       <MapPin className="mb-2 h-6 w-6 text-primary sm:mb-3 sm:h-8 sm:w-8" />
                       <h3 className="text-sm font-semibold sm:text-base">Endereco</h3>
                       <p className="text-xs text-muted-foreground sm:text-sm">
-                        Rua Exemplo, 123
+                        Rua Maurício Francisco Klabin, 449
                         <br />
-                        Sao Paulo - SP
+                        Vila Mariana, São Paulo - SP
                         <br />
-                        CEP: 01000-000
+                        CEP: 04120-020
                       </p>
                     </CardContent>
                   </Card>
