@@ -24,6 +24,135 @@
   </head>
   <body>
     <div id="root"></div>
+    <div vw class="enabled notranslate">
+      <div vw-access-button class="active"></div>
+      <div vw-plugin-wrapper>
+        <div class="vw-plugin-top-wrapper"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      ;(function () {
+        var appUrl = "https://vlibras.gov.br/app"
+        var scriptId = "vlibras-plugin-script"
+        var cacheResetKey = "tdb-vlibras-unity-cache-reset-20260510"
+
+        function warn(message, error) {
+          if (window.console && typeof window.console.warn === "function") {
+            window.console.warn("[VLibras]", message, error || "")
+          }
+        }
+
+        function hasResetCache() {
+          try {
+            return window.localStorage.getItem(cacheResetKey) === "ok"
+          } catch (error) {
+            return false
+          }
+        }
+
+        function markCacheAsReset() {
+          try {
+            window.localStorage.setItem(cacheResetKey, "ok")
+          } catch (error) {
+            warn("Nao foi possivel marcar a limpeza do cache local.", error)
+          }
+        }
+
+        function deleteIndexedDb(databaseName) {
+          return new Promise(function (resolve) {
+            if (!window.indexedDB) {
+              resolve()
+              return
+            }
+
+            var resolved = false
+            var finish = function () {
+              if (!resolved) {
+                resolved = true
+                resolve()
+              }
+            }
+
+            var timeout = window.setTimeout(finish, 1500)
+
+            try {
+              var request = window.indexedDB.deleteDatabase(databaseName)
+              request.onsuccess = function () {
+                window.clearTimeout(timeout)
+                finish()
+              }
+              request.onerror = function () {
+                window.clearTimeout(timeout)
+                finish()
+              }
+              request.onblocked = finish
+            } catch (error) {
+              window.clearTimeout(timeout)
+              warn("Nao foi possivel limpar o UnityCache.", error)
+              finish()
+            }
+          })
+        }
+
+        function resetVlibrasUnityCacheOnce() {
+          if (!window.indexedDB || hasResetCache()) {
+            return Promise.resolve()
+          }
+
+          if (!window.__vlibrasCacheResetPromise) {
+            window.__vlibrasCacheResetPromise = deleteIndexedDb("UnityCache").finally(markCacheAsReset)
+          }
+
+          return window.__vlibrasCacheResetPromise
+        }
+
+        function initializeVlibras() {
+          try {
+            if (window.__vlibrasLoaded) return
+            if (!window.VLibras || !window.VLibras.Widget) {
+              warn("Script carregado, mas window.VLibras.Widget nao esta disponivel.")
+              return
+            }
+
+            window.__vlibrasLoaded = true
+            new window.VLibras.Widget(appUrl)
+          } catch (error) {
+            window.__vlibrasLoaded = false
+            warn("Falha ao inicializar o widget.", error)
+          }
+        }
+
+        function loadVlibrasScript() {
+          try {
+            if (window.__vlibrasLoaded) return
+
+            var existingScript = document.getElementById(scriptId)
+            if (existingScript) {
+              if (window.VLibras && window.VLibras.Widget) {
+                initializeVlibras()
+              } else {
+                existingScript.addEventListener("load", initializeVlibras, { once: true })
+              }
+              return
+            }
+
+            var script = document.createElement("script")
+            script.id = scriptId
+            script.src = appUrl + "/vlibras-plugin.js"
+            script.async = true
+            script.onload = initializeVlibras
+            script.onerror = function (error) {
+              warn("Nao foi possivel carregar vlibras-plugin.js.", error)
+            }
+            document.body.appendChild(script)
+          } catch (error) {
+            warn("Falha ao carregar o script do widget.", error)
+          }
+        }
+
+        resetVlibrasUnityCacheOnce().then(loadVlibrasScript).catch(loadVlibrasScript)
+      })()
+    </script>
   </body>
 </html>
