@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { clearAuth } from "@/lib/auth"
@@ -111,11 +112,14 @@ const systemItems = [
   },
 ]
 
-export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant = "desktop" }: AdminSidebarProps) {
+export function AdminSidebar({ collapsed, onToggle, onNavigate, variant = "desktop" }: AdminSidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const pathname = location.pathname
   const isDrawer = variant === "drawer"
+  const [internalCollapsed, setInternalCollapsed] = useState(false)
+  const isCollapsed = collapsed ?? internalCollapsed
+  const handleToggle = onToggle ?? (() => setInternalCollapsed((current) => !current))
 
   const handleLogout = () => {
     clearAuth()
@@ -135,11 +139,11 @@ export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant 
           isActive
             ? "bg-sidebar-primary text-sidebar-primary-foreground"
             : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-          collapsed && "justify-center px-2"
+          isCollapsed && "justify-center px-2"
         )}
       >
         <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-        {showLabel && !collapsed && (
+        {showLabel && !isCollapsed && (
           <span className="flex flex-1 items-center justify-between">
             {item.title}
             {item.badge && (
@@ -152,7 +156,7 @@ export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant 
       </Link>
     )
 
-    if (collapsed) {
+    if (isCollapsed) {
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
@@ -170,18 +174,18 @@ export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant 
     <TooltipProvider>
       <aside
         className={cn(
-          "tdb-admin-sidebar h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
+          "tdb-admin-sidebar flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 h-dvh max-h-dvh min-h-0",
           isDrawer ? "flex w-full" : "hidden shrink-0 lg:flex",
-          !isDrawer && (collapsed ? "w-16" : "w-64")
+          !isDrawer && (isCollapsed ? "w-16" : "w-64")
         )}
       >
         {/* Logo */}
         <div className={cn(
           "flex h-16 items-center border-b border-sidebar-border px-4",
-          collapsed && "justify-center px-2"
+          isCollapsed && "justify-center px-2"
         )}>
           <Link to="/admin" className="flex items-center gap-2">
-            {!collapsed && (
+            {!isCollapsed && (
               <div className="flex flex-col leading-none">
                 <span className="text-lg font-bold text-sidebar-foreground">
                   Turma do Bem
@@ -191,18 +195,18 @@ export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant 
                 </span>
               </div>
             )}
-            {collapsed && (
+            {isCollapsed && (
               <span className="text-xl font-bold text-sidebar-primary">TdB</span>
             )}
           </Link>
         </div>
 
         {/* Navigation */}
-        <ScrollArea className="flex-1 px-3 py-4">
+        <ScrollArea className="min-h-0 flex-1 px-3 py-4">
           <nav className="flex flex-col gap-6">
             {/* Main Navigation */}
             <div>
-              {!collapsed && (
+              {!isCollapsed && (
                 <h3 className="mb-3 px-3 text-sm font-bold uppercase tracking-[0.18em] text-sidebar-foreground">
                   Principal
                 </h3>
@@ -216,7 +220,7 @@ export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant 
 
             {/* Management */}
             <div className="border-t border-orange-500/70 pt-4">
-              {!collapsed && (
+              {!isCollapsed && (
                 <h3 className="mb-3 px-3 text-sm font-bold uppercase tracking-[0.18em] text-sidebar-foreground">
                   Gestão
                 </h3>
@@ -230,7 +234,7 @@ export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant 
 
             {/* System */}
             <div className="border-t border-orange-500/70 pt-4">
-              {!collapsed && (
+              {!isCollapsed && (
                 <h3 className="mb-3 px-3 text-sm font-bold uppercase tracking-[0.18em] text-sidebar-foreground">
                   Sistema
                 </h3>
@@ -246,24 +250,24 @@ export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant 
 
         {/* Footer */}
         <div className={cn(
-          "border-t border-sidebar-border p-3 space-y-2",
-          collapsed && "flex flex-col items-center"
+          "shrink-0 border-t border-sidebar-border p-3 space-y-2",
+          isCollapsed && "flex flex-col items-center"
         )}>
           {!isDrawer && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={onToggle}
+              onClick={handleToggle}
               className={cn(
                 "w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                collapsed && "w-auto justify-center px-2"
+                isCollapsed && "w-auto justify-center px-2"
               )}
             >
               <ChevronLeft className={cn(
                 "h-4 w-4 transition-transform",
-                collapsed && "rotate-180"
+                isCollapsed && "rotate-180"
               )} />
-              {!collapsed && <span className="ml-2">Recolher menu</span>}
+              {!isCollapsed && <span className="ml-2">Recolher menu</span>}
             </Button>
           )}
           <Button
@@ -272,11 +276,11 @@ export function AdminSidebar({ collapsed = false, onToggle, onNavigate, variant 
             onClick={handleLogout}
             className={cn(
               "w-full justify-start text-destructive/70 hover:bg-destructive/10 hover:text-destructive",
-              collapsed && "w-auto justify-center px-2"
+              isCollapsed && "w-auto justify-center px-2"
             )}
           >
             <LogOut className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">Sair</span>}
+            {!isCollapsed && <span className="ml-2">Sair</span>}
           </Button>
         </div>
       </aside>

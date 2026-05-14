@@ -26,6 +26,7 @@ import {
   listLeadBeneficiarios,
   updateLeadBeneficiario,
 } from "@/services/java-api/lead-beneficiario.service"
+import { listAdminVolunteerOptions, type AdminVolunteerOption } from "@/services/admin-volunteers.service"
 import { createTriagem, listTriagens, priorizarTriagem, selecionarMatch, sugerirEncaminhamento } from "@/services/java-api/triagem.service"
 import type { EncaminhamentoSugerido, LeadBeneficiario, LeadBeneficiarioPayload, LeadStatus, Triagem } from "@/types/java-api"
 import { AlertCircle, ClipboardList, Pencil, Plus, Search, Sparkles, Trash2 } from "lucide-react"
@@ -150,6 +151,7 @@ export default function AdminTriagemPage() {
   const [isTriagemSubmitting, setIsTriagemSubmitting] = useState(false)
   const [actionLeadId, setActionLeadId] = useState<number | null>(null)
   const [suggestions, setSuggestions] = useState<Record<number, EncaminhamentoSugerido>>({})
+  const [volunteers, setVolunteers] = useState<AdminVolunteerOption[]>([])
 
   const triagemByLeadId = useMemo(() => {
     const map = new Map<number, Triagem>()
@@ -160,6 +162,10 @@ export default function AdminTriagemPage() {
     })
     return map
   }, [triagens])
+
+  const volunteerById = useMemo(() => {
+    return new Map(volunteers.map((volunteer) => [volunteer.id, volunteer]))
+  }, [volunteers])
 
   const stats = useMemo(() => {
     return {
@@ -196,12 +202,14 @@ export default function AdminTriagemPage() {
 
     try {
       setError(null)
-      const [leadResult, triagemResult] = await Promise.allSettled([
+      const [leadResult, triagemResult, volunteersResult] = await Promise.allSettled([
         listLeadBeneficiarios(),
         listTriagens(),
+        listAdminVolunteerOptions(),
       ])
       setLeads(leadResult.status === "fulfilled" ? leadResult.value : [])
       setTriagens(triagemResult.status === "fulfilled" ? triagemResult.value : [])
+      setVolunteers(volunteersResult.status === "fulfilled" ? volunteersResult.value : [])
 
       if (leadResult.status === "rejected" || triagemResult.status === "rejected") {
         const firstError = leadResult.status === "rejected"
@@ -248,6 +256,16 @@ export default function AdminTriagemPage() {
     setTriagemLead(null)
     setTriagemForm(EMPTY_TRIAGEM_FORM)
     setIsTriagemDialogOpen(false)
+  }
+
+  function getSuggestedVolunteerLabel(suggestion: EncaminhamentoSugerido): string {
+    const volunteerId = suggestion.volunteerId
+    const volunteer = volunteerId ? volunteerById.get(volunteerId) : undefined
+    if (volunteer) {
+      return [volunteer.nome, volunteer.especialidade].filter(Boolean).join(" - ")
+    }
+
+    return suggestion.destino || (volunteerId ? `#${volunteerId}` : "-")
   }
 
   async function openEditDialog(leadId: number) {
@@ -619,7 +637,7 @@ export default function AdminTriagemPage() {
                               </div>
                               <p className="mt-1 text-muted-foreground">{suggestion.sugestao}</p>
                               <p className="mt-2 text-muted-foreground">
-                                Voluntario sugerido: #{suggestion.volunteerId || suggestion.destino || "-"}
+                                Voluntario sugerido: {getSuggestedVolunteerLabel(suggestion)}
                                 {suggestion.score !== undefined ? ` - score ${suggestion.score}` : ""}
                               </p>
                               {suggestion.observacoes ? (
