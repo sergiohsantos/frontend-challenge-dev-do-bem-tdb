@@ -25,6 +25,62 @@ export function maskCep(value: string): string {
   return digits.replace(/^(\d{5})(\d)/, "$1-$2")
 }
 
+export function maskCrp(value: string): string {
+  const digits = normalizeDigits(value).slice(0, 7)
+  if (!digits) return value.trim() ? "CRP " : ""
+
+  const region = digits.slice(0, 2)
+  const number = digits.slice(2)
+  return `CRP ${region}${number ? `/${number}` : ""}`
+}
+
+export function maskCro(value: string): string {
+  if (!value.trim()) return ""
+
+  const withoutPrefix = value
+    .toUpperCase()
+    .replace(/^C\s*R\s*O\s*\/?\s*/, "")
+
+  const uf = withoutPrefix.replace(/[^A-Z]/g, "").slice(0, 2)
+  const digits = normalizeDigits(withoutPrefix).slice(0, 5)
+
+  if (!uf) return "CRO/"
+  return `CRO/${uf}${digits ? ` ${digits}` : ""}`
+}
+
+export function isValidCrp(value: string): boolean {
+  return /^CRP \d{2}\/\d{5}$/.test(value.trim())
+}
+
+export function isValidCro(value: string): boolean {
+  return /^CRO\/[A-Z]{2} \d{5}$/.test(value.trim())
+}
+
+export function isDentistType(value: string | undefined | null): boolean {
+  return String(value || "").toUpperCase().startsWith("DENT")
+}
+
+export function isPsychologistType(value: string | undefined | null): boolean {
+  const normalized = String(value || "").toUpperCase()
+  return normalized.startsWith("PSIC")
+}
+
+export function formatProfessionalRegistration(type: string | undefined | null, value: string): string {
+  if (isDentistType(type)) return maskCro(value)
+  if (isPsychologistType(type)) return maskCrp(value)
+  return value
+}
+
+export function professionalRegistrationError(type: string | undefined | null, value: string): string {
+  if (isDentistType(type) && !isValidCro(value)) {
+    return "Informe o CRO no formato CRO/SP 12345."
+  }
+  if (isPsychologistType(type) && !isValidCrp(value)) {
+    return "Informe o CRP no formato CRP 06/12345."
+  }
+  return ""
+}
+
 export function normalizeRg(value: string): string {
   return value.toUpperCase().replace(/[^0-9X]/g, "").slice(0, 9)
 }
@@ -48,6 +104,8 @@ export function limitText(value: string, maxLength: number): string {
 export function formatRegistrationField(field: string, value: string): string {
   if (field.toLowerCase().includes("cpf")) return maskCpf(value)
   if (field === "rg") return maskRg(value)
+  if (field === "cro") return maskCro(value)
+  if (field === "crp") return maskCrp(value)
   if (field.toLowerCase().includes("cep")) return maskCep(value)
   if (field.toLowerCase().includes("telefone")) return maskPhone(value)
   if (field === "estado" || field === "estadoClinica") return value.toUpperCase().slice(0, 2)
@@ -117,6 +175,9 @@ export function friendlyRegistrationError(error: unknown): string {
   if (lower.includes("email") || lower.includes("e-mail")) return "Informe um e-mail valido."
   if (lower.includes("telefone")) return "Telefone invalido."
   if (lower.includes("cep")) return "CEP invalido."
+  if (lower.includes("cro")) return "Informe o CRO no formato CRO/SP 12345."
+  if (lower.includes("crp")) return "Informe o CRP no formato CRP 06/12345."
+  if (lower.includes("registro profissional")) return "Informe o registro profissional no formato indicado."
   if (lower.includes("field required") || lower.includes("missing") || lower.includes("422")) {
     return "Preencha os campos obrigatorios."
   }
