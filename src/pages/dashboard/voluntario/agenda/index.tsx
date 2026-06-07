@@ -15,6 +15,9 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  User,
+  FilePlus,
+  MessageSquare,
 } from "lucide-react"
 import { LocationIndicator } from "@/components/ui/breadcrumb-nav"
 import { apiFetch } from "@/lib/api"
@@ -328,27 +331,42 @@ export default function AgendaPage() {
                 upcomingAppointments.map((apt) => (
                   <Card key={apt.id}>
                     <CardContent className="p-6">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="flex items-start gap-4">
                           <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
                             {apt.patientName?.charAt(0) || "P"}
                           </div>
                           <div>
                             <p className="font-semibold text-foreground">{apt.patientName}</p>
-                            <p className="text-sm text-muted-foreground">{apt.type}</p>
-                            <div className="mt-1 flex items-center gap-2 text-sm">
+                            <p className="text-sm text-muted-foreground">{apt.type || "Consulta"}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
                               <Clock className="h-4 w-4 text-muted-foreground" />
                               <span>{apt.date || "-"} às {apt.time || "-"}</span>
+                              {getStatusBadge(apt.status)}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(apt.status)}
+                        <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[420px]">
                           {apt.patientId ? (
                             <Button size="sm" variant="outline" asChild>
-                              <Link to={`/dashboard/voluntario/pacientes/${apt.patientId}`}>Ver paciente</Link>
+                              <Link to={`/dashboard/voluntario/pacientes/${apt.patientId}`}>
+                                <User className="mr-2 h-4 w-4" />
+                                Ver paciente
+                              </Link>
                             </Button>
                           ) : null}
+                          <Button size="sm" variant="outline" asChild>
+                            <Link to="/dashboard/voluntario/solicitacoes/nova">
+                              <FilePlus className="mr-2 h-4 w-4" />
+                              Nova solicitação
+                            </Link>
+                          </Button>
+                          <Button size="sm" variant="outline" asChild>
+                            <Link to="/dashboard/voluntario/mensagens">
+                              <MessageSquare className="mr-2 h-4 w-4" />
+                              Mensagens
+                            </Link>
+                          </Button>
                         </div>
                       </div>
                     </CardContent>

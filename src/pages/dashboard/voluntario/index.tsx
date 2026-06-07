@@ -78,6 +78,74 @@ export default function VoluntarioDashboardPage() {
   const hasUpcomingAppointments = (volunteerData?.upcomingAppointments || []).length > 0
   const hasActivePatients = (volunteerData?.activePatients || []).length > 0
   const hasMessages = (volunteerData?.recentMessages || []).length > 0
+  const nextAppointment = volunteerData?.upcomingAppointments?.[0]
+  const pendingApprovals = volunteerData?.stats?.pendingApprovals || 0
+  const nextAction = hasUpcomingAppointments
+    ? {
+        title: "Ver agenda",
+        description: nextAppointment
+          ? `Você tem uma consulta próxima com ${nextAppointment.patientName || "um paciente"}.`
+          : "Você tem uma consulta próxima para acompanhar.",
+        href: "/dashboard/voluntario/agenda",
+        icon: Calendar,
+      }
+    : hasActivePatients
+      ? {
+          title: "Ver pacientes",
+          description: "Revise seus pacientes ativos e acompanhe o progresso dos tratamentos.",
+          href: "/dashboard/voluntario/pacientes",
+          icon: Users,
+        }
+      : {
+          title: "Atualizar disponibilidade",
+          description: "Mantenha sua disponibilidade atualizada para receber novos encaminhamentos.",
+          href: "/dashboard/voluntario/disponibilidade",
+          icon: Clock,
+        }
+  const NextActionIcon = nextAction.icon
+  const routineItems = [
+    {
+      title: nextAppointment ? "Próxima consulta" : "Agenda",
+      description: nextAppointment
+        ? `${nextAppointment.patientName || "Paciente"} - ${nextAppointment.date || "-"} às ${nextAppointment.time || "-"}`
+        : "Nenhuma consulta próxima no momento.",
+      href: "/dashboard/voluntario/agenda",
+      icon: Calendar,
+      active: hasUpcomingAppointments,
+    },
+    {
+      title: "Pacientes ativos",
+      description: hasActivePatients
+        ? `${volunteerData?.stats?.activePatients || volunteerData?.activePatients?.length || 0} paciente(s) em acompanhamento.`
+        : "Seus pacientes em tratamento aparecerão aqui.",
+      href: "/dashboard/voluntario/pacientes",
+      icon: Users,
+      active: hasActivePatients,
+    },
+    {
+      title: "Mensagens recentes",
+      description: hasMessages ? "Há conversas recentes para acompanhar." : "Nenhuma mensagem recente.",
+      href: "/dashboard/voluntario/mensagens",
+      icon: MessageSquare,
+      active: hasMessages,
+    },
+    {
+      title: pendingApprovals > 0 ? "Solicitações pendentes" : "Nova solicitação",
+      description: pendingApprovals > 0
+        ? `${pendingApprovals} solicitação(ões) aguardando andamento.`
+        : "Crie uma nova solicitação de procedimento quando necessário.",
+      href: pendingApprovals > 0 ? "/dashboard/voluntario/solicitacoes" : "/dashboard/voluntario/solicitacoes/nova",
+      icon: FilePlus,
+      active: pendingApprovals > 0,
+    },
+    {
+      title: "Disponibilidade",
+      description: "Mantenha seus horários disponíveis sempre atualizados.",
+      href: "/dashboard/voluntario/disponibilidade",
+      icon: Clock,
+      active: true,
+    },
+  ]
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -172,6 +240,72 @@ export default function VoluntarioDashboardPage() {
               variant="primary"
             />
           </StatGrid>
+
+          <div className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
+            <Card className="border-primary/20 bg-gradient-to-br from-primary/10 via-background to-secondary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <NextActionIcon className="h-5 w-5 text-primary" aria-hidden="true" />
+                  Próxima ação recomendada
+                </CardTitle>
+                <CardDescription>{nextAction.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button asChild>
+                    <Link to={nextAction.href}>
+                      {nextAction.title}
+                      <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link to="/dashboard/voluntario/solicitacoes/nova">
+                      <FilePlus className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Nova solicitação
+                    </Link>
+                  </Button>
+                  {hasMessages && (
+                    <Button variant="ghost" asChild>
+                      <Link to="/dashboard/voluntario/mensagens">
+                        <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
+                        Mensagens
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <CheckCircle2 className="h-5 w-5 text-primary" aria-hidden="true" />
+                  Minha rotina de hoje
+                </CardTitle>
+                <CardDescription>Ações úteis para acompanhar seus atendimentos.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {routineItems.map((item) => {
+                  const RoutineIcon = item.icon
+                  return (
+                    <Link
+                      key={item.title}
+                      to={item.href}
+                      className="flex items-start gap-3 rounded-xl border border-border p-3 transition-colors hover:border-primary/30 hover:bg-muted/50"
+                    >
+                      <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${item.active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        <RoutineIcon className="h-5 w-5" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Main Grid */}
           <TwoColumnLayout

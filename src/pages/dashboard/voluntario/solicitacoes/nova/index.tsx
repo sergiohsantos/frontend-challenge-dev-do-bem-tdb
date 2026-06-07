@@ -13,7 +13,8 @@ import {
   ArrowLeft,
   Loader2,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  ClipboardList
 } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { getToken, getUser } from "@/lib/auth"
@@ -51,6 +52,7 @@ export default function NovaSolicitacaoPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingCases, setIsLoadingCases] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [casesLoadError, setCasesLoadError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [userName, setUserName] = useState("...")
   const [cases, setCases] = useState<VolunteerCase[]>([])
@@ -82,9 +84,8 @@ export default function NovaSolicitacaoPage() {
               ? (data as { cases: unknown[] }).cases
               : []
         setCases(payload as VolunteerCase[])
-      } catch (err) {
-        console.error("Error loading cases:", err)
-        // Don't block the form, just show empty cases
+      } catch {
+        setCasesLoadError("Não foi possível carregar seus beneficiários agora. Tente voltar e abrir esta tela novamente em instantes.")
       } finally {
         setIsLoadingCases(false)
       }
@@ -112,17 +113,17 @@ export default function NovaSolicitacaoPage() {
     
     // Validation
     if (!formData.tipo || !formData.procedimento || !formData.justificativa) {
-      setError("Por favor, preencha todos os campos obrigatorios.")
+      setError("Preencha os campos obrigatórios antes de enviar a solicitação.")
       return
     }
     
     if (!formData.beneficiario_id && cases.length > 0) {
-      setError("Por favor, selecione um beneficiario.")
+      setError("Selecione o beneficiário antes de enviar a solicitação.")
       return
     }
     
     if (!formData.beneficiario_id && cases.length === 0) {
-      setError("Voce precisa ter casos atribuidos para criar uma solicitacao.")
+      setError("Você precisa ter um beneficiário atribuído para criar uma solicitação.")
       return
     }
     
@@ -216,6 +217,20 @@ export default function NovaSolicitacaoPage() {
             </div>
           )}
 
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ClipboardList className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Antes de enviar</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Selecione o beneficiário, descreva o procedimento e explique a justificativa clínica. A solicitação será analisada pela equipe responsável.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -230,7 +245,7 @@ export default function NovaSolicitacaoPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Beneficiary Selection */}
                 <div className="space-y-2">
-                  <Label htmlFor="beneficiario_id">Beneficiario *</Label>
+                  <Label htmlFor="beneficiario_id">Beneficiário *</Label>
                   {isLoadingCases ? (
                     <div className="flex items-center gap-2 py-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -259,12 +274,12 @@ export default function NovaSolicitacaoPage() {
                   ) : (
                     <div className="rounded-lg border border-warning/50 bg-warning/10 p-3">
                       <p className="text-sm text-warning">
-                        Nenhum caso encontrado. Voce precisa ter casos atribuidos para criar uma solicitacao.
+                        {casesLoadError || "Nenhum caso encontrado. Você precisa ter casos atribuídos para criar uma solicitação."}
                       </p>
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Selecione o beneficiario para o qual deseja solicitar o procedimento
+                    Obrigatório. Selecione o beneficiário para o qual deseja solicitar o procedimento.
                   </p>
                 </div>
 
@@ -287,6 +302,9 @@ export default function NovaSolicitacaoPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Obrigatório. Use o tipo mais próximo do procedimento solicitado.
+                  </p>
                 </div>
 
                 {/* Procedure Name */}
@@ -299,6 +317,9 @@ export default function NovaSolicitacaoPage() {
                     onChange={(e) => handleChange("procedimento", e.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Obrigatório. Informe um nome claro para facilitar a análise.
+                  </p>
                 </div>
 
                 {/* Priority */}
@@ -319,6 +340,9 @@ export default function NovaSolicitacaoPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Obrigatório. Use "urgente" apenas quando houver necessidade clínica imediata.
+                  </p>
                 </div>
 
                 {/* Justification */}
@@ -332,6 +356,9 @@ export default function NovaSolicitacaoPage() {
                     rows={4}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Obrigatório. Explique por que o procedimento é necessário para este caso.
+                  </p>
                 </div>
 
                 {/* Diagnosis */}
@@ -368,7 +395,7 @@ export default function NovaSolicitacaoPage() {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={isSubmitting} className="flex-1">
+                  <Button type="submit" disabled={isSubmitting || isLoadingCases || cases.length === 0} className="flex-1">
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

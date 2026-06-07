@@ -1,102 +1,162 @@
-# DEV do BEM — Turma do Bem  
-### Sprint 3 — Front-End com React + Vite + TypeScript
+# DEV do BEM — Turma do Bem
+### Sprint 4 — Front-End React + Vite + TypeScript integrado com APIs
 
 ![Logo](./public/images/dev-do-bem-logo.png)
 
 ## Descrição do projeto
 
-O **DEV do BEM** é a solução digital desenvolvida para a ONG **Turma do Bem**, com o objetivo de melhorar a comunicação, a organização e o acompanhamento entre **beneficiários**, **voluntários** e **administradores**.
+O **DEV do BEM** é uma solução digital desenvolvida para apoiar a operação da **Turma do Bem**, conectando **beneficiários**, **voluntários** e **administradores** em uma jornada mais organizada, acompanhável e orientada por dados.
 
-Nesta **Sprint 3**, o projeto evoluiu de uma base anterior para uma aplicação moderna em **React + Vite + TypeScript**, com estrutura de **SPA (Single Page Application)**, rotas organizadas, componentização, responsividade e melhor experiência de navegação para os diferentes perfis do sistema.
+Na **Sprint 4**, o frontend evoluiu da base já componentizada da Sprint 3 para uma aplicação integrada com serviços reais de backend. A aplicação continua sendo uma **SPA (Single Page Application)** construída com **React + Vite + TypeScript**, mas agora passa a consumir APIs remotas para funcionalidades administrativas, triagem, onboarding, inteligência artificial, mensagens, dashboards, aprovações e acompanhamento operacional.
 
-A aplicação contempla páginas públicas institucionais e também áreas autenticadas com funcionalidades específicas para cada perfil.
+A conexão oficial do ecossistema na Sprint 4 considera o uso de **Oracle Database** na camada de persistência dos backends, com o frontend consumindo APIs publicadas e organizadas por responsabilidade:
 
-Além disso, nesta etapa foram incorporadas integrações complementares voltadas à **acessibilidade** e à **comunicação com usuários**, com destaque para:
-- integração com a **API oficial do WhatsApp Business Platform (Cloud API)** via backend;
-- inclusão do **VLibras**, biblioteca pública de acessibilidade em Libras para navegação no frontend.
+- **Backend Core Python/FastAPI**: autenticação, beneficiários, voluntários, admin, casos, aprovações, mensagens, documentos, notificações, WhatsApp e dashboards.
+- **Backend Java/Quarkus**: módulo administrativo de **triagem**, **habilitação/onboarding**, checklist, encaminhamento e match.
+- **Backend IA/FastAPI**: página administrativa de **IA preditiva**, com previsão de risco e apoio à tomada de decisão.
+- **Frontend React/Vite**: interface pública, dashboards por perfil e área administrativa integrada.
 
 ---
 
-## Objetivo da Sprint 3
+## Objetivo da Sprint 4
 
-O foco desta Sprint foi realizar a **migração do frontend para React + Vite + TypeScript**, organizando a aplicação em componentes reutilizáveis, utilizando navegação com **React Router**, estilização com **Tailwind CSS** e formulários com **React Hook Form**, conforme solicitado na proposta da disciplina.
+O objetivo principal desta etapa foi concluir o frontend como uma aplicação web profissional, mantendo a arquitetura modular criada na Sprint 3 e adicionando integração real com APIs.
 
-Além da migração estrutural, a Sprint também consolidou melhorias visuais e funcionais nas áreas internas do sistema, especialmente em dashboards, mensagens, prontuários, perfis e páginas institucionais.
+A Sprint 4 reforça os seguintes pontos:
 
-Também foram realizados ajustes para:
-- melhorar a **acessibilidade da navegação**;
-- preparar o sistema para **envio de notificações automatizadas via WhatsApp**;
-- reforçar a integração entre frontend e backend sem alterar a estrutura já consolidada do projeto.
+- consumo de APIs REST com **Fetch API nativa**, sem Axios;
+- integração com backend Java/Quarkus nas telas administrativas de **triagem** e **onboarding**;
+- integração com backend de IA na tela `/admin/ia-preditiva`;
+- manutenção da integração com o backend Python/FastAPI para o core da solução;
+- publicação do frontend na **Vercel**;
+- uso de variáveis de ambiente para separar desenvolvimento, homologação e produção;
+- tratamento de erros, loading, estados vazios e respostas inesperadas;
+- responsividade com **Tailwind CSS**;
+- documentação clara no README para execução e avaliação.
 
 ---
 
 ## Problema que a solução resolve
 
-A Turma do Bem possui uma operação social que depende de comunicação clara entre diferentes perfis envolvidos no atendimento. Antes da solução proposta, o processo apresentava limitações como:
+A operação da Turma do Bem envolve várias etapas: cadastro, triagem, análise, aprovação, encaminhamento para voluntários, agendamento, comunicação, acompanhamento e registro de evolução do caso.
 
-- dificuldade de comunicação entre os participantes;
-- pouco controle sobre solicitações e aprovações;
-- baixa centralização de informações;
-- dificuldade para acompanhamento de beneficiários;
-- pouca organização de prontuários, documentos e histórico;
-- experiência digital limitada para navegação e uso do sistema.
+Sem uma plataforma centralizada, surgem dificuldades como:
 
-O sistema proposto busca resolver esse cenário com uma plataforma centralizada, responsiva e organizada por perfis.
+- baixa rastreabilidade da jornada do beneficiário;
+- dificuldade para acompanhar o andamento de casos;
+- comunicação fragmentada entre beneficiários, voluntários e administração;
+- ausência de visão consolidada de aprovações, consultas e prontuários;
+- dificuldade para priorizar atendimentos e evitar faltas;
+- falta de apoio digital para triagem, onboarding e tomada de decisão administrativa.
+
+O frontend do DEV do BEM organiza esses fluxos em uma interface única, responsiva e separada por perfis, conectada aos serviços de backend da solução.
 
 ---
 
-## Principais funcionalidades do frontend
+## Principais funcionalidades
 
 ### Páginas públicas
-- Home
-- Sobre
-- FAQ
-- Contato
-- Integrantes
-- Página da solução / apresentação do projeto
+
+- Home institucional.
+- Sobre o projeto.
+- Programas.
+- FAQ.
+- Contato.
+- Integrantes.
+- Ajuda, acessibilidade, comunicação, termos e privacidade.
+- Página de login e cadastros.
 
 ### Área do Beneficiário
-- dashboard inicial
-- visualização de perfil
-- edição dos próprios dados com modo controlado de edição
-- notificações
-- mensagens
-- acompanhamento de consultas e prontuário
+
+- Dashboard inicial.
+- Visualização e edição do perfil.
+- Acompanhamento de consultas.
+- Confirmação de presença.
+- Solicitação de reagendamento.
+- Visualização de documentos.
+- Mensagens.
+- Notificações.
+- Configurações e preferências.
 
 ### Área do Voluntário
-- dashboard do voluntário
-- gestão de pacientes
-- visualização de prontuário
-- visualização completa de dados do beneficiário
-- registro de anotações no prontuário
-- disponibilidade
-- perfil editável com botão para habilitar edição
-- mensagens
-- notificações
+
+- Dashboard do voluntário.
+- Lista de pacientes vinculados.
+- Prontuário do beneficiário.
+- Anotações no prontuário.
+- Agenda e consultas.
+- Disponibilidade.
+- Solicitações de procedimento.
+- Comentários em solicitações.
+- Mensagens.
+- Notificações.
+- Perfil editável.
 
 ### Área do Administrador
-- dashboard administrativo
-- gestão de beneficiários
-- gestão de voluntários
-- gestão de parceiros
-- aprovações
-- relatórios
-- mensagens internas e de aprovação unificadas
-- visualização e gestão de prontuários
-- perfil editável
-- notificações
 
-### Acessibilidade e apoio ao usuário
-- integração com **VLibras**
-- suporte à navegação com tradução automática de conteúdo para Libras
-- componente carregado globalmente no frontend
-- posicionamento do widget ajustado para não conflitar com botões flutuantes já existentes
+- Dashboard administrativo.
+- Gestão de beneficiários.
+- Gestão de voluntários.
+- Gestão de parceiros.
+- Aprovações clínicas e administrativas.
+- Mensagens internas e mensagens por aprovação.
+- Relatórios.
+- Notificações.
+- Configurações.
+- Testes de WhatsApp.
+- Acompanhamento de prontuários e documentos.
+
+### Novidades da Sprint 4 no Admin
+
+A Sprint 4 adicionou módulos administrativos específicos para tornar a solução mais completa e integrada:
+
+#### Triagem — `/admin/triagem`
+
+Tela integrada ao backend Java/Quarkus para apoiar a entrada e avaliação inicial de beneficiários.
+
+Funcionalidades cobertas:
+
+- criação manual de lead de beneficiário pelo administrador;
+- listagem de leads;
+- busca local;
+- edição e exclusão de leads;
+- registro de triagem;
+- priorização de triagem;
+- sugestão de encaminhamento;
+- preparação do lead para onboarding;
+- tratamento de loading, erros e estados vazios.
+
+#### Onboarding — `/admin/onboarding`
+
+Tela integrada ao backend Java/Quarkus para validar dados e documentos antes de liberar o beneficiário para atendimento.
+
+Funcionalidades cobertas:
+
+- visualização de leads em processo de habilitação;
+- checklist documental;
+- validação de cadastro;
+- validação de região;
+- registro de observações;
+- conversão do lead para **APTO_ATENDIMENTO** quando os critérios forem atendidos;
+- proteção contra conversão indevida quando houver pendência.
+
+#### IA Preditiva — `/admin/ia-preditiva`
+
+Tela integrada ao backend de IA/FastAPI para apoiar o administrador na leitura de risco e priorização.
+
+Funcionalidades cobertas:
+
+- consumo da API de predição;
+- envio de dados do atendimento para análise;
+- retorno de risco estimado;
+- exibição de indicadores e cards de apoio;
+- leitura de perfis com maior chance de não comparecimento;
+- apoio à priorização de casos;
+- preparação para evolução com massa real do banco Oracle.
 
 ---
 
 ## Tecnologias utilizadas
-
-Este projeto foi desenvolvido com as seguintes tecnologias:
 
 - **React**
 - **Vite**
@@ -105,330 +165,452 @@ Este projeto foi desenvolvido com as seguintes tecnologias:
 - **React Router DOM**
 - **React Hook Form**
 - **Lucide React**
+- **Radix UI / componentes internos**
+- **Sonner / toasts**
 - **Fetch API nativa**
-- **Node.js / npm**
+- **Node.js**
+- **npm**
 - **VLibras**
+- **Vercel**
+- **APIs REST**
+- **Backend Python/FastAPI**
+- **Backend Java/Quarkus**
+- **Backend IA/FastAPI**
+- **Oracle Database** na persistência oficial dos backends na Sprint 4
 - **WhatsApp Business Platform (Cloud API)** via backend
 
 ### Observações técnicas importantes
-- O projeto **não utiliza Axios**
-- O projeto **não utiliza Bootstrap, Material UI, Chakra UI ou frameworks proibidos**
-- A navegação foi estruturada no modelo **SPA**
-- Os formulários contam com **validação usando React Hook Form**
-- O layout foi ajustado com foco em **responsividade**
-- A comunicação com o WhatsApp foi preparada usando a **API oficial da Meta**, sem bibliotecas não oficiais
+
+- O projeto **não utiliza Axios**.
+- O projeto **não utiliza Bootstrap, Material UI, Chakra UI ou jQuery**.
+- O projeto **não utiliza templates prontos**.
+- A aplicação é estruturada como **SPA**.
+- O roteamento é feito com **React Router DOM**.
+- A estilização é feita com **Tailwind CSS**.
+- Formulários usam **React Hook Form** quando há entrada e validação de dados.
+- O frontend não expõe tokens sensíveis de backend.
+- As URLs das APIs são configuradas por variáveis de ambiente.
 
 ---
 
-## Arquitetura e organização do projeto
+## Arquitetura do frontend
 
-A aplicação foi organizada em estrutura modular, priorizando reutilização e legibilidade.
+A aplicação é organizada de forma modular para facilitar manutenção, evolução e separação por contexto de uso.
 
 ```bash
 src/
 ├── components/
-│   ├── layout/
-│   ├── ui/
-│   ├── home/
+│   ├── accessibility/
 │   ├── admin/
 │   ├── beneficiario/
-│   ├── voluntario/
-│   ├── accessibility/
-│   └── shared/
-├── pages/
 │   ├── home/
-│   ├── sobre/
-│   ├── faq/
-│   ├── contato/
-│   ├── integrantes/
-│   ├── login/
+│   ├── layout/
+│   ├── shared/
+│   ├── ui/
+│   └── voluntario/
+├── hooks/
+├── lib/
+├── pages/
+│   ├── admin/
 │   ├── dashboard/
 │   │   ├── admin/
 │   │   ├── beneficiario/
 │   │   └── voluntario/
+│   ├── contato/
+│   ├── faq/
+│   ├── home/
+│   ├── integrantes/
+│   ├── login/
+│   ├── sobre/
 │   └── ...
-├── lib/
-├── hooks/
-├── assets/
-├── styles/
+├── services/
+│   ├── java-api/
+│   │   ├── ai-risk.service.ts
+│   │   ├── client.ts
+│   │   ├── lead-beneficiario.service.ts
+│   │   ├── onboarding.service.ts
+│   │   └── triagem.service.ts
+│   ├── admin-volunteers.service.ts
+│   ├── aiApi.ts
+│   └── ...
+├── types/
+│   └── java-api.ts
+│   └── ai.ts
 ├── App.tsx
 └── main.tsx
 ```
 
 ### Organização adotada
-- **`components/`**: componentes reutilizáveis da interface
-- **`components/accessibility/`**: componentes relacionados à acessibilidade, incluindo o widget do VLibras
-- **`pages/`**: páginas e rotas da aplicação
-- **`lib/`**: utilitários e integrações
-- **`hooks/`**: hooks auxiliares
-- **`assets/`**: imagens, logos e mídias
-- **`App.tsx`**: configuração das rotas
-- **`main.tsx`**: inicialização da aplicação e carregamento global de integrações como o VLibras
+
+- **`components/`**: componentes reutilizáveis da interface.
+- **`pages/`**: páginas públicas e internas.
+- **`services/java-api/`**: camada isolada para integração com o backend Java/Quarkus.
+- **`types/`**: tipagens compartilhadas da aplicação.
+- **`lib/`**: utilitários, helpers de API, autenticação e funções auxiliares.
+- **`hooks/`**: hooks reutilizáveis.
+- **`App.tsx`**: definição das rotas.
+- **`main.tsx`**: inicialização da aplicação e integrações globais.
+
+---
+
+## Rotas principais
+
+### Rotas públicas
+
+- `/`
+- `/sobre`
+- `/programas`
+- `/faq`
+- `/contato`
+- `/integrantes`
+- `/ajuda`
+- `/acessibilidade`
+- `/comunicacao`
+- `/termos`
+- `/privacidade`
+- `/login`
+- `/cadastro/beneficiario`
+- `/cadastro/voluntario`
+- `/cadastro/apolonias`
+
+### Rotas do beneficiário
+
+- `/dashboard/beneficiario`
+- `/dashboard/beneficiario/consultas`
+- `/dashboard/beneficiario/documentos`
+- `/dashboard/beneficiario/mensagens`
+- `/dashboard/beneficiario/notificacoes`
+- `/dashboard/beneficiario/perfil`
+- `/dashboard/beneficiario/configuracoes`
+
+### Rotas do voluntário
+
+- `/dashboard/voluntario`
+- `/dashboard/voluntario/agenda`
+- `/dashboard/voluntario/disponibilidade`
+- `/dashboard/voluntario/mensagens`
+- `/dashboard/voluntario/notificacoes`
+- `/dashboard/voluntario/pacientes`
+- `/dashboard/voluntario/pacientes/:id`
+- `/dashboard/voluntario/perfil`
+- `/dashboard/voluntario/solicitacoes`
+- `/dashboard/voluntario/configuracoes`
+
+### Rotas administrativas
+
+- `/admin`
+- `/admin/aprovacoes`
+- `/admin/beneficiarios`
+- `/admin/beneficiarios/:id`
+- `/admin/voluntarios`
+- `/admin/parceiros`
+- `/admin/programas`
+- `/admin/relatorios`
+- `/admin/satisfacao`
+- `/admin/mensagens`
+- `/admin/notificacoes`
+- `/admin/configuracoes`
+- `/admin/triagem`
+- `/admin/onboarding`
+- `/admin/ia-preditiva`
+
+---
+
+## Integração com APIs
+
+A Sprint 4 tem como foco o consumo de APIs e a integração entre frontend e backends. O frontend utiliza **Fetch API nativa**, com serviços separados por domínio.
+
+### API Core Python/FastAPI
+
+Responsável pelo núcleo da aplicação:
+
+- autenticação;
+- perfis;
+- dashboards;
+- beneficiários;
+- voluntários;
+- casos;
+- consultas;
+- aprovações;
+- mensagens;
+- documentos;
+- notificações;
+- relatórios;
+- WhatsApp;
+- preferências.
+
+Variável de ambiente:
+
+```env
+VITE_API_URL=https://apicore-devdobem.clinicarx.dev
+```
+
+### API Java/Quarkus
+
+Responsável pelo módulo administrativo de triagem e onboarding.
+
+Variável de ambiente:
+
+```env
+VITE_JAVA_API_URL=https://apionboarding-devdobem.clinicarx.dev
+```
+
+Endpoints consumidos pelo frontend:
+
+#### Leads de beneficiários
+
+```text
+GET    /api/leads-beneficiarios
+GET    /api/leads-beneficiarios/{id}
+POST   /api/leads-beneficiarios
+PUT    /api/leads-beneficiarios/{id}
+DELETE /api/leads-beneficiarios/{id}
+```
+
+#### Triagens
+
+```text
+GET  /api/triagens
+POST /api/triagens
+POST /api/triagens/{id}/priorizar
+```
+
+#### Encaminhamentos
+
+```text
+POST /api/encaminhamentos/sugerir/{leadId}
+```
+
+#### Onboarding e checklist
+
+```text
+POST /api/checklists
+POST /api/checklists/{leadId}/validar
+POST /api/leads-beneficiarios/{id}/converter
+```
+
+### API de IA/FastAPI
+
+Responsável por apoiar a página administrativa de IA preditiva.
+
+Variável de ambiente:
+
+```env
+VITE_AI_API_URL=https://apichatbot-devdobem.clinicarx.dev/ai
+```
+
+Uso esperado no frontend:
+
+```text
+POST ${VITE_AI_API_URL}/predict
+```
+
+A tela `/admin/ia-preditiva` utiliza essa integração para exibir previsões e indicadores de apoio à decisão administrativa.
+
+---
+
+## Variáveis de ambiente
+
+Crie um arquivo `.env` na raiz do projeto frontend.
+
+### Desenvolvimento local
+
+```env
+VITE_API_URL=http://127.0.0.1:8000
+VITE_JAVA_API_URL=http://127.0.0.1:8080
+VITE_AI_API_URL=http://127.0.0.1:8001/ai
+```
+
+### Produção / Vercel
+
+```env
+VITE_API_URL=https://apicore-devdobem.clinicarx.dev
+VITE_JAVA_API_URL=https://apionboarding-devdobem.clinicarx.dev
+VITE_AI_API_URL=https://apichatbot-devdobem.clinicarx.dev/ai
+```
+
+> Em produção, as variáveis devem ser cadastradas no painel da Vercel. Os fallbacks para `localhost` devem ser usados apenas em desenvolvimento.
+
+---
+
+## Tratamento de erros e resiliência
+
+As integrações da Sprint 4 foram organizadas para evitar que respostas inesperadas quebrem a interface.
+
+Foram aplicados cuidados como:
+
+- loading em telas com consumo de API;
+- estados vazios;
+- mensagens amigáveis de erro;
+- toasts de sucesso e falha;
+- botões desabilitados durante envio;
+- tratamento de respostas inconsistentes;
+- proteção contra renderização de dados nulos;
+- separação dos serviços de API por domínio;
+- manutenção do shell administrativo mesmo quando uma API específica falha.
 
 ---
 
 ## Componentização e reutilização
 
-O projeto foi estruturado com foco em reutilização de componentes, incluindo:
+O projeto reutiliza componentes como:
 
-- Header
-- Footer
-- Menu lateral
-- Botões
-- Inputs
-- Textarea
-- Select
-- Cards
-- Tabelas
-- Alertas
-- Componentes de layout por perfil
-- Componentes de mensagens e notificações
-- Componente de acessibilidade do **VLibras**
+- Header;
+- Footer;
+- AdminHeader;
+- AdminSidebar;
+- DashboardHeader;
+- cards;
+- tabelas;
+- badges;
+- botões;
+- inputs;
+- selects;
+- textareas;
+- modais;
+- toasts;
+- alertas;
+- loaders;
+- componentes de mensagens;
+- componentes administrativos;
+- componentes de acessibilidade.
 
-Essa abordagem melhora a manutenção do projeto, facilita a evolução das páginas e garante padronização visual.
-
----
-
-## Navegação e rotas
-
-A aplicação utiliza **React Router DOM** para navegação entre páginas públicas e privadas.
-
-### Exemplos de rotas públicas
-- `/`
-- `/sobre`
-- `/faq`
-- `/contato`
-- `/integrantes`
-
-### Exemplos de rotas autenticadas
-- `/dashboard/admin`
-- `/dashboard/beneficiario`
-- `/dashboard/voluntario`
-- `/dashboard/voluntario/pacientes/:id`
-- `/admin/beneficiarios/:id`
-
-Foram utilizados recursos como:
-- `useNavigate`
-- `useParams`
-- rotas estáticas
-- rotas dinâmicas
+A componentização reduz repetição, melhora a padronização visual e facilita a evolução dos módulos de triagem, onboarding e IA.
 
 ---
 
 ## Hooks e comportamento dinâmico
 
-O projeto utiliza hooks do React para controle de estado e comportamento da aplicação:
+O frontend utiliza recursos do React para controlar navegação, dados e estados:
 
-- **`useState`** para estados locais
-- **`useEffect`** para efeitos e carregamento de dados
-- **`useNavigate`** para navegação programática
-- **`useParams`** para captura de parâmetros em rotas dinâmicas
-- **`useForm()`** com React Hook Form para formulários com validação
+- **`useState`** para estados locais;
+- **`useEffect`** para carregamento de dados;
+- **`useMemo`** para cálculos e filtros;
+- **`useNavigate`** para navegação programática;
+- **`useParams`** para rotas dinâmicas;
+- **`useForm()`** para formulários com validação;
+- hooks e helpers internos para autenticação, perfil e chamadas de API.
 
-### Formulários com React Hook Form
-Para atender à Sprint 3, o projeto utiliza **React Hook Form**, com destaque para formulários como:
-- página de **Contato**
-- página de **Login**
+---
 
-Isso garante validação mais organizada, tipagem e melhor controle dos dados enviados.
+## Formulários com React Hook Form
+
+A aplicação utiliza **React Hook Form** em formulários com validação, como:
+
+- login;
+- contato;
+- cadastros;
+- dados de triagem;
+- etapas de onboarding;
+- telas com entrada administrativa.
+
+O uso de formulários tipados contribui para validação mais clara, menor repetição de código e melhor experiência do usuário.
 
 ---
 
 ## Estilização e responsividade
 
-A interface foi desenvolvida com **Tailwind CSS**, buscando:
+A interface foi construída com **Tailwind CSS** e testada para diferentes resoluções.
 
-- layout profissional
-- boa legibilidade
-- organização visual
-- consistência entre páginas
-- adaptação para diferentes tamanhos de tela
+A aplicação contempla:
 
-### Responsividade aplicada em:
-- **mobile**
-- **tablet**
-- **desktop**
-
-Foram feitos ajustes de:
-- alinhamento de botões
-- grid responsivo
-- sidebar e navegação
-- cards e formulários
-- páginas públicas e internas
-- posicionamento do widget de acessibilidade para não conflitar com outros elementos fixos
+- mobile até 480px;
+- tablet em torno de 768px;
+- desktop a partir de 992px;
+- cards responsivos;
+- tabelas e listas adaptadas;
+- grids flexíveis;
+- navegação administrativa organizada;
+- botões e formulários ajustados para telas menores;
+- manutenção da identidade visual da Turma do Bem.
 
 ---
 
-## Experiência do usuário (UX)
+## Acessibilidade
 
-A experiência do usuário foi tratada como parte central da Sprint. Foram realizados ajustes em:
+O projeto mantém a integração com **VLibras**, ferramenta pública de acessibilidade em Libras.
 
-- fluxo de mensagens
-- organização de prontuários
-- visualização de dados por perfil
-- correção de downloads
-- feedback visual em formulários
-- organização dos dashboards
-- consistência entre páginas administrativas
-- navegação institucional mais clara
-- bloqueio inicial de edição em páginas de perfil, com botão explícito para habilitar alterações
-- inclusão de recurso de acessibilidade com Libras
+A integração considera:
 
----
-
-## Integração com backend
-
-O frontend se comunica com o backend para operações como:
-
-- autenticação
-- consulta de dashboards
-- mensagens
-- notificações
-- perfil do usuário
-- prontuários
-- anotações
-- relatórios
-- disponibilidade do voluntário
-- contato institucional
-
-A comunicação foi feita com **Fetch API nativa**, respeitando a proposta da sprint e evitando bibliotecas não permitidas.
+- carregamento global do widget;
+- componente isolado de acessibilidade;
+- cuidado para não conflitar com botões flutuantes;
+- melhoria da navegação para usuários surdos;
+- reforço do caráter social e inclusivo da solução.
 
 ---
 
 ## Integração com WhatsApp Business Platform
 
-Durante a evolução do projeto, foi realizada a integração com a **API oficial do WhatsApp Business Platform (Cloud API)**, utilizando a conta de testes da Meta.
+O frontend preserva a integração indireta com a **WhatsApp Business Platform (Cloud API)** por meio do backend Python/FastAPI.
 
-### Objetivo da integração
-Permitir que eventos relevantes do fluxo da ONG também possam gerar notificações por WhatsApp, reforçando a comunicação entre os perfis do sistema.
+A regra adotada é:
 
-### Eventos de notificação planejados
-- solicitação gerada/aberta pelo voluntário;
+- o token da Meta não fica no frontend;
+- o envio é feito pelo backend;
+- o frontend aciona ações administrativas ou transacionais;
+- o backend decide quando enviar notificações.
+
+Eventos previstos:
+
+- solicitação criada pelo voluntário;
 - solicitação aprovada pelo administrador;
-- solicitação de agendamento de consulta para o beneficiário;
-- solicitação aprovada pelo beneficiário;
-- solicitação de reagendamento pelo beneficiário.
-
-### Regras adotadas na integração
-- uso da **API oficial da Meta**
-- não utilização de bibliotecas não oficiais
-- integração feita via **backend FastAPI**
-- frontend preservado no seu formato original, sem exposição de token
-- envio contendo o payload real de referência da solicitação, por exemplo: **SOL-xxxx-x**
-
-### Observações importantes do ambiente de teste
-Durante os testes acadêmicos foi utilizado o número de teste da Meta e o template padrão **`hello_world`** para validação inicial da integração.
-
-Também foi validado que:
-- mensagens de template funcionam normalmente no fluxo de teste;
-- mensagens de texto livre dependem da **janela de atendimento** aberta pelo usuário no WhatsApp e fluxos reais de backend **janela de atendimento**;
-
-
-### Benefícios da integração
-- reforço da comunicação do processo
-- maior visibilidade dos eventos importantes
-- apoio ao acompanhamento de solicitações e consultas
-- preparo do sistema para futuras automações transacionais
-
----
-
-## Integração com VLibras
-
-Como parte das melhorias de acessibilidade, o projeto passou a incluir o **VLibras**, ferramenta pública do governo brasileiro para tradução de conteúdos digitais em português para Libras.
-
-### Como foi aplicado
-- integração do widget oficial no frontend
-- carregamento global do componente em `main.tsx`
-- isolamento da lógica em componente próprio
-- cuidado para não quebrar a estrutura já existente
-- ajuste de posicionamento do widget para evitar conflito com botões flutuantes da aplicação
-
-### Benefícios
-- ampliação da acessibilidade para usuários surdos
-- reforço do compromisso social e inclusivo do projeto
-- melhoria da experiência de navegação em páginas públicas e privadas
-
----
-
-## Perfis de acesso
-
-O sistema possui três perfis principais:
-
-### Beneficiário
-Visualiza informações do atendimento, mensagens, notificações, perfil e acompanhamento do processo.
-
-### Voluntário
-Gerencia pacientes, prontuários, anotações, disponibilidade, mensagens e dados do próprio perfil.
-
-### Administrador
-Controla beneficiários, voluntários, parceiros, aprovações, relatórios, mensagens, prontuários e visão geral da operação.
-
----
-
-## Diferenciais da solução
-
-Comparado a soluções genéricas, o projeto apresenta como diferenciais:
-
-- foco específico no contexto social da ONG Turma do Bem
-- separação de fluxos por perfil
-- centralização de comunicação e prontuário
-- interface moderna em SPA
-- organização modular e escalável
-- preocupação com acessibilidade, clareza e usabilidade
-- páginas institucionais integradas ao ecossistema do sistema
-- comunicação via WhatsApp oficial
-- inclusão de acessibilidade com VLibras
-
----
-
-## Imagens e identidade visual
-
-### Logo do projeto
-![Logo](./public/images/dev-do-bem-logo.png)
-
-### Integrantes
-As imagens dos integrantes foram integradas ao projeto na página pública de equipe.
-
-#### Sérgio Henrique S
-![Sérgio](./public/team/Sergio.jpg)
-
-#### Icaro Nascimento
-![Icaro](./public/team/Icaro.png)
+- consulta agendada;
+- beneficiário solicitado para confirmação;
+- pedido de reagendamento.
 
 ---
 
 ## Como executar localmente
 
 ### Pré-requisitos
-Antes de iniciar, você precisa ter instalado:
 
-- **Node.js** 18 ou superior
-- **npm** 9 ou superior
+- **Node.js** 18 ou superior.
+- **npm** 9 ou superior.
+- Backend Python/FastAPI disponível.
+- Backend Java/Quarkus disponível para triagem e onboarding.
+- Backend IA/FastAPI disponível para IA preditiva.
 
 ### Passo a passo
 
 ```bash
 # 1. Clone o repositório
-git clone <URL_DO_SEU_REPOSITORIO>
+git clone https://github.com/sergiohsantos/frontend-challenge-dev-do-bem-tdb
 
-# 2. Acesse a pasta do projeto
-cd nome-do-projeto
+# 2. Acesse a pasta do frontend
+cd frontend-challenge-dev-do-bem-tdb
 
 # 3. Instale as dependências
 npm install
 
-# 4. Rode o projeto em ambiente de desenvolvimento
+# 4. Crie o arquivo .env
+cp .env.example .env
+```
+
+Configure o `.env`:
+
+```env
+VITE_API_URL=http://127.0.0.1:8000
+VITE_JAVA_API_URL=http://127.0.0.1:8080
+VITE_AI_API_URL=http://127.0.0.1:8001/ai
+```
+
+Rode o frontend:
+
+```bash
 npm run dev
 ```
 
-Depois disso, abra no navegador:
-```bash
+Abra no navegador:
+
+```text
 http://localhost:3000
 ```
 
-Para acessar o ADMIN, abra no navegador:
-```bash
-http://localhost:3000/admin
+ou, se o Vite subir em outra porta:
+
+```text
+http://localhost:5173
 ```
 
 ### Build de produção
@@ -437,10 +619,68 @@ http://localhost:3000/admin
 npm run build
 ```
 
-### Preview local do build
+### Preview do build
 
 ```bash
 npm run preview
+```
+
+---
+
+## Como executar os backends usados pelo frontend
+
+### Backend Python/FastAPI — Core
+
+```bash
+cd ../pythonCore_backend
+python3 -m venv .venv
+source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\activate
+pip3 install -r requirements.txt
+cp .env.example .env
+uvicorn app.main:app --reload
+```
+
+Swagger:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+### Backend Java/Quarkus — Triagem e Onboarding
+
+```bash
+cd ../tdb-onboarding-api
+./mvnw quarkus:dev
+```
+
+No Windows:
+
+```bash
+cd ..\tdb-onboarding-api
+mvnw.cmd quarkus:dev
+```
+
+Swagger:
+
+```text
+http://localhost:8080/q/swagger-ui
+```
+
+### Backend IA/FastAPI — IA Preditiva
+
+```bash
+cd ../chatbotAI_backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txt
+uvicorn app.main:app --reload --port 8001
+```
+
+Endpoint esperado pelo frontend:
+
+```text
+http://127.0.0.1:8001/ai/predict
 ```
 
 ---
@@ -457,87 +697,147 @@ npm run build
 npm run preview
 # visualiza localmente a build gerada
 ```
-## Rodar Backend localmente
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-# Windows PowerShell: .venv\Scripts\activate
-pip3 install -r requirements.txt
-cp .env.example .env
-python3 -m app.seed
-uvicorn app.main:app --reload
-```
-
-Swagger:
-- http://127.0.0.1:8000/docs
-
-## Credenciais seed
-
-### Beneficiário
-- login: `12345678900`
-- senha: `123456`
-
-### Voluntário
-- login: `maria.santos@turmadobem.org.br`
-- senha: `123456`
-
-### Admin
-- login: `ana.admin@turmadobem.org.br`
-- senha: `123456`
 
 ---
 
-## Estrutura de entrega da Sprint 3
+## Credenciais de demonstração
 
-O projeto foi preparado para atender ao padrão solicitado na disciplina:
+### Admin
 
-- projeto em **React + Vite + TypeScript**
-- estrutura organizada em componentes e páginas
-- uso de **Tailwind CSS**
-- uso de **React Router**
-- uso de **React Hook Form**
-- histórico de versionamento no **GitHub**
-- README com informações técnicas
-- sem pasta `node_modules` no envio do `.zip`
+```text
+Login: fiap.admin@tdb.org.br
+Senha: mesma_senha_da_banca
+```
 
-Além disso, o projeto passou a contar com:
-- integração de acessibilidade com **VLibras**
-- preparação de integração com **WhatsApp Cloud API**
-- padronização visual e estrutural das principais páginas internas
+### Beneficiário
+
+```text
+Login: fiap.beneficiario@tdb.org.br
+Senha: mesma_senha_da_banca
+```
+
+### Voluntário
+
+```text
+Login: fiap.dentista@tdb.org.br
+Senha: mesma_senha_da_banca
+```
+
+---
+
+## Deploy
+
+### Vercel
+
+URL pública da aplicação:
+
+```text
+https://frontend-challenge-dev-do-bem-tdb.vercel.app
+```
+
+URL de login:
+
+```text
+https://frontend-challenge-dev-do-bem-tdb.vercel.app/login
+```
+
+Área administrativa:
+
+```text
+https://frontend-challenge-dev-do-bem-tdb.vercel.app/admin
+```
+
+### Variáveis necessárias na Vercel
+
+```env
+VITE_API_URL=https://apicore-devdobem.clinicarx.dev
+VITE_JAVA_API_URL=https://apionboarding-devdobem.clinicarx.dev
+VITE_AI_API_URL=https://apichatbot-devdobem.clinicarx.dev/ai
+```
 
 ---
 
 ## Repositório GitHub
 
-**Link do repositório:**
-
-```txt
-https://github.com/sergiohsantos/frontend-challenge-dev-do-bem-sprint3
+```text
+https://github.com/sergiohsantos/frontend-challenge-dev-do-bem-tdb
 ```
 
 ---
 
 ## Vídeo da apresentação
 
-**Link do vídeo no YouTube:**
-
-```txt
-https://youtu.be/wmODf-Xuycg?si=hnypX6oyPrGFbAI6
+```text
+https://www.youtube.com/watch?v=JYhQrmlqUK0
 ```
+
+---
+
+## Estrutura de entrega da Sprint 4
+
+O projeto foi preparado para atender ao padrão solicitado na disciplina de **Front-End Design Engineering**.
+
+Itens contemplados:
+
+- React + Vite + TypeScript;
+- SPA com React Router;
+- componentização;
+- Tailwind CSS;
+- responsividade;
+- hooks e rotas dinâmicas;
+- formulários com React Hook Form;
+- consumo de APIs REST;
+- integração com API Java;
+- tratamento de erros;
+- README completo;
+- link do GitHub;
+- link do vídeo;
+- URL da Vercel;
+- histórico Git;
+- ausência de `node_modules` no `.zip`;
+- não utilização de bibliotecas proibidas.
+
+---
+
+## Checklist técnico da Sprint 4
+
+- [x] Aplicação React + Vite + TypeScript.
+- [x] Arquitetura SPA.
+- [x] Componentização aplicada.
+- [x] Tailwind CSS aplicado.
+- [x] React Router DOM implementado.
+- [x] Rotas públicas e privadas.
+- [x] Rotas dinâmicas.
+- [x] React Hook Form em formulários.
+- [x] Fetch API nativa.
+- [x] Sem Axios.
+- [x] Sem frameworks de UI proibidos.
+- [x] Integração com backend Python/FastAPI.
+- [x] Integração com backend Java/Quarkus.
+- [x] Tela administrativa de Triagem.
+- [x] Tela administrativa de Onboarding.
+- [x] Tela administrativa de IA Preditiva.
+- [x] Integração indireta com WhatsApp via backend.
+- [x] VLibras integrado.
+- [x] Heurísticas de Nielsen aplicadas nas melhorias de Voluntário e Beneficiário, com feedback visual, estados vazios, prevenção de erro, navegação clara e próxima ação recomendada.
+- [x] Variáveis de ambiente documentadas.
+- [x] Deploy na Vercel.
+- [x] README atualizado para entrega final.
 
 ---
 
 ## Integrantes da equipe
 
-### 1. Sérgio Henrique S
+### Sérgio Henrique S
+
 - **RM:** RM567254
 - **Turma:** 1TDS Agosto
 - **Áreas:** Frontend, Python, IA Chatbot
 - **LinkedIn:** [linkedin.com/in/sergiohenriquessantos](https://www.linkedin.com/in/sergiohenriquessantos/)
 - **GitHub:** [github.com/sergiohsantos](https://github.com/sergiohsantos)
 
-### 2. Icaro Nascimento
+### Icaro Nascimento
+
 - **RM:** RM567386
 - **Turma:** 1TDS Agosto
 - **Áreas:** Java, Database, Business Model
@@ -548,13 +848,11 @@ https://youtu.be/wmODf-Xuycg?si=hnypX6oyPrGFbAI6
 
 ## Créditos
 
-Projeto acadêmico desenvolvido para a disciplina de **Front-End Design Engineering**, dentro do Challenge da **FIAP**, em parceria com a **Turma do Bem**.
+Projeto acadêmico desenvolvido para o Challenge da **FIAP**, em parceria com a **Turma do Bem**, dentro da disciplina de **Front-End Design Engineering**.
 
 ---
 
 ## Contato da equipe
-
-Para dúvidas sobre o projeto, entre em contato com a equipe pelos links abaixo:
 
 - **Sérgio Henrique S**  
   LinkedIn: [linkedin.com/in/sergiohenriquessantos](https://www.linkedin.com/in/sergiohenriquessantos/)  
@@ -566,171 +864,15 @@ Para dúvidas sobre o projeto, entre em contato com a equipe pelos links abaixo:
 
 ---
 
-## Observações finais
-
-Este projeto representa a evolução da solução proposta nas sprints anteriores, consolidando a migração para um frontend moderno, componentizado e escalável.
-
-A Sprint 3 foi fundamental para:
-- transformar a base em uma SPA
-- consolidar uma arquitetura profissional com React
-- melhorar a navegação
-- padronizar a interface
-- reforçar a experiência do usuário
-- preparar a aplicação para integração e expansão nas próximas etapas
-- ampliar a acessibilidade com VLibras
-- estruturar a comunicação transacional via WhatsApp oficial
-
----
-
 ## Status do projeto
 
 ✅ Sprint 3 concluída  
-✅ Aplicação migrada para React + Vite + TypeScript  
-✅ Componentização aplicada  
-✅ React Router implementado  
-✅ Tailwind CSS aplicado  
-✅ React Hook Form utilizado  
-✅ README técnico estruturado  
-✅ Integração com VLibras adicionada  
-✅ Integração com WhatsApp Cloud API preparada  
-✅ Projeto pronto para entrega acadêmica
-
----
-
-## Atualizacoes da integracao administrativa com backend Java
-
-Durante a evolucao do projeto, foi adicionada uma integracao complementar com um backend em **Java Quarkus** para atender especificamente o fluxo administrativo de **triagem** e **onboarding**.
-
-Essa integracao foi implementada de forma isolada, preservando:
-
-- o backend principal em Python como core da aplicacao;
-- as integracoes ja existentes do frontend;
-- as paginas publicas e os fluxos anteriores;
-- o shell administrativo, autenticacao e guards ja existentes.
-
-### Rotas administrativas integradas com Java
-
-As seguintes rotas do frontend passaram a consumir o backend Java:
-
-- `/admin/triagem`
-- `/admin/onboarding`
-
-Essas funcionalidades permanecem restritas a area administrativa e nao foram movidas para paginas publicas nem para os fluxos de beneficiario e voluntario.
-
-### Jornada administrativa implementada
-
-O modulo administrativo com backend Java passou a contemplar a seguinte jornada:
-
-- criacao manual de **LeadBeneficiario** pelo administrador;
-- listagem, busca local, edicao e exclusao de leads em `/admin/triagem`;
-- registro explicito da triagem para um lead valido;
-- priorizacao da triagem pelo backend Java;
-- sugestao de encaminhamento pelo backend Java;
-- encaminhamento do lead triado para `/admin/onboarding`;
-- validacao documental por checklist;
-- conversao final do lead para **APTO_ATENDIMENTO** no backend Java.
-
-### Camada isolada da API Java Quarkus
-
-Para manter a separacao entre os backends, foi criada uma camada exclusiva para o Java em:
-
-```text
-src/services/java-api/
-```
-
-Arquivos principais:
-
-- `client.ts`
-- `lead-beneficiario.service.ts`
-- `triagem.service.ts`
-- `onboarding.service.ts`
-
-Tambem foi criada uma tipagem dedicada para esse modulo em:
-
-```text
-src/types/java-api.ts
-```
-
-### Variavel de ambiente da API Java
-
-O frontend passou a considerar a URL da API Java por meio da variavel:
-
-```bash
-VITE_JAVA_API_URL=https://apionboarding-devdobem.clinicarx.dev
-```
-
-Essa variavel e usada apenas para as telas administrativas novas integradas ao backend Java.
-
-### Variaveis de producao na Vercel
-
-Configure no painel da Vercel:
-
-```bash
-VITE_API_URL=https://apicore-devdobem.clinicarx.dev
-VITE_JAVA_API_URL=https://apionboarding-devdobem.clinicarx.dev
-VITE_AI_API_URL=https://apichatbot-devdobem.clinicarx.dev/ai
-```
-
-No ambiente de producao o build exige essas variaveis. Os fallbacks para `localhost` existem apenas em modo de desenvolvimento.
-
-A pagina de IA em `/admin/ia-preditiva` consome a API de Chatbot IA publicada na EC2 por meio de `VITE_AI_API_URL`.
-
-### Endpoints Java consumidos pelo frontend
-
-#### Triagem
-- `GET /api/leads-beneficiarios`
-- `GET /api/leads-beneficiarios/{id}`
-- `POST /api/leads-beneficiarios`
-- `PUT /api/leads-beneficiarios/{id}`
-- `DELETE /api/leads-beneficiarios/{id}`
-- `GET /api/triagens`
-- `POST /api/triagens`
-- `POST /api/triagens/{id}/priorizar`
-- `POST /api/encaminhamentos/sugerir/{leadId}`
-
-#### Onboarding
-- `POST /api/checklists`
-- `POST /api/checklists/{leadId}/validar`
-- `POST /api/leads-beneficiarios/{id}/converter`
-
-### Resiliencia e consistencia da integracao
-
-As telas de `/admin/triagem` e `/admin/onboarding` receberam tratamento adicional para:
-
-- loading e estados vazios;
-- mensagens amigaveis de erro e sucesso;
-- desabilitar botoes durante submit;
-- evitar falhas de renderizacao em respostas inconsistentes;
-- manter a aparencia e os componentes ja utilizados no admin.
-
-Tambem foram realizados ajustes para alinhar os payloads do frontend com o contrato real do backend Java, incluindo:
-
-- dados obrigatorios de `LeadBeneficiario`;
-- estrutura esperada de `Triagem`;
-- persistencia e validacao do checklist de onboarding;
-- conversao do lead apenas quando a validacao permitir.
-
-### Como executar tambem o backend Java localmente
-
-Para habilitar as funcionalidades administrativas de triagem e onboarding, o backend Java tambem deve estar em execucao.
-
-```bash
-cd ../tdb-onboarding-api
-./mvnw quarkus:dev
-```
-
-No Windows:
-
-```bash
-cd ..\\tdb-onboarding-api
-mvnw.cmd quarkus:dev
-```
-
-Swagger do backend Java:
-
-- `http://localhost:8080/q/swagger-ui`
-
-Com o frontend em desenvolvimento e o backend Java ativo, as paginas abaixo ficam integradas ao novo modulo administrativo:
-
-- `http://localhost:3000/admin/triagem`
-- `http://localhost:3000/admin/onboarding`
+✅ Sprint 4 concluída  
+✅ Frontend integrado com API Core Python  
+✅ Frontend integrado com API Java/Quarkus  
+✅ Frontend integrado com API de IA  
+✅ Triagem administrativa implementada  
+✅ Onboarding administrativo implementado  
+✅ IA preditiva integrada ao Admin  
+✅ Deploy preparado para Vercel  
+✅ README atualizado para entrega final

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 import { 
   Calendar, 
   Clock, 
@@ -15,7 +17,9 @@ import {
   CheckCircle2, 
   AlertCircle,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  MessageSquare,
+  FileText
 } from "lucide-react"
 import { LocationIndicator } from "@/components/ui/breadcrumb-nav"
 import { apiFetch } from "@/lib/api"
@@ -51,6 +55,11 @@ export default function ConsultasPage() {
   const [userName, setUserName] = useState("...")
   const [requestingAppointmentId, setRequestingAppointmentId] = useState<number | null>(null)
   const [confirmingAppointmentId, setConfirmingAppointmentId] = useState<number | null>(null)
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false)
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null)
+  const [rescheduleReason, setRescheduleReason] = useState("")
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null)
+  const isPositiveFeedback = error ? /sucesso|confirmada/i.test(error) : false
 
   useEffect(() => {
     const user = getUser()
@@ -77,8 +86,8 @@ export default function ConsultasPage() {
       const uniqueAppointments = allAppointments.filter((item, index, array) => array.findIndex((entry) => entry.id === item.id) === index)
       setAppointments(uniqueAppointments)
       setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar consultas")
+    } catch {
+      setError("Não foi possível carregar suas consultas agora. Tente novamente em instantes.")
     } finally {
       setIsLoading(false)
     }
@@ -128,15 +137,27 @@ export default function ConsultasPage() {
       await loadAppointments()
       setError(result.message || "Presença confirmada com sucesso")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao confirmar presença")
+      setError(err instanceof Error ? err.message : "Não foi possível confirmar sua presença agora. Tente novamente em instantes.")
     } finally {
       setConfirmingAppointmentId(null)
     }
   }
 
-  const handleReschedule = async (appointmentId: number) => {
-    const reason = window.prompt("Descreva o motivo do reagendamento:")?.trim()
-    if (!reason) return
+  const openRescheduleDialog = (appointmentId: number) => {
+    setSelectedAppointmentId(appointmentId)
+    setRescheduleReason("")
+    setRescheduleError(null)
+    setRescheduleDialogOpen(true)
+  }
+
+  const handleReschedule = async () => {
+    const appointmentId = selectedAppointmentId
+    const reason = rescheduleReason.trim()
+    if (!appointmentId) return
+    if (!reason) {
+      setRescheduleError("Informe o motivo do reagendamento.")
+      return
+    }
 
     try {
       setRequestingAppointmentId(appointmentId)
@@ -155,8 +176,11 @@ export default function ConsultasPage() {
       setAppointments((prev) => prev.map((item) => item.id === appointmentId ? { ...item, status: "rescheduled" } : item))
       await loadAppointments()
       setError(result.message || "Solicitação de reagendamento enviada com sucesso")
+      setRescheduleDialogOpen(false)
+      setSelectedAppointmentId(null)
+      setRescheduleReason("")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao solicitar reagendamento")
+      setError(err instanceof Error ? err.message : "Não foi possível solicitar o reagendamento agora. Tente novamente em instantes.")
     } finally {
       setRequestingAppointmentId(null)
     }
@@ -202,13 +226,41 @@ export default function ConsultasPage() {
             </p>
           </div>
 
-          {/* Error */}
+          {/* Feedback */}
           {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
-              {error}
+            <div className={`mb-4 flex flex-col gap-3 rounded-lg border p-3 text-sm sm:flex-row sm:items-center sm:justify-between ${
+              isPositiveFeedback
+                ? "border-success/50 bg-success/10 text-success"
+                : "border-destructive/50 bg-destructive/10 text-destructive"
+            }`}>
+              <div className="flex items-center gap-2">
+                {isPositiveFeedback ? <CheckCircle2 className="h-4 w-4 flex-shrink-0" /> : <AlertCircle className="h-4 w-4 flex-shrink-0" />}
+                <span>{error}</span>
+              </div>
+              {!isPositiveFeedback && (
+                <Button variant="outline" size="sm" onClick={() => void loadAppointments()}>
+                  Tentar novamente
+                </Button>
+              )}
             </div>
           )}
+
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="grid gap-3 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Antes da consulta</p>
+                <p className="text-sm text-muted-foreground">
+                  Chegue com antecedência, leve documento com foto, avise se não puder comparecer e mantenha seu telefone disponível.
+                </p>
+              </div>
+              <Button variant="outline" asChild>
+                <Link to="/dashboard/beneficiario/mensagens">Ver mensagens</Link>
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Tabs */}
           <Tabs defaultValue="upcoming" className="space-y-6">
@@ -270,23 +322,35 @@ export default function ConsultasPage() {
                             </a>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
+                        <div className="flex flex-col gap-2 sm:min-w-[220px] sm:items-end">
                           {getStatusBadge(apt.status)}
                           {(apt.status === "scheduled" || apt.status === "rescheduled" || apt.status === "confirmed") && (
                             <>
                               {apt.canConfirm !== false && apt.status !== "confirmed" && (
-                                <Button size="sm" className="gap-2 bg-success text-success-foreground hover:bg-success/90" onClick={() => handleConfirmAppointment(apt.id)} disabled={confirmingAppointmentId === apt.id}>
+                                <Button size="sm" className="w-full gap-2 bg-success text-success-foreground hover:bg-success/90" onClick={() => handleConfirmAppointment(apt.id)} disabled={confirmingAppointmentId === apt.id}>
                                   <CheckCircle2 className="h-4 w-4" />
                                   {confirmingAppointmentId === apt.id ? "Confirmando..." : "Confirmar presenca"}
                                 </Button>
                               )}
                               {apt.canReschedule !== false && (
-                                <Button size="sm" variant="outline" onClick={() => handleReschedule(apt.id)} disabled={requestingAppointmentId === apt.id}>
-                                  {requestingAppointmentId === apt.id ? "Enviando..." : "Reagendar"}
+                                <Button size="sm" variant="outline" className="w-full" onClick={() => openRescheduleDialog(apt.id)} disabled={requestingAppointmentId === apt.id}>
+                                  {requestingAppointmentId === apt.id ? "Enviando..." : "Solicitar reagendamento"}
                                 </Button>
                               )}
                             </>
                           )}
+                          <Button size="sm" variant="outline" className="w-full" asChild>
+                            <Link to="/dashboard/beneficiario/mensagens">
+                              <MessageSquare className="mr-2 h-4 w-4" />
+                              Ver mensagens
+                            </Link>
+                          </Button>
+                          <Button size="sm" variant="ghost" className="w-full" asChild>
+                            <Link to="/dashboard/beneficiario/documentos">
+                              <FileText className="mr-2 h-4 w-4" />
+                              Ver documentos
+                            </Link>
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -342,6 +406,38 @@ export default function ConsultasPage() {
           </Tabs>
         </div>
       </main>
+
+      <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Solicitar reagendamento</DialogTitle>
+            <DialogDescription>
+              Informe o motivo para que a equipe avalie uma nova data de consulta.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Textarea
+              value={rescheduleReason}
+              onChange={(event) => {
+                setRescheduleReason(event.target.value)
+                setRescheduleError(null)
+              }}
+              placeholder="Explique brevemente o motivo do reagendamento..."
+              className="min-h-[120px]"
+            />
+            {rescheduleError && <p className="text-sm text-destructive">{rescheduleError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleDialogOpen(false)} disabled={requestingAppointmentId !== null}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void handleReschedule()} disabled={requestingAppointmentId !== null || !rescheduleReason.trim()}>
+              {requestingAppointmentId !== null && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {requestingAppointmentId !== null ? "Enviando..." : "Enviar solicitação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <HelpButton />
     </div>

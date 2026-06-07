@@ -9,7 +9,7 @@ import { AlertBanner } from "@/components/ui/alert-banner"
 import { downloadFromApi } from "@/lib/file-download"
 import { apiFetch } from "@/lib/api"
 import { getToken, getUser } from "@/lib/auth"
-import { AlertCircle, ArrowLeft, Download, FileText, FolderOpen, Loader2 } from "lucide-react"
+import { AlertCircle, ArrowLeft, Download, FileText, FolderOpen, Loader2, Calendar, MessageSquare } from "lucide-react"
 
 interface DocumentItem {
   id: string
@@ -116,6 +116,31 @@ export default function BeneficiarioDocumentosPage() {
           </div>
 
           {error && <AlertBanner type="error" title="Erro" message={error} dismissible onDismiss={() => setError(null)} className="mb-4" />}
+
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold text-foreground">Documentos do atendimento</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Consulte arquivos gerados para seu caso e leve os documentos solicitados nas próximas consultas.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" asChild>
+                  <Link to="/dashboard/beneficiario/consultas">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Consultas
+                  </Link>
+                </Button>
+                <Button variant="ghost" asChild>
+                  <Link to="/dashboard/beneficiario/mensagens">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Mensagens
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {documents.length === 0 ? (
             <Card>
