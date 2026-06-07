@@ -316,7 +316,9 @@ export default function AdminMensagensPage() {
                     <div className="grid gap-6 lg:grid-cols-3">
                       <div className="space-y-3 lg:col-span-1">
                         {filteredThreads.length === 0 ? (
-                          <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">Nenhuma conversa encontrada.</div>
+                          <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+                            Nenhuma conversa encontrada. Ajuste a busca ou volte para aprovacoes e beneficiarios para abrir um caso relacionado.
+                          </div>
                         ) : (
                           filteredThreads.map((thread) => (
                             <button
@@ -342,7 +344,9 @@ export default function AdminMensagensPage() {
 
                       <div className="lg:col-span-2">
                         {!activeThread ? (
-                          <div className="rounded-xl border bg-card p-10 text-center text-muted-foreground">Selecione uma conversa.</div>
+                          <div className="rounded-xl border bg-card p-10 text-center text-muted-foreground">
+                            Selecione uma conversa para ver o historico e responder com seguranca.
+                          </div>
                         ) : (
                           <div className="space-y-4">
                             <div className="rounded-xl border bg-card p-4">
@@ -358,7 +362,9 @@ export default function AdminMensagensPage() {
                               {isLoadingMessages ? (
                                 <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
                               ) : messages.length === 0 ? (
-                                <div className="py-10 text-center text-sm text-muted-foreground">Nenhuma mensagem nesta conversa.</div>
+                                <div className="py-10 text-center text-sm text-muted-foreground">
+                                  Nenhuma mensagem nesta conversa. Envie uma orientacao curta quando houver uma acao pendente.
+                                </div>
                               ) : (
                                 messages.map((message, index) => {
                                   const isMine = message.senderRole === "admin" || message.senderRole === "ADMIN"

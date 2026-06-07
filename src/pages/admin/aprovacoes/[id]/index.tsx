@@ -129,7 +129,7 @@ export default function DetalheSolicitacaoPage() {
         setSpecialtyFilter(currentSpecialty || "all")
         setAssignedVolunteerId(data.voluntario.id ? String(data.voluntario.id) : "")
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao carregar detalhes")
+        setError("Nao foi possivel carregar os detalhes da solicitacao agora. Volte para aprovacoes ou tente novamente.")
       } finally {
         setIsLoading(false)
       }
@@ -193,7 +193,7 @@ export default function DetalheSolicitacaoPage() {
       }
       throw new Error('Este anexo não possui arquivo disponível para download.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao baixar anexo')
+      setError("Nao foi possivel baixar este anexo agora. Tente novamente em instantes.")
     }
   }
 
@@ -257,7 +257,7 @@ export default function DetalheSolicitacaoPage() {
       setDialogOpen(false)
       navigate("/admin/aprovacoes")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao processar acao")
+      setError("Nao foi possivel concluir a decisao agora. Confira os dados e tente novamente.")
     } finally {
       setIsSubmitting(false)
     }
@@ -361,6 +361,30 @@ export default function DetalheSolicitacaoPage() {
           </Button>
         </div>
       </div>
+
+      <Card className="border-primary/20">
+        <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Proxima acao recomendada</p>
+            {solicitacao.status === "aprovado" || solicitacao.status === "rejeitado" ? (
+              <p className="font-semibold text-foreground">Solicitacao ja decidida. Use esta tela para consulta e anexos.</p>
+            ) : (
+              <>
+                <p className="font-semibold text-foreground">Revise dados clinicos, anexos e voluntario antes de decidir.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Para rejeitar ou pedir informacoes, informe um motivo claro para quem receber a resposta.
+                </p>
+              </>
+            )}
+          </div>
+          <Button variant="outline" asChild>
+            <Link to="/admin/aprovacoes">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para fila
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Main Content */}
       <div className="grid gap-6 lg:grid-cols-3">

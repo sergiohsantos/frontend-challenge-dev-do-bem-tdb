@@ -7,13 +7,26 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertBanner } from "@/components/ui/alert-banner"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { DocumentUploadPanel, getFriendlyUploadError, type DocumentUploadFormState } from "@/components/shared/document-upload-panel"
 import { apiFetch, apiUpload } from "@/lib/api"
 import { downloadFromApi } from "@/lib/file-download"
 import { getToken } from "@/lib/auth"
 import { listAdminVolunteerOptions, type AdminVolunteerOption } from "@/services/admin-volunteers.service"
-import { ArrowLeft, Calendar, Download, FileText, Loader2, Mail, MapPin, Phone, UserCheck } from "lucide-react"
+import { getAdminWhatsAppStatus, sendAIRiskWhatsAppAlert, type AdminWhatsAppStatus } from "@/services/admin-whatsapp.service"
+import { getAIReminderPreview, getAIRiskDashboard } from "@/services/java-api/ai-risk.service"
+import type { AIRiskItem } from "@/types/java-api"
+import { ArrowLeft, Calendar, Download, FileText, Loader2, Mail, MapPin, MessageCircle, Phone, Send, UserCheck } from "lucide-react"
+import { toast } from "sonner"
 
 type BeneficiaryDetail = {
   id: number
@@ -97,6 +110,15 @@ const initialUploadState: DocumentUploadFormState = {
   visibleToBeneficiary: false,
 }
 
+function formatRiskPercent(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-"
+  return `${Math.round(value * 100)}%`
+}
+
+function safeReminderFallback() {
+  return "Ola! Passando para lembrar da sua proxima consulta pela Turma do Bem. Sua presenca e muito importante. Se precisar reagendar, responda esta mensagem ou acesse o portal."
+}
+
 export default function AdminBeneficiarioDetailPage() {
   const params = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
@@ -112,16 +134,24 @@ export default function AdminBeneficiarioDetailPage() {
   const [selectedVolunteerId, setSelectedVolunteerId] = useState("")
   const [isAssigningVolunteer, setIsAssigningVolunteer] = useState(false)
   const [uploadState, setUploadState] = useState<DocumentUploadFormState>(initialUploadState)
+  const [riskItem, setRiskItem] = useState<AIRiskItem | null>(null)
+  const [whatsAppStatus, setWhatsAppStatus] = useState<AdminWhatsAppStatus | null>(null)
+  const [riskMessage, setRiskMessage] = useState("")
+  const [isRiskDialogOpen, setIsRiskDialogOpen] = useState(false)
+  const [isPreparingRiskMessage, setIsPreparingRiskMessage] = useState(false)
+  const [isSendingRiskWhatsApp, setIsSendingRiskWhatsApp] = useState(false)
 
   useEffect(() => {
     const loadDetail = async () => {
       try {
         const token = getToken()
         if (!token) return
-        const [detailResult, docsResult, volunteersResult] = await Promise.allSettled([
+        const [detailResult, docsResult, volunteersResult, riskResult, whatsAppResult] = await Promise.allSettled([
           apiFetch<BeneficiaryDetail>(`/api/admin/beneficiaries/${params.id}`, {}, token),
           apiFetch<unknown>(`/api/admin/beneficiaries/${params.id}/documents`, {}, token),
           listAdminVolunteerOptions(),
+          getAIRiskDashboard({ days: 30, limit: 100, classification: "all" }),
+          getAdminWhatsAppStatus(),
         ])
         if (detailResult.status === "rejected") {
           throw detailResult.reason
@@ -134,6 +164,12 @@ export default function AdminBeneficiarioDetailPage() {
         setSelectedVolunteerId(data.voluntario?.id ? String(data.voluntario.id) : "")
         setDocuments(source.map((item) => normalizeDocument(item as Record<string, unknown>)).filter((item) => item.id > 0))
         setVolunteers(volunteerOptions.filter((volunteer) => volunteer.status !== "inativo"))
+        if (riskResult.status === "fulfilled") {
+          setRiskItem((riskResult.value.items || []).find((item) => item.beneficiaryId === data.id) || null)
+        }
+        if (whatsAppResult.status === "fulfilled") {
+          setWhatsAppStatus(whatsAppResult.value)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar beneficiário")
       } finally {
@@ -211,6 +247,40 @@ export default function AdminBeneficiarioDetailPage() {
     }
   }
 
+  const openRiskWhatsAppDialog = async () => {
+    if (!riskItem) return
+    try {
+      setIsPreparingRiskMessage(true)
+      const preview = await getAIReminderPreview(riskItem.appointmentId)
+      setRiskMessage(preview.message || safeReminderFallback())
+    } catch {
+      setRiskMessage(safeReminderFallback())
+    } finally {
+      setIsPreparingRiskMessage(false)
+      setIsRiskDialogOpen(true)
+    }
+  }
+
+  const handleSendRiskWhatsApp = async () => {
+    if (!riskItem || !riskMessage.trim()) return
+    try {
+      setIsSendingRiskWhatsApp(true)
+      const response = await sendAIRiskWhatsAppAlert({
+        beneficiary_id: riskItem.beneficiaryId,
+        appointment_id: riskItem.appointmentId,
+        message: riskMessage.trim(),
+        risk_classification: riskItem.classification,
+        risk_score: riskItem.risk,
+      })
+      toast.success(response.message || "Mensagem enviada com sucesso pelo WhatsApp.")
+      setIsRiskDialogOpen(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Nao foi possivel enviar a mensagem pelo WhatsApp.")
+    } finally {
+      setIsSendingRiskWhatsApp(false)
+    }
+  }
+
   return (
     <div className="flex min-h-screen">
       <AdminSidebar />
@@ -238,6 +308,68 @@ export default function AdminBeneficiarioDetailPage() {
                 </div>
                 <Badge variant="outline">{detail.status || "sem status"}</Badge>
               </div>
+
+              <Card className="border-primary/20">
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <CardTitle>Risco operacional IA</CardTitle>
+                    <CardDescription>Alerta preventivo para proximas consultas. A decisao final continua sendo do Admin.</CardDescription>
+                  </div>
+                  <Button variant="outline" asChild>
+                    <Link to="/admin/ia-preditiva">Ver Central de IA</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {riskItem ? (
+                    <div className="space-y-4">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-lg border p-3">
+                          <p className="text-xs text-muted-foreground">Classificacao</p>
+                          <p className="font-semibold">{riskItem.classification || "Sem classificacao"}</p>
+                        </div>
+                        <div className="rounded-lg border p-3">
+                          <p className="text-xs text-muted-foreground">Risco interno</p>
+                          <p className="font-semibold">{formatRiskPercent(riskItem.risk)}</p>
+                        </div>
+                        <div className="rounded-lg border p-3">
+                          <p className="text-xs text-muted-foreground">Consulta</p>
+                          <p className="font-semibold">{riskItem.appointmentDate || "Sem data"} {riskItem.appointmentTime || ""}</p>
+                        </div>
+                        <div className="rounded-lg border p-3">
+                          <p className="text-xs text-muted-foreground">Telefone</p>
+                          <p className="font-semibold">{riskItem.beneficiaryPhoneMasked || "Nao informado"}</p>
+                        </div>
+                      </div>
+                      <div className="rounded-lg border p-3">
+                        <p className="text-sm font-medium">Motivos operacionais</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {(riskItem.reasons || []).map((reason) => <Badge key={reason} variant="outline">{reason}</Badge>)}
+                        </div>
+                        <p className="mt-3 text-sm text-muted-foreground">{riskItem.recommendation || "Acompanhar o caso na fila operacional."}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" asChild>
+                          <Link to={`/admin/mensagens?thread=case-public-${riskItem.caseId}`}>
+                            <MessageCircle className="mr-2 h-4 w-4" />
+                            Abrir mensagens
+                          </Link>
+                        </Button>
+                        <Button
+                          onClick={() => void openRiskWhatsAppDialog()}
+                          disabled={isPreparingRiskMessage || !riskItem.beneficiaryPhoneMasked || whatsAppStatus?.enabled !== true}
+                        >
+                          {isPreparingRiskMessage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                          Enviar WhatsApp
+                        </Button>
+                      </div>
+                      {!riskItem.beneficiaryPhoneMasked ? <p className="text-sm text-warning">Beneficiario sem telefone cadastrado para envio.</p> : null}
+                      {whatsAppStatus?.enabled !== true ? <p className="text-sm text-warning">Integracao WhatsApp esta desabilitada no momento.</p> : null}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhum risco operacional identificado para as proximas consultas.</p>
+                  )}
+                </CardContent>
+              </Card>
 
               <Tabs defaultValue="cadastro" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-4 lg:w-[720px]">
@@ -384,6 +516,43 @@ export default function AdminBeneficiarioDetailPage() {
           )}
         </main>
       </div>
+
+      <Dialog open={isRiskDialogOpen} onOpenChange={(open) => !open && !isSendingRiskWhatsApp ? setIsRiskDialogOpen(false) : undefined}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Enviar alerta pelo WhatsApp</DialogTitle>
+            <DialogDescription>Revise a mensagem antes de enviar para o beneficiario.</DialogDescription>
+          </DialogHeader>
+          {riskItem ? (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Beneficiario</p>
+                  <p className="font-medium">{detail?.nome}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Consulta</p>
+                  <p className="font-medium">{riskItem.appointmentDate || "Sem data"} {riskItem.appointmentTime || ""}</p>
+                </div>
+              </div>
+              <div className="rounded-lg border border-accent/20 bg-accent/10 p-3 text-sm text-accent-foreground">
+                Envio preventivo e operacional. Nao informe diagnostico, score de risco ou dados clinicos sensiveis.
+              </div>
+              <Textarea value={riskMessage} onChange={(event) => setRiskMessage(event.target.value)} rows={6} />
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRiskDialogOpen(false)} disabled={isSendingRiskWhatsApp}>Cancelar</Button>
+            <Button
+              onClick={() => void handleSendRiskWhatsApp()}
+              disabled={isSendingRiskWhatsApp || !riskItem || !riskMessage.trim() || !riskItem.beneficiaryPhoneMasked || whatsAppStatus?.enabled !== true}
+            >
+              {isSendingRiskWhatsApp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              {isSendingRiskWhatsApp ? "Enviando..." : "Enviar WhatsApp"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

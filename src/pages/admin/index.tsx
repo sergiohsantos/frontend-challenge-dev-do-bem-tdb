@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/chart"
 import { apiFetch, type AdminDashboard } from "@/lib/api"
 import { getToken } from "@/lib/auth"
+import { getAIRiskDashboard } from "@/services/java-api/ai-risk.service"
+import type { AIRiskSummary } from "@/types/java-api"
 import {
   LineChart,
   Line,
@@ -86,6 +88,18 @@ const kpiDefinitions = [
   },
 ]
 
+const operationalRoutes = [
+  { label: "Aprovacoes e laudos", href: "/admin/aprovacoes", hint: "Decidir solicitacoes pendentes antes que a fila cresca." },
+  { label: "Triagem", href: "/admin/triagem", hint: "Revisar leads e definir o tipo de atendimento antes do encaminhamento." },
+  { label: "Onboarding", href: "/admin/onboarding", hint: "Conferir documentos e habilitar cadastros quando o checklist estiver completo." },
+  { label: "Mensagens", href: "/admin/mensagens", hint: "Responder conversas que travam o andamento dos casos." },
+  { label: "Indicadores", href: "/admin/relatorios", hint: "Acompanhar relatorios, regioes e satisfacao para decidir proximas acoes." },
+]
+
+function normalizeText(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+}
+
 // Program definitions for display
 const programDefinitions = [
   { key: "dentistas", name: "Dentistas do Bem", icon: Smile, color: "bg-primary" },
@@ -102,6 +116,8 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [aiSummary, setAiSummary] = useState<AIRiskSummary | null>(null)
+  const [aiSummaryError, setAiSummaryError] = useState<string | null>(null)
 
   // Check auth immediately on mount
   useEffect(() => {
@@ -135,6 +151,23 @@ export default function AdminDashboardPage() {
     }
 
     loadDashboard()
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const loadAIAlerts = async () => {
+      try {
+        const response = await getAIRiskDashboard({ days: 14, limit: 20, classification: "all" })
+        setAiSummary(response.summary)
+        setAiSummaryError(null)
+      } catch {
+        setAiSummary(null)
+        setAiSummaryError("Alertas de IA indisponiveis agora.")
+      }
+    }
+
+    void loadAIAlerts()
   }, [isAuthenticated])
 
   // Extract API data with safe defaults and compatibility aliases
@@ -172,6 +205,26 @@ export default function AdminDashboardPage() {
     ...item,
     score: Number(item.score ?? 0),
   }))
+  const routeStatus = operationalRoutes.map((item) => {
+    const label = normalizeText(item.label)
+    const relatedAlerts = alerts.filter((alert) => {
+      const message = normalizeText(alert.message)
+      if (label.includes("aprovacoes")) return message.includes("aprov") || message.includes("laudo")
+      if (label.includes("triagem")) return message.includes("triagem") || message.includes("lead")
+      if (label.includes("onboarding")) return message.includes("onboarding") || message.includes("document")
+      if (label.includes("mensagens")) return message.includes("mensagem") || message.includes("conversa")
+      return message.includes("indicador") || message.includes("relatorio") || message.includes("satisfacao")
+    })
+    return {
+      ...item,
+      countLabel: relatedAlerts.length > 0 ? `${relatedAlerts.length} alerta(s)` : "Abrir",
+      hasAlert: relatedAlerts.length > 0,
+    }
+  })
+  const nextAction =
+    routeStatus.find((item) => item.hasAlert) ||
+    (pipeline.length > 0 ? routeStatus[1] : null) ||
+    (insights.length > 0 ? routeStatus[4] : routeStatus[0])
 
   // Don't render anything until auth check completes
   if (!isAuthenticated) {
@@ -288,6 +341,136 @@ export default function AdminDashboardPage() {
                 )
               })}
             </div>
+
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle>Central de Operacao</CardTitle>
+                  <CardDescription>Fila de trabalho do Admin com atalhos para decidir, orientar e acompanhar casos.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 md:grid-cols-2">
+                  {routeStatus.map((item) => (
+                    <div key={item.href} className="rounded-lg border p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground">{item.label}</p>
+                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.hint}</p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${item.hasAlert ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"}`}>
+                          {item.countLabel}
+                        </span>
+                      </div>
+                      <Button variant="outline" size="sm" className="mt-4 w-full justify-between" asChild>
+                        <Link to={item.href}>
+                          Abrir area
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card className="min-w-0 border-primary/20">
+                <CardHeader>
+                  <CardTitle>Proxima acao recomendada</CardTitle>
+                  <CardDescription>Prioridade simples: aprovacoes, triagem, onboarding, mensagens e indicadores.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="rounded-lg bg-primary/5 p-4">
+                    <p className="text-sm text-muted-foreground">Foque agora em</p>
+                    <p className="mt-1 text-lg font-semibold">{nextAction.label}</p>
+                    <p className="mt-2 text-sm text-muted-foreground">{nextAction.hint}</p>
+                  </div>
+                  {alerts.length > 0 ? (
+                    <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
+                      <p className="font-medium">Status do sistema</p>
+                      <p className="mt-1 text-muted-foreground">{alerts[0]?.message}</p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border p-3 text-sm text-muted-foreground">
+                      Nenhum alerta critico no momento. Continue acompanhando a esteira operacional.
+                    </div>
+                  )}
+                  <Button className="w-full justify-between" asChild>
+                    <Link to={nextAction.href}>
+                      Ir para proxima acao
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="min-w-0">
+              <CardHeader>
+                <CardTitle>Esteira Operacional TDB</CardTitle>
+                <CardDescription>Visao simples das etapas retornadas pelo dashboard. Use como leitura de status, sem alterar etapas por aqui.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pipeline.length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {pipeline.map((item, index) => (
+                      <div key={`operational-${item.__key}`} className="rounded-lg border p-4">
+                        <div className="mb-3 flex items-center gap-2">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                            {index + 1}
+                          </span>
+                          <p className="min-w-0 truncate font-medium">{item.stage}</p>
+                        </div>
+                        <p className="text-2xl font-bold">{item.count.toLocaleString("pt-BR")}</p>
+                        <p className="text-xs text-muted-foreground">caso(s) nesta etapa</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                    A esteira ainda nao retornou etapas. Tente novamente mais tarde ou acompanhe aprovacoes e triagem.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="min-w-0 border-primary/20">
+              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle>Alertas de IA</CardTitle>
+                  <CardDescription>Resumo operacional de risco de falta nas proximas consultas.</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/admin/ia-preditiva">
+                    Ver Central de Priorizacao IA
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {aiSummary ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-lg border p-4">
+                      <p className="text-sm text-muted-foreground">Alto risco</p>
+                      <p className="text-2xl font-bold text-destructive">{aiSummary.highRisk}</p>
+                    </div>
+                    <div className="rounded-lg border p-4">
+                      <p className="text-sm text-muted-foreground">Medio risco</p>
+                      <p className="text-2xl font-bold text-warning">{aiSummary.mediumRisk}</p>
+                    </div>
+                    <div className="rounded-lg border p-4">
+                      <p className="text-sm text-muted-foreground">Nao confirmados</p>
+                      <p className="text-2xl font-bold">{aiSummary.unconfirmed}</p>
+                    </div>
+                    <div className="rounded-lg border p-4">
+                      <p className="text-sm text-muted-foreground">Media de risco</p>
+                      <p className="text-2xl font-bold">{aiSummary.averageRisk === null ? "-" : `${Math.round(aiSummary.averageRisk * 100)}%`}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    {aiSummaryError || "Carregando alertas de IA..."}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Charts Row 1 */}
             <div className="grid min-w-0 gap-6 lg:grid-cols-2">

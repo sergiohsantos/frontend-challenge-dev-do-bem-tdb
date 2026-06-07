@@ -39,6 +39,21 @@ function isChecklistComplete(checklist?: ChecklistValidationPayload): boolean {
   return Object.values(checklist).every(Boolean)
 }
 
+function getChecklistPendencies(checklist?: ChecklistValidationPayload): string[] {
+  if (!checklist) return ["documento do responsavel", "comprovante de residencia", "autorizacao"]
+  const pendencies = []
+  if (!checklist.documentoResponsavelOk) pendencies.push("documento do responsavel")
+  if (!checklist.comprovanteResidenciaOk) pendencies.push("comprovante de residencia")
+  if (!checklist.autorizacaoOk) pendencies.push("autorizacao")
+  return pendencies
+}
+
+function getOnboardingNextAction(complete: boolean, validation?: ChecklistValidationResult): string {
+  if (validation?.valido) return "Checklist validado. Habilite o cadastro para seguir para atendimento."
+  if (complete) return "Todos os itens foram marcados. Valide o checklist para confirmar no backend."
+  return "Marque todos os documentos obrigatorios antes de validar."
+}
+
 export default function AdminOnboardingPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [search, setSearch] = useState("")
@@ -119,9 +134,14 @@ export default function AdminOnboardingPage() {
   }
 
   async function handleValidate(lead: LeadBeneficiario) {
+    const payload = checklists[lead.id] || DEFAULT_CHECKLIST
+    if (!isChecklistComplete(payload)) {
+      toast.error(`Complete o checklist antes de validar. Faltam: ${getChecklistPendencies(payload).join(", ")}.`)
+      return
+    }
+
     try {
       setBusyLeadId(lead.id)
-      const payload = checklists[lead.id] || DEFAULT_CHECKLIST
       const result = await validarChecklist(lead.id, payload)
       setValidationResults((current) => ({ ...current, [lead.id]: result }))
 
@@ -277,6 +297,8 @@ export default function AdminOnboardingPage() {
                   const validation = validationResults[lead.id]
                   const isBusy = busyLeadId === lead.id
                   const complete = isChecklistComplete(checklist)
+                  const pendencies = getChecklistPendencies(checklist)
+                  const nextAction = getOnboardingNextAction(complete, validation)
 
                   return (
                     <div key={lead.id} className="rounded-xl border border-border p-4">
@@ -297,9 +319,17 @@ export default function AdminOnboardingPage() {
                           <p className="text-sm text-muted-foreground">Status atual: {lead.status}</p>
                         </div>
 
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm lg:max-w-sm">
+                          <p className="font-medium text-foreground">Proxima acao recomendada</p>
+                          <p className="mt-1 text-muted-foreground">{nextAction}</p>
+                          {!complete ? (
+                            <p className="mt-1 text-muted-foreground">Pendencias: {pendencies.join(", ")}.</p>
+                          ) : null}
+                        </div>
+
                         <div className="flex flex-wrap gap-2">
-                          <Button variant="outline" size="sm" onClick={() => void handleValidate(lead)} disabled={isBusy}>
-                            {isBusy ? "Processando..." : "Validar checklist"}
+                          <Button variant="outline" size="sm" onClick={() => void handleValidate(lead)} disabled={isBusy || !complete}>
+                            {isBusy ? "Processando..." : complete ? "Validar checklist" : "Complete o checklist"}
                           </Button>
                           <Button size="sm" onClick={() => void handleConvert(lead.id)} disabled={isBusy || !validation?.valido}>
                             {isBusy ? "Processando..." : "Habilitar cadastro"}

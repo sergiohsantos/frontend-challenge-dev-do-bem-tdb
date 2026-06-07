@@ -165,6 +165,24 @@ function getTipoAtendimentoLabel(value?: string): string {
   return ATENDIMENTO_OPTIONS.find((option) => option.value === value)?.label || "Nao definido"
 }
 
+function getLeadNextAction(lead: LeadBeneficiario, hasTriagem: boolean, hasSuggestion: boolean): string {
+  if (!hasTriagem) return "Registre a triagem inicial antes de pedir sugestao de voluntario."
+  if (lead.status === "TRIADO" && !hasSuggestion) return "Selecione o tipo de atendimento e clique em sugerir voluntario."
+  if (hasSuggestion && lead.status !== "APTO_ATENDIMENTO") return "Revise a justificativa do match antes de vincular o voluntario."
+  if (lead.status === "APTO_ATENDIMENTO") return "Beneficiario apto para seguir na jornada de atendimento."
+  return "Revise os dados do beneficiario e avance para a proxima etapa segura."
+}
+
+function getMatchExplanation(suggestion: EncaminhamentoSugerido): string {
+  const reasons = []
+  if (suggestion.regiaoCompativel) reasons.push("regiao compativel")
+  if (suggestion.onlinePermitido) reasons.push("atendimento online permitido")
+  if (suggestion.score !== undefined) reasons.push(`score ${suggestion.score}`)
+  return reasons.length > 0
+    ? `Motivo da sugestao: ${reasons.join(", ")}.`
+    : "Sugestao retornada pela regra atual de encaminhamento."
+}
+
 export default function AdminTriagemPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [search, setSearch] = useState("")
@@ -625,6 +643,7 @@ export default function AdminTriagemPage() {
                   const suggestion = suggestions[lead.id]
                   const isBusy = actionLeadId === lead.id
                   const tipoAtendimento = tipoAtendimentoByLeadId[lead.id] || normalizeTipoAtendimento(triagem?.especialidadeDesejada || lead.necessidadeInicial || lead.programa)
+                  const nextAction = getLeadNextAction(lead, Boolean(triagem), Boolean(suggestion))
 
                   return (
                     <div key={lead.id} className="rounded-xl border border-border p-4">
@@ -645,6 +664,10 @@ export default function AdminTriagemPage() {
                           <p className="text-sm text-muted-foreground">
                             Vulnerabilidade social: {formatBooleanLabel(lead.vulnerabilidadeSocial)}
                           </p>
+                          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                            <p className="font-medium text-foreground">Proxima acao recomendada</p>
+                            <p className="mt-1 text-muted-foreground">{nextAction}</p>
+                          </div>
                           {triagem ? (
                             <p className="text-sm text-muted-foreground">
                               Triagem: urgência {triagem.urgenciaOdontologica || "-"} / {triagem.prioridade || "sem prioridade"}
@@ -720,6 +743,7 @@ export default function AdminTriagemPage() {
                               <p className="mt-1 text-muted-foreground">
                                 Tipo de atendimento: {getTipoAtendimentoLabel(tipoAtendimento)}
                               </p>
+                              <p className="mt-1 text-muted-foreground">{getMatchExplanation(suggestion)}</p>
                               {suggestion.observacoes ? (
                                 <p className="mt-1 text-muted-foreground">Observacoes: {suggestion.observacoes}</p>
                               ) : null}
