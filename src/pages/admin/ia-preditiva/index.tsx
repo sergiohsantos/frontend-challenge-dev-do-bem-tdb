@@ -7,31 +7,45 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock3,
+  Copy,
   Database,
   Eye,
   Gauge,
   Loader2,
   MessageCircle,
   RefreshCcw,
+  Send,
   ShieldCheck,
   Sparkles,
   TrendingUp,
   Users,
 } from "lucide-react"
+import { Link } from "react-router-dom"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
 import { getAIHealth, getAIModelStatus, getAIReady, predictNoShowRisk } from "@/services/aiApi"
+import { getAdminWhatsAppStatus, sendAIRiskWhatsAppAlert, type AdminWhatsAppStatus } from "@/services/admin-whatsapp.service"
 import { getAIReminderPreview, getAIRiskDashboard } from "@/services/java-api/ai-risk.service"
 import type { AIHealthResponse, AIModelStatusResponse, AIReadyResponse, PredictRequest, PredictResponse } from "@/types/ai"
 import type { AIReminderPreviewResponse, AIRiskDashboardParams, AIRiskDashboardResponse, AIRiskItem } from "@/types/java-api"
+import { toast } from "sonner"
 
 const INITIAL_FORM: PredictRequest = {
   idade: 15,
@@ -126,6 +140,25 @@ function statValue(value?: number | null): string {
   return value.toLocaleString("pt-BR")
 }
 
+function fallbackReminderMessage(): string {
+  return "Ola! Passando para lembrar da sua proxima consulta pela Turma do Bem. Sua presenca e muito importante. Se precisar reagendar, responda esta mensagem ou acesse o portal."
+}
+
+function riskActionPlan(classification?: string | null): string[] {
+  const normalized = classification?.toUpperCase()
+  if (normalized === "ALTO") {
+    return ["Solicitar confirmacao", "Enviar alerta pelo WhatsApp", "Verificar documentos pendentes", "Acompanhar retorno do beneficiario"]
+  }
+  if (normalized === "MEDIO") {
+    return ["Enviar lembrete preventivo", "Acompanhar confirmacao", "Revisar proximidade da consulta"]
+  }
+  return ["Manter fluxo normal", "Usar lembrete padrao, se aplicavel"]
+}
+
+function canUsePhone(item?: AIRiskItem | null): boolean {
+  return Boolean(item?.beneficiaryPhoneMasked)
+}
+
 export default function AdminIAPreditivaPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [health, setHealth] = useState<AIHealthResponse | null>(null)
@@ -136,7 +169,13 @@ export default function AdminIAPreditivaPage() {
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [filters, setFilters] = useState<AIRiskDashboardParams>(INITIAL_FILTERS)
   const [reminderPreview, setReminderPreview] = useState<AIReminderPreviewResponse | null>(null)
+  const [previewByAppointment, setPreviewByAppointment] = useState<Record<number, AIReminderPreviewResponse>>({})
   const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null)
+  const [whatsAppStatus, setWhatsAppStatus] = useState<AdminWhatsAppStatus | null>(null)
+  const [whatsAppStatusError, setWhatsAppStatusError] = useState<string | null>(null)
+  const [sendDialogItem, setSendDialogItem] = useState<AIRiskItem | null>(null)
+  const [sendMessage, setSendMessage] = useState("")
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false)
   const [form, setForm] = useState<PredictRequest>(INITIAL_FORM)
   const [prediction, setPrediction] = useState<PredictResponse | null>(null)
   const [isStatusLoading, setIsStatusLoading] = useState(true)
@@ -147,19 +186,25 @@ export default function AdminIAPreditivaPage() {
   async function loadAIStatus() {
     setIsStatusLoading(true)
     setStatusError(null)
+    setWhatsAppStatusError(null)
 
-    const [healthResult, readyResult, modelResult] = await Promise.allSettled([
+    const [healthResult, readyResult, modelResult, whatsAppResult] = await Promise.allSettled([
       getAIHealth(),
       getAIReady(),
       getAIModelStatus(),
+      getAdminWhatsAppStatus(),
     ])
 
     setHealth(healthResult.status === "fulfilled" ? healthResult.value : null)
     setReady(readyResult.status === "fulfilled" ? readyResult.value : null)
     setModelStatus(modelResult.status === "fulfilled" ? modelResult.value : null)
+    setWhatsAppStatus(whatsAppResult.status === "fulfilled" ? whatsAppResult.value : null)
 
     if (healthResult.status === "rejected" || readyResult.status === "rejected" || modelResult.status === "rejected") {
       setStatusError("Alguns indicadores da API de IA nao puderam ser carregados agora.")
+    }
+    if (whatsAppResult.status === "rejected") {
+      setWhatsAppStatusError("Nao foi possivel consultar o status do WhatsApp agora.")
     }
 
     setIsStatusLoading(false)
@@ -236,14 +281,70 @@ export default function AdminIAPreditivaPage() {
       setPreviewLoadingId(appointmentId)
       const response = await getAIReminderPreview(appointmentId)
       setReminderPreview(response)
+      setPreviewByAppointment((current) => ({ ...current, [appointmentId]: response }))
+      toast.success("Pre-visualizacao carregada.")
     } catch (error) {
-      setReminderPreview({
+      const fallback = {
         appointmentId,
         channel: "whatsapp",
         message: error instanceof Error ? error.message : "Nao foi possivel gerar a pre-visualizacao agora.",
-      })
+      }
+      setReminderPreview(fallback)
+      setPreviewByAppointment((current) => ({ ...current, [appointmentId]: fallback }))
     } finally {
       setPreviewLoadingId(null)
+    }
+  }
+
+  async function copyMessage(message: string) {
+    try {
+      await navigator.clipboard.writeText(message)
+      toast.success("Mensagem copiada.")
+    } catch {
+      toast.error("Nao foi possivel copiar a mensagem automaticamente.")
+    }
+  }
+
+  async function openSendDialog(item: AIRiskItem) {
+    const existingPreview = previewByAppointment[item.appointmentId]
+    if (existingPreview?.message) {
+      setSendMessage(existingPreview.message)
+      setSendDialogItem(item)
+      return
+    }
+    try {
+      setPreviewLoadingId(item.appointmentId)
+      const response = await getAIReminderPreview(item.appointmentId)
+      setReminderPreview(response)
+      setPreviewByAppointment((current) => ({ ...current, [item.appointmentId]: response }))
+      setSendMessage(response.message || fallbackReminderMessage())
+      setSendDialogItem(item)
+    } catch {
+      setSendMessage(fallbackReminderMessage())
+      setSendDialogItem(item)
+    } finally {
+      setPreviewLoadingId(null)
+    }
+  }
+
+  async function handleSendWhatsApp() {
+    if (!sendDialogItem || !sendMessage.trim()) return
+    try {
+      setIsSendingWhatsApp(true)
+      const response = await sendAIRiskWhatsAppAlert({
+        beneficiary_id: sendDialogItem.beneficiaryId,
+        appointment_id: sendDialogItem.appointmentId,
+        message: sendMessage.trim(),
+        risk_classification: sendDialogItem.classification,
+        risk_score: sendDialogItem.risk,
+      })
+      toast.success(response.message || "Mensagem enviada com sucesso pelo WhatsApp.")
+      setSendDialogItem(null)
+      setSendMessage("")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel enviar a mensagem pelo WhatsApp.")
+    } finally {
+      setIsSendingWhatsApp(false)
     }
   }
 
@@ -376,6 +477,40 @@ export default function AdminIAPreditivaPage() {
                 </div>
               )}
 
+              {(whatsAppStatusError || whatsAppStatus?.warning || whatsAppStatus?.enabled === false) && (
+                <div className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+                  <AlertTriangle className="h-4 w-4" />
+                  {whatsAppStatus?.enabled === false
+                    ? "Integracao WhatsApp esta desabilitada no momento."
+                    : whatsAppStatusError || whatsAppStatus?.warning}
+                </div>
+              )}
+
+              <Card className="border-primary/20 shadow-sm">
+                <CardHeader>
+                  <CardTitle>Plano de acao sugerido</CardTitle>
+                  <CardDescription>A IA apoia a operacao, mas a decisao final continua sendo do administrador.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 md:grid-cols-3">
+                  {["ALTO", "MEDIO", "BAIXO"].map((classification) => {
+                    const palette = riskPalette(classification)
+                    return (
+                      <div key={classification} className="rounded-lg border p-4">
+                        <Badge className={palette.badge}>{classification}</Badge>
+                        <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                          {riskActionPlan(classification).map((action) => (
+                            <li key={action} className="flex gap-2">
+                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                              <span>{action}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+
               {reminderPreview && (
                 <Card className="border-primary/20 shadow-sm">
                   <CardHeader>
@@ -383,10 +518,16 @@ export default function AdminIAPreditivaPage() {
                       <MessageCircle className="h-5 w-5 text-primary" />
                       Pre-visualizacao de lembrete
                     </CardTitle>
-                    <CardDescription>Este endpoint apenas sugere a mensagem. O Java nao envia WhatsApp nesta etapa.</CardDescription>
+                    <CardDescription>Revise a mensagem antes de copiar ou enviar pelo WhatsApp.</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-3">
                     <p className="rounded-lg border border-border bg-muted/30 p-4 text-sm leading-6 text-foreground">{reminderPreview.message}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={() => void copyMessage(reminderPreview.message)}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copiar mensagem
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -416,6 +557,8 @@ export default function AdminIAPreditivaPage() {
                 {items.map((item) => {
                   const palette = riskPalette(item.classification)
                   const risk = item.risk !== null && item.risk !== undefined ? Math.round(item.risk * 100) : null
+                  const itemPreview = previewByAppointment[item.appointmentId]
+                  const messageToCopy = itemPreview?.message || fallbackReminderMessage()
 
                   return (
                     <Card key={item.appointmentId} className={`shadow-sm ${palette.card}`}>
@@ -475,20 +618,32 @@ export default function AdminIAPreditivaPage() {
 
                         <div className="flex flex-wrap gap-2">
                           <Button variant="outline" size="sm" asChild>
-                            <a href={`/admin/beneficiarios/${item.beneficiaryId}`}>
+                            <Link to={`/admin/beneficiarios/${item.beneficiaryId}`}>
                               <Eye className="mr-2 h-4 w-4" />
                               Ver beneficiario
-                            </a>
+                            </Link>
                           </Button>
                           <Button variant="outline" size="sm" asChild>
-                            <a href="/admin/mensagens">
+                            <Link to={`/admin/mensagens?thread=case-public-${item.caseId}`}>
                               <MessageCircle className="mr-2 h-4 w-4" />
                               Abrir mensagens
-                            </a>
+                            </Link>
                           </Button>
                           <Button size="sm" onClick={() => void handleReminderPreview(item.appointmentId)} disabled={previewLoadingId === item.appointmentId}>
                             {previewLoadingId === item.appointmentId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                             Pre-visualizar lembrete
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => void copyMessage(messageToCopy)}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copiar mensagem
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => void openSendDialog(item)}
+                            disabled={previewLoadingId === item.appointmentId || whatsAppStatus?.enabled !== true}
+                          >
+                            {previewLoadingId === item.appointmentId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                            Enviar WhatsApp
                           </Button>
                         </div>
                       </CardContent>
@@ -715,6 +870,95 @@ export default function AdminIAPreditivaPage() {
               </section>
             </TabsContent>
           </Tabs>
+
+          <Dialog open={Boolean(sendDialogItem)} onOpenChange={(open) => {
+            if (!open && !isSendingWhatsApp) {
+              setSendDialogItem(null)
+              setSendMessage("")
+            }
+          }}>
+            <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Enviar alerta pelo WhatsApp</DialogTitle>
+                <DialogDescription>Revise a mensagem antes de enviar para o beneficiario.</DialogDescription>
+              </DialogHeader>
+
+              {sendDialogItem ? (
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Beneficiario</p>
+                      <p className="font-medium">{sendDialogItem.beneficiaryName}</p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Telefone</p>
+                      <p className="font-medium">{sendDialogItem.beneficiaryPhoneMasked || "Nao informado"}</p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Consulta</p>
+                      <p className="font-medium">{formatDate(sendDialogItem.appointmentDate)} as {formatTime(sendDialogItem.appointmentTime)}</p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Classificacao de risco</p>
+                      <p className="font-medium">{sendDialogItem.classification || "Sem classificacao"} {sendDialogItem.risk !== null && sendDialogItem.risk !== undefined ? `(${formatPercent(sendDialogItem.risk)})` : ""}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-accent/20 bg-accent/10 p-3 text-sm text-accent-foreground">
+                    Envio preventivo e operacional. Nao informe diagnostico, score de risco ou dados clinicos sensiveis na mensagem.
+                  </div>
+
+                  {!canUsePhone(sendDialogItem) ? (
+                    <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+                      Beneficiario sem telefone cadastrado para envio.
+                    </div>
+                  ) : null}
+
+                  {whatsAppStatus?.enabled !== true ? (
+                    <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+                      Integracao WhatsApp esta desabilitada no momento.
+                    </div>
+                  ) : null}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="risk-whatsapp-message">Mensagem sugerida</Label>
+                    <Textarea
+                      id="risk-whatsapp-message"
+                      value={sendMessage}
+                      onChange={(event) => setSendMessage(event.target.value)}
+                      rows={6}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button variant="outline" onClick={() => {
+                  setSendDialogItem(null)
+                  setSendMessage("")
+                }} disabled={isSendingWhatsApp}>
+                  Cancelar
+                </Button>
+                <Button variant="outline" onClick={() => void copyMessage(sendMessage)} disabled={!sendMessage.trim() || isSendingWhatsApp}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copiar mensagem
+                </Button>
+                <Button
+                  onClick={() => void handleSendWhatsApp()}
+                  disabled={
+                    isSendingWhatsApp ||
+                    !sendDialogItem ||
+                    !sendMessage.trim() ||
+                    !canUsePhone(sendDialogItem) ||
+                    whatsAppStatus?.enabled !== true
+                  }
+                >
+                  {isSendingWhatsApp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                  {isSendingWhatsApp ? "Enviando..." : "Enviar WhatsApp"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </main>
       </div>
     </div>

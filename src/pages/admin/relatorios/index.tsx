@@ -99,6 +99,10 @@ export default function AdminRelatoriosPage() {
             <CardContent>
               {loading ? (
                 <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : (data.reportTypes || []).length === 0 ? (
+                <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                  Nenhum relatorio disponivel agora. Tente novamente mais tarde ou acompanhe os indicadores do dashboard.
+                </div>
               ) : (
                 <div className="space-y-4">
                   {(data.reportTypes || []).map((report) => (

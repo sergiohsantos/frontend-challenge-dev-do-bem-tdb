@@ -131,7 +131,7 @@ export default function AprovacaoPage() {
       setRejectedRequests(data.rejected || [])
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar aprovacoes")
+      setError("Nao foi possivel carregar as aprovacoes agora. Tente novamente em instantes.")
     } finally {
       setIsLoading(false)
     }
@@ -157,6 +157,7 @@ export default function AprovacaoPage() {
     const matchesTipo = tipoFilter === "all" || r.tipo === tipoFilter
     return matchesSearch && matchesStatus && matchesProgram && matchesTipo
   })
+  const priorityRequest = filteredRequests.find((request) => request.prioridade === "urgente") || filteredRequests[0]
 
   const handleAction = (request: ApprovalRequest, action: "aprovar" | "rejeitar" | "info") => {
     setSelectedRequest(request)
@@ -203,7 +204,7 @@ export default function AprovacaoPage() {
       setComentario("")
       await loadApprovals(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao processar acao")
+      setError("Nao foi possivel concluir a acao agora. Confira o comentario e tente novamente.")
     } finally {
       setIsSubmitting(false)
     }
@@ -269,6 +270,36 @@ export default function AprovacaoPage() {
           </Card>
         ))}
       </div>
+      )}
+
+      {!isLoading && (
+        <Card className="border-primary/20">
+          <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Proxima acao recomendada</p>
+              {priorityRequest ? (
+                <>
+                  <p className="font-semibold text-foreground">
+                    Revisar {priorityRequest.procedimento} de {priorityRequest.beneficiario}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Prioridade {prioridadeMap[priorityRequest.prioridade as keyof typeof prioridadeMap]?.label || priorityRequest.prioridade}. Abra os detalhes se precisar conferir anexos antes de decidir.
+                  </p>
+                </>
+              ) : (
+                <p className="font-semibold text-foreground">Nenhuma aprovacao pendente agora.</p>
+              )}
+            </div>
+            {priorityRequest ? (
+              <Button variant="outline" asChild>
+                <Link to={`/admin/aprovacoes/${priorityRequest.public_id || priorityRequest.id}`}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Abrir prioridade
+                </Link>
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
       )}
 
       {/* Tabs */}
