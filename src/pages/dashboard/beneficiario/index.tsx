@@ -135,7 +135,7 @@ function AppointmentPanel({
           ) : null}
           <Button variant="outline" className="w-full gap-2" onClick={onReschedule} disabled={isRescheduling || appointment.canReschedule === false}>
             <Calendar className="h-5 w-5" aria-hidden="true" />
-            {isRescheduling ? "Enviando..." : "Reagendar"}
+            {isRescheduling ? "Enviando..." : "Solicitar reagendamento"}
           </Button>
         </div>
       </div>
@@ -154,6 +154,9 @@ export default function BeneficiarioDashboardPage() {
   const [pendingConfirmationAppointment, setPendingConfirmationAppointment] = useState<DashboardAppointment | null>(null)
   const [isSendingMessage, setIsSendingMessage] = useState(false)
   const [isRequestingReschedule, setIsRequestingReschedule] = useState(false)
+  const [rescheduleAppointmentId, setRescheduleAppointmentId] = useState<number | null>(null)
+  const [rescheduleReason, setRescheduleReason] = useState("")
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null)
   const [showSatisfactionDialog, setShowSatisfactionDialog] = useState(false)
   const [satisfactionScore, setSatisfactionScore] = useState<number | null>(null)
   const [satisfactionComment, setSatisfactionComment] = useState("")
@@ -190,10 +193,20 @@ export default function BeneficiarioDashboardPage() {
     date: s.date,
     status: (s.status === "completed" || s.status === "current" ? s.status : "upcoming") as "completed" | "current" | "upcoming",
   })) || []
+  const fallbackJourneySteps = [
+    { id: "cadastro", title: "Cadastro recebido", description: "Aguardando validação das informações.", status: "current" as const },
+    { id: "documentos", title: "Documentos", description: "Aguardando documentos ou validação.", status: "upcoming" as const },
+    { id: "triagem", title: "Triagem", description: "Caso em acompanhamento pela equipe.", status: "upcoming" as const },
+    { id: "voluntario", title: "Voluntário indicado", description: "Aguardando indicação ou atualização.", status: "upcoming" as const },
+    { id: "consulta", title: "Consulta agendada", description: "Aguardando agendamento.", status: "upcoming" as const },
+    { id: "atendimento", title: "Atendimento iniciado", description: "Aguardando evolução clínica.", status: "upcoming" as const },
+    { id: "conclusao", title: "Tratamento concluído", description: "Aguardando conclusão do caso.", status: "upcoming" as const },
+  ]
+  const displayJourneySteps = journeySteps.length > 0 ? journeySteps : fallbackJourneySteps
   const currentJourneyStep = (() => {
-    const currentIndex = journeySteps.findIndex((step) => step.status === "current")
+    const currentIndex = displayJourneySteps.findIndex((step) => step.status === "current")
     if (currentIndex >= 0) return currentIndex + 1
-    const completedCount = journeySteps.filter((step) => step.status === "completed").length
+    const completedCount = displayJourneySteps.filter((step) => step.status === "completed").length
     return completedCount > 0 ? completedCount : 1
   })()
 
@@ -229,11 +242,21 @@ export default function BeneficiarioDashboardPage() {
     }
   }
 
-  const handleReschedule = async (appointmentId?: number) => {
+  const openRescheduleDialog = (appointmentId?: number) => {
     if (!appointmentId) return
+    setRescheduleAppointmentId(appointmentId)
+    setRescheduleReason("")
+    setRescheduleError(null)
+  }
 
-    const reason = window.prompt("Descreva o motivo do reagendamento:")?.trim()
-    if (!reason) return
+  const handleReschedule = async () => {
+    const appointmentId = rescheduleAppointmentId
+    const reason = rescheduleReason.trim()
+    if (!appointmentId) return
+    if (!reason) {
+      setRescheduleError("Informe o motivo do reagendamento.")
+      return
+    }
 
     try {
       setIsRequestingReschedule(true)
@@ -251,6 +274,8 @@ export default function BeneficiarioDashboardPage() {
 
       await loadDashboard()
       setError("Solicitação de reagendamento enviada ao voluntário com sucesso.")
+      setRescheduleAppointmentId(null)
+      setRescheduleReason("")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao solicitar reagendamento")
     } finally {
@@ -309,6 +334,36 @@ export default function BeneficiarioDashboardPage() {
   }
 
   const status = mapBeneficiaryStatus(userData?.status)
+  const appointmentToConfirm = userData?.appointmentsNeedingConfirmation?.[0]
+  const appointmentToView = appointmentToConfirm || userData?.nextAppointment || userData?.confirmedUpcomingAppointments?.[0]
+  const nextStepAction = appointmentToConfirm
+    ? {
+        title: "Confirmar presença",
+        description: "Confirme sua consulta para garantir seu atendimento.",
+        href: "/dashboard/beneficiario/consultas",
+        icon: CheckCircle2,
+      }
+    : appointmentToView
+      ? {
+          title: "Ver consulta",
+          description: "Sua consulta está agendada. Confira data, horário e orientações.",
+          href: "/dashboard/beneficiario/consultas",
+          icon: Calendar,
+        }
+      : (userData?.recentMessages || []).length > 0
+        ? {
+            title: "Ver mensagens",
+            description: "Há comunicação recente sobre o seu atendimento.",
+            href: "/dashboard/beneficiario/mensagens",
+            icon: MessageSquare,
+          }
+        : {
+            title: "Acompanhar jornada",
+            description: "Seu caso está em acompanhamento. Continue verificando as próximas atualizações.",
+            href: "/dashboard/beneficiario/consultas",
+            icon: Sparkles,
+          }
+  const NextStepIcon = nextStepAction.icon
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -362,6 +417,36 @@ export default function BeneficiarioDashboardPage() {
           </div>
 
           {/* Main Grid */}
+          <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/10 via-background to-secondary/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <NextStepIcon className="h-5 w-5 text-primary" aria-hidden="true" />
+                Meu próximo passo
+              </CardTitle>
+              <CardDescription>{nextStepAction.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button asChild>
+                  <Link to={nextStepAction.href}>{nextStepAction.title}</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/dashboard/beneficiario/documentos">
+                    <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Ver documentos
+                  </Link>
+                </Button>
+                <Button variant="ghost" asChild>
+                  <Link to="/dashboard/beneficiario/mensagens">
+                    <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Mensagens
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Main Grid */}
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Left Column - Main Content */}
             <div className="space-y-6 lg:col-span-2">
@@ -387,9 +472,9 @@ export default function BeneficiarioDashboardPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {journeySteps.length > 0 ? (
+                  {displayJourneySteps.length > 0 ? (
                     <ProgressIndicator 
-                      steps={journeySteps.map(s => ({
+                      steps={displayJourneySteps.map(s => ({
                         label: s.title,
                         description: s.description,
                         completed: s.status === "completed",
@@ -442,7 +527,7 @@ export default function BeneficiarioDashboardPage() {
                           setShowConfirmDialog(true)
                           setPendingConfirmationAppointment(appointment)
                         }}
-                        onReschedule={() => handleReschedule(appointment.id)}
+                        onReschedule={() => openRescheduleDialog(appointment.id)}
                         isRescheduling={isRequestingReschedule}
                       />
                     ))}
@@ -452,7 +537,7 @@ export default function BeneficiarioDashboardPage() {
                       <AppointmentPanel
                         key={`reschedule-${appointment.id}`}
                         appointment={appointment}
-                        onReschedule={() => handleReschedule(appointment.id)}
+                        onReschedule={() => openRescheduleDialog(appointment.id)}
                         isRescheduling={isRequestingReschedule}
                       />
                     ))}
@@ -529,7 +614,7 @@ export default function BeneficiarioDashboardPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <JourneyTimeline steps={journeySteps} />
+                    <JourneyTimeline steps={displayJourneySteps} />
                 </CardContent>
               </Card>
 
@@ -708,6 +793,43 @@ export default function BeneficiarioDashboardPage() {
           </div>
         </PageContainer>
       </main>
+
+      <Dialog open={rescheduleAppointmentId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setRescheduleAppointmentId(null)
+          setRescheduleError(null)
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Solicitar reagendamento</DialogTitle>
+            <DialogDescription>
+              Informe o motivo para que o voluntário e a equipe avaliem uma nova data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Textarea
+              value={rescheduleReason}
+              onChange={(event) => {
+                setRescheduleReason(event.target.value)
+                setRescheduleError(null)
+              }}
+              placeholder="Explique brevemente o motivo do reagendamento..."
+              className="min-h-[120px]"
+            />
+            {rescheduleError && <p className="text-sm text-destructive">{rescheduleError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleAppointmentId(null)} disabled={isRequestingReschedule}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void handleReschedule()} disabled={isRequestingReschedule || !rescheduleReason.trim()}>
+              {isRequestingReschedule && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isRequestingReschedule ? "Enviando..." : "Enviar solicitação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showSatisfactionDialog} onOpenChange={setShowSatisfactionDialog}>
         <DialogContent className="max-w-md">

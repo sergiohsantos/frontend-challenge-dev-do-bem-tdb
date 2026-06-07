@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { Heart, Menu, Bell, User, LogOut, Settings, HelpCircle, Home, Calendar, MessageSquare, FileText } from "lucide-react"
+import { Heart, Menu, Bell, User, LogOut, Settings, HelpCircle, Home, Calendar, MessageSquare, FileText, ClipboardList, CalendarClock } from "lucide-react"
 
 interface DashboardHeaderProps {
   userName: string
@@ -30,6 +30,8 @@ const voluntarioNav = [
   { href: "/dashboard/voluntario", label: "Início", icon: Home },
   { href: "/dashboard/voluntario/pacientes", label: "Pacientes", icon: User },
   { href: "/dashboard/voluntario/agenda", label: "Agenda", icon: Calendar },
+  { href: "/dashboard/voluntario/solicitacoes", label: "Solicitações", icon: ClipboardList },
+  { href: "/dashboard/voluntario/disponibilidade", label: "Disponibilidade", icon: CalendarClock },
   { href: "/dashboard/voluntario/mensagens", label: "Mensagens", icon: MessageSquare },
 ]
 
@@ -95,7 +97,7 @@ export function DashboardHeader({ userName, userType, notificationCount = 0 }: D
             <Link
               key={item.href}
               to={item.href}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:gap-2 lg:px-3"
             >
               <item.icon className="h-4 w-4" aria-hidden="true" />
               {item.label}

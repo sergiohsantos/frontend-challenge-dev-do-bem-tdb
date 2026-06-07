@@ -22,6 +22,7 @@ import {
   AlertCircle,
   User
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { apiFetch, type ProcedureRequest } from "@/lib/api"
 import { getToken, getUser } from "@/lib/auth"
 
@@ -94,6 +95,7 @@ export default function SolicitacoesPage() {
   const pendingRequests = filteredRequests.filter(r => ["pendente", "em_analise", "info_adicional"].includes(r.status))
   const approvedRequests = filteredRequests.filter(r => r.status === "aprovado")
   const rejectedRequests = filteredRequests.filter(r => r.status === "rejeitado")
+  const actionRequiredRequests = filteredRequests.filter(r => r.status === "info_adicional")
 
   if (isLoading) {
     return (
@@ -145,6 +147,34 @@ export default function SolicitacoesPage() {
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
               {error}
             </div>
+          )}
+
+          <div className="mb-6 grid gap-4 md:grid-cols-4">
+            <SummaryCard title="Pendentes" value={pendingRequests.length} icon={Clock} tone="warning" />
+            <SummaryCard title="Aprovadas" value={approvedRequests.length} icon={CheckCircle2} tone="success" />
+            <SummaryCard title="Em ajuste" value={actionRequiredRequests.length} icon={AlertTriangle} tone="accent" />
+            <SummaryCard title="Rejeitadas" value={rejectedRequests.length} icon={XCircle} tone="danger" />
+          </div>
+
+          {actionRequiredRequests.length > 0 && (
+            <Card className="mb-6 border-accent/40 bg-accent/10">
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 text-accent" />
+                  <div>
+                    <p className="font-semibold text-foreground">Há solicitações que precisam de resposta</p>
+                    <p className="text-sm text-muted-foreground">
+                      Revise os comentários do admin e envie as informações solicitadas.
+                    </p>
+                  </div>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link to={`/dashboard/voluntario/solicitacoes/${actionRequiredRequests[0].public_id || actionRequiredRequests[0].id}`}>
+                    Responder primeira
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {/* Search */}
@@ -299,6 +329,39 @@ function RequestCard({ request }: { request: ProcedureRequest }) {
               </Button>
             )}
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SummaryCard({
+  title,
+  value,
+  icon: Icon,
+  tone,
+}: {
+  title: string
+  value: number
+  icon: LucideIcon
+  tone: "warning" | "success" | "accent" | "danger"
+}) {
+  const toneClass = {
+    warning: "bg-warning/10 text-warning",
+    success: "bg-success/10 text-success",
+    accent: "bg-accent/10 text-accent",
+    danger: "bg-destructive/10 text-destructive",
+  }[tone]
+
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-3 p-4">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${toneClass}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-sm text-muted-foreground">{title}</p>
+          <p className="text-2xl font-bold text-foreground">{value}</p>
         </div>
       </CardContent>
     </Card>

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { DashboardSkeleton } from "@/components/ui/page-loader"
 import { AlertBanner } from "@/components/ui/alert-banner"
 import { Empty, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty"
-import { MessageSquare, ArrowLeft, Send, Loader2 } from "lucide-react"
+import { MessageSquare, ArrowLeft, Send, Loader2, Calendar, FileText } from "lucide-react"
 import { apiFetch, type Message } from "@/lib/api"
 import { getToken, getUser } from "@/lib/auth"
 
@@ -160,6 +160,31 @@ export default function BeneficiarioMensagensPage() {
               className="mb-6"
             />
           )}
+
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold text-foreground">Mensagens do atendimento</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Use este espaço para dúvidas sobre sua consulta, documentos ou orientações recebidas.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" asChild>
+                  <Link to="/dashboard/beneficiario/consultas">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Consultas
+                  </Link>
+                </Button>
+                <Button variant="ghost" asChild>
+                  <Link to="/dashboard/beneficiario/documentos">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Documentos
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="grid gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-1">
