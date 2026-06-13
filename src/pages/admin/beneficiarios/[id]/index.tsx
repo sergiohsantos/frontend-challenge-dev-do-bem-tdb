@@ -119,6 +119,19 @@ function safeReminderFallback() {
   return "Ola! Passando para lembrar da sua proxima consulta pela Turma do Bem. Sua presenca e muito importante. Se precisar reagendar, responda esta mensagem ou acesse o portal."
 }
 
+function canSendRiskWhatsApp(status?: AdminWhatsAppStatus | null) {
+  if (status?.enabled !== true) return false
+  return status.messageMode === "text" || (status.messageMode === "template" && status.templateDefaultPresent === true)
+}
+
+function riskWhatsAppUnavailableMessage(status?: AdminWhatsAppStatus | null) {
+  if (status?.enabled !== true) return "Integracao WhatsApp esta desabilitada no momento."
+  if (status.messageMode !== "text" && status.templateDefaultPresent !== true) {
+    return "Nao ha template WhatsApp aprovado configurado para este envio."
+  }
+  return ""
+}
+
 export default function AdminBeneficiarioDetailPage() {
   const params = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
@@ -356,14 +369,14 @@ export default function AdminBeneficiarioDetailPage() {
                         </Button>
                         <Button
                           onClick={() => void openRiskWhatsAppDialog()}
-                          disabled={isPreparingRiskMessage || !riskItem.beneficiaryPhoneMasked || whatsAppStatus?.enabled !== true}
+                          disabled={isPreparingRiskMessage || !riskItem.beneficiaryPhoneMasked || !canSendRiskWhatsApp(whatsAppStatus)}
                         >
                           {isPreparingRiskMessage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                           Enviar WhatsApp
                         </Button>
                       </div>
                       {!riskItem.beneficiaryPhoneMasked ? <p className="text-sm text-warning">Beneficiario sem telefone cadastrado para envio.</p> : null}
-                      {whatsAppStatus?.enabled !== true ? <p className="text-sm text-warning">Integracao WhatsApp esta desabilitada no momento.</p> : null}
+                      {!canSendRiskWhatsApp(whatsAppStatus) ? <p className="text-sm text-warning">{riskWhatsAppUnavailableMessage(whatsAppStatus)}</p> : null}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">Nenhum risco operacional identificado para as proximas consultas.</p>
@@ -545,7 +558,7 @@ export default function AdminBeneficiarioDetailPage() {
             <Button variant="outline" onClick={() => setIsRiskDialogOpen(false)} disabled={isSendingRiskWhatsApp}>Cancelar</Button>
             <Button
               onClick={() => void handleSendRiskWhatsApp()}
-              disabled={isSendingRiskWhatsApp || !riskItem || !riskMessage.trim() || !riskItem.beneficiaryPhoneMasked || whatsAppStatus?.enabled !== true}
+              disabled={isSendingRiskWhatsApp || !riskItem || !riskMessage.trim() || !riskItem.beneficiaryPhoneMasked || !canSendRiskWhatsApp(whatsAppStatus)}
             >
               {isSendingRiskWhatsApp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
               {isSendingRiskWhatsApp ? "Enviando..." : "Enviar WhatsApp"}

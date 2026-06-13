@@ -7,6 +7,7 @@ export interface AdminWhatsAppStatus {
   enabledByAdmin?: boolean
   configured?: boolean
   messageMode?: string
+  templateDefaultPresent?: boolean
   warning?: string | null
 }
 
