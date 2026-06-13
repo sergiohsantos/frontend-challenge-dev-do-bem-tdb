@@ -159,6 +159,19 @@ function canUsePhone(item?: AIRiskItem | null): boolean {
   return Boolean(item?.beneficiaryPhoneMasked)
 }
 
+function canSendRiskWhatsApp(status?: AdminWhatsAppStatus | null): boolean {
+  if (status?.enabled !== true) return false
+  return status.messageMode === "text" || (status.messageMode === "template" && status.templateDefaultPresent === true)
+}
+
+function riskWhatsAppUnavailableMessage(status?: AdminWhatsAppStatus | null): string {
+  if (status?.enabled !== true) return "Integracao WhatsApp esta desabilitada no momento."
+  if (status.messageMode !== "text" && status.templateDefaultPresent !== true) {
+    return "Nao ha template WhatsApp aprovado configurado para este envio."
+  }
+  return ""
+}
+
 export default function AdminIAPreditivaPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [health, setHealth] = useState<AIHealthResponse | null>(null)
@@ -477,11 +490,11 @@ export default function AdminIAPreditivaPage() {
                 </div>
               )}
 
-              {(whatsAppStatusError || whatsAppStatus?.warning || whatsAppStatus?.enabled === false) && (
+              {(whatsAppStatusError || whatsAppStatus?.warning || !canSendRiskWhatsApp(whatsAppStatus)) && (
                 <div className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
                   <AlertTriangle className="h-4 w-4" />
-                  {whatsAppStatus?.enabled === false
-                    ? "Integracao WhatsApp esta desabilitada no momento."
+                  {!canSendRiskWhatsApp(whatsAppStatus)
+                    ? riskWhatsAppUnavailableMessage(whatsAppStatus)
                     : whatsAppStatusError || whatsAppStatus?.warning}
                 </div>
               )}
@@ -640,7 +653,7 @@ export default function AdminIAPreditivaPage() {
                           <Button
                             size="sm"
                             onClick={() => void openSendDialog(item)}
-                            disabled={previewLoadingId === item.appointmentId || whatsAppStatus?.enabled !== true}
+                            disabled={previewLoadingId === item.appointmentId || !canSendRiskWhatsApp(whatsAppStatus)}
                           >
                             {previewLoadingId === item.appointmentId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                             Enviar WhatsApp
@@ -914,9 +927,9 @@ export default function AdminIAPreditivaPage() {
                     </div>
                   ) : null}
 
-                  {whatsAppStatus?.enabled !== true ? (
+                  {!canSendRiskWhatsApp(whatsAppStatus) ? (
                     <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
-                      Integracao WhatsApp esta desabilitada no momento.
+                      {riskWhatsAppUnavailableMessage(whatsAppStatus)}
                     </div>
                   ) : null}
 
@@ -950,7 +963,7 @@ export default function AdminIAPreditivaPage() {
                     !sendDialogItem ||
                     !sendMessage.trim() ||
                     !canUsePhone(sendDialogItem) ||
-                    whatsAppStatus?.enabled !== true
+                    !canSendRiskWhatsApp(whatsAppStatus)
                   }
                 >
                   {isSendingWhatsApp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
