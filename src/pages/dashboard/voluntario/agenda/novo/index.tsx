@@ -64,6 +64,7 @@ export default function NovaConsultaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("Consulta agendada com sucesso")
   const [patients, setPatients] = useState<Patient[]>([])
   const [approvedProcedures, setApprovedProcedures] = useState<ApprovedProcedure[]>([])
   const [userName, setUserName] = useState("...")
@@ -159,7 +160,7 @@ export default function NovaConsultaPage() {
         return
       }
 
-      await apiFetch("/api/volunteers/appointments", {
+      const response = await apiFetch<{ message?: string }>("/api/volunteers/appointments", {
         method: "POST",
         body: JSON.stringify({
           patientId: Number(formData.patientId),
@@ -171,6 +172,7 @@ export default function NovaConsultaPage() {
         }),
       }, token)
 
+      setSuccessMessage(response.message || "Agendamento concluído com sucesso")
       setSuccess(true)
       setTimeout(() => {
         navigate("/dashboard/voluntario/agenda")
@@ -204,9 +206,9 @@ export default function NovaConsultaPage() {
           <Card className="max-w-md mx-auto">
             <CardContent className="pt-6 text-center">
               <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
-              <h2 className="mt-4 text-xl font-semibold">Consulta agendada!</h2>
+              <h2 className="mt-4 text-xl font-semibold">Agendamento atualizado!</h2>
               <p className="mt-2 text-muted-foreground">
-                A consulta foi agendada com sucesso. Redirecionando...
+                {successMessage}. Redirecionando...
               </p>
             </CardContent>
           </Card>
