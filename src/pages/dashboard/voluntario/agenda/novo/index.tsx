@@ -116,7 +116,6 @@ export default function NovaConsultaPage() {
         setApprovedProcedures(
           requestsPayload
             .map((item) => normalizeProcedure(item as Record<string, unknown>))
-            .filter((item) => item.status === "aprovado" && item.beneficiaryId > 0 && item.canSchedule !== false)
         )
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar dados para o agendamento")
@@ -130,7 +129,11 @@ export default function NovaConsultaPage() {
 
   const proceduresForSelectedPatient = useMemo(() => {
     if (!formData.patientId) return []
-    return approvedProcedures.filter((item) => item.beneficiaryId === Number(formData.patientId))
+    return approvedProcedures.filter((item) => (
+      item.status === "aprovado" &&
+      item.beneficiaryId === Number(formData.patientId) &&
+      item.canSchedule === true
+    ))
   }, [approvedProcedures, formData.patientId])
 
   useEffect(() => {
@@ -292,8 +295,10 @@ export default function NovaConsultaPage() {
                       Primeiro selecione o paciente para ver os procedimentos liberados para agendamento.
                     </div>
                   ) : proceduresForSelectedPatient.length === 0 ? (
-                    <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-sm text-warning">
-                      Este beneficiário ainda não possui solicitação aprovada. Aguarde a aprovação do Admin para agendar a consulta.
+                    <div className="space-y-2">
+                      <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-sm text-warning">
+                        Não há procedimentos aprovados disponíveis para agendamento deste beneficiário.
+                      </div>
                     </div>
                   ) : (
                     <Select
