@@ -37,6 +37,14 @@ interface ApprovedProcedure {
   canSchedule?: boolean
 }
 
+interface ScheduleAppointment {
+  id: number
+  patientName: string
+  date: string
+  time: string
+  status: string
+}
+
 function normalizePatient(raw: Record<string, unknown>): Patient {
   return {
     id: Number(raw.id ?? raw.beneficiaryId ?? raw.beneficiario_id ?? 0),
@@ -58,6 +66,36 @@ function normalizeProcedure(raw: Record<string, unknown>): ApprovedProcedure {
   }
 }
 
+function normalizeScheduleAppointment(raw: Record<string, unknown>): ScheduleAppointment {
+  const rawStatus = String(raw.status ?? raw.statusRaw ?? "scheduled")
+  const normalizedStatus = rawStatus.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()
+  const status = ["CONFIRMADA"].includes(normalizedStatus)
+    ? "confirmed"
+    : ["REAGENDADA", "REAGENDAMENTO_SOLICITADO"].includes(normalizedStatus)
+      ? "rescheduled"
+      : ["CANCELADA", "CANCELADO", "FALTA"].includes(normalizedStatus)
+        ? "cancelled"
+        : ["REALIZADA", "CONCLUIDA", "CONCLUIDO"].includes(normalizedStatus)
+          ? "completed"
+          : rawStatus.toLowerCase()
+
+  return {
+    id: Number(raw.id ?? 0),
+    patientName: String(raw.patientName ?? raw.beneficiaryName ?? raw.beneficiario ?? "Paciente"),
+    date: String(raw.date ?? ""),
+    time: String(raw.time ?? ""),
+    status,
+  }
+}
+
+function appointmentBlocksSchedule(appointment: ScheduleAppointment) {
+  return ["scheduled", "confirmed", "rescheduled"].includes(appointment.status.toLowerCase())
+}
+
+function buildScheduleConflictMessage(appointment: ScheduleAppointment) {
+  return `Conflito de agenda: você já possui uma consulta com ${appointment.patientName} neste dia e horário. Escolha outra data ou horário.`
+}
+
 export default function NovaConsultaPage() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
@@ -67,6 +105,7 @@ export default function NovaConsultaPage() {
   const [successMessage, setSuccessMessage] = useState("Consulta agendada com sucesso")
   const [patients, setPatients] = useState<Patient[]>([])
   const [approvedProcedures, setApprovedProcedures] = useState<ApprovedProcedure[]>([])
+  const [scheduleAppointments, setScheduleAppointments] = useState<ScheduleAppointment[]>([])
   const [userName, setUserName] = useState("...")
   const [formData, setFormData] = useState({
     patientId: "",
@@ -93,9 +132,10 @@ export default function NovaConsultaPage() {
           return
         }
 
-        const [patientsData, requestsData] = await Promise.all([
+        const [patientsData, requestsData, scheduleData] = await Promise.all([
           apiFetch<unknown>("/api/volunteers/my-patients", {}, token),
           apiFetch<unknown>("/api/volunteers/procedure-requests", {}, token),
+          apiFetch<unknown>("/api/volunteers/schedule", {}, token),
         ])
 
         const patientsPayload = Array.isArray(patientsData)
@@ -112,11 +152,22 @@ export default function NovaConsultaPage() {
             ? (requestsData as { items: unknown[] }).items
             : []
 
+        const schedulePayload = Array.isArray(scheduleData)
+          ? scheduleData
+          : scheduleData && typeof scheduleData === "object" && Array.isArray((scheduleData as { appointments?: unknown[] }).appointments)
+            ? (scheduleData as { appointments: unknown[] }).appointments
+            : scheduleData && typeof scheduleData === "object" && Array.isArray((scheduleData as { items?: unknown[] }).items)
+              ? (scheduleData as { items: unknown[] }).items
+              : scheduleData && typeof scheduleData === "object" && Array.isArray((scheduleData as { schedule?: unknown[] }).schedule)
+                ? (scheduleData as { schedule: unknown[] }).schedule
+                : []
+
         setPatients(patientsPayload.map((item) => normalizePatient(item as Record<string, unknown>)))
         setApprovedProcedures(
           requestsPayload
             .map((item) => normalizeProcedure(item as Record<string, unknown>))
         )
+        setScheduleAppointments(schedulePayload.map((item) => normalizeScheduleAppointment(item as Record<string, unknown>)))
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar dados para o agendamento")
       } finally {
@@ -136,6 +187,15 @@ export default function NovaConsultaPage() {
     ))
   }, [approvedProcedures, formData.patientId])
 
+  const scheduleConflict = useMemo(() => {
+    if (!formData.date || !formData.time) return null
+    return scheduleAppointments.find((appointment) => (
+      appointment.date === formData.date &&
+      appointment.time === formData.time &&
+      appointmentBlocksSchedule(appointment)
+    )) ?? null
+  }, [formData.date, formData.time, scheduleAppointments])
+
   useEffect(() => {
     if (!formData.patientId) return
     if (proceduresForSelectedPatient.length === 0) {
@@ -153,8 +213,12 @@ export default function NovaConsultaPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
     setError(null)
+    if (scheduleConflict) {
+      setError(buildScheduleConflictMessage(scheduleConflict))
+      return
+    }
+    setIsSubmitting(true)
 
     try {
       const token = getToken()
@@ -345,6 +409,13 @@ export default function NovaConsultaPage() {
                   </div>
                 </div>
 
+                {scheduleConflict && (
+                  <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                    <span>{buildScheduleConflictMessage(scheduleConflict)}</span>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="type">Descrição amigável *</Label>
                   <Input
@@ -388,7 +459,8 @@ export default function NovaConsultaPage() {
                       !formData.approvalRequestId ||
                       !formData.date ||
                       !formData.time ||
-                      !formData.type
+                      !formData.type ||
+                      Boolean(scheduleConflict)
                     }
                   >
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
