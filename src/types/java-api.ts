@@ -141,6 +141,8 @@ export interface AIRiskDashboardParams {
   classification?: string
   program?: string
   region?: string
+  beneficiary?: string
+  approvalRequest?: string
 }
 
 export interface AIReminderPreviewResponse {

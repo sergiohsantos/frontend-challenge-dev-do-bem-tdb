@@ -71,6 +71,8 @@ const INITIAL_FILTERS: AIRiskDashboardParams = {
   classification: "all",
   program: "all",
   region: "all",
+  beneficiary: "all",
+  approvalRequest: "all",
 }
 
 function formatPercent(value?: number | null): string {
@@ -434,11 +436,11 @@ export default function AdminIAPreditivaPage() {
               </section>
 
               <Card className="shadow-sm">
-                <CardContent className="grid gap-4 p-4 md:grid-cols-5">
+                <CardContent className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-7">
                   <div className="space-y-2">
                     <Label>Periodo</Label>
                     <Select value={String(filters.days || 14)} onValueChange={(value) => updateFilter("days", Number(value))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="period-filter"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="7">7 dias</SelectItem>
                         <SelectItem value="14">14 dias</SelectItem>
@@ -450,7 +452,7 @@ export default function AdminIAPreditivaPage() {
                   <div className="space-y-2">
                     <Label>Classificacao</Label>
                     <Select value={filters.classification || "all"} onValueChange={(value) => updateFilter("classification", value)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="classification-filter"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todas</SelectItem>
                         <SelectItem value="ALTO">Alto</SelectItem>
@@ -466,6 +468,14 @@ export default function AdminIAPreditivaPage() {
                   <div className="space-y-2">
                     <Label htmlFor="region-filter">Regiao</Label>
                     <Input id="region-filter" value={filters.region === "all" ? "" : filters.region || ""} onChange={(event) => updateFilter("region", event.target.value || "all")} placeholder="Todas" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="beneficiary-filter">Beneficiario</Label>
+                    <Input id="beneficiary-filter" value={filters.beneficiary === "all" ? "" : filters.beneficiary || ""} onChange={(event) => updateFilter("beneficiary", event.target.value || "all")} placeholder="Nome" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="approval-request-filter">Solicitacao</Label>
+                    <Input id="approval-request-filter" value={filters.approvalRequest === "all" ? "" : filters.approvalRequest || ""} onChange={(event) => updateFilter("approvalRequest", event.target.value || "all")} placeholder="SOL-2026-063" />
                   </div>
                   <div className="flex items-end">
                     <Button className="w-full" onClick={() => void loadDashboard(filters)} disabled={isDashboardLoading}>
