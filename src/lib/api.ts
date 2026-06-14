@@ -246,10 +246,12 @@ export interface BeneficiaryDashboard {
   }>
   satisfaction?: {
     canSubmit: boolean
+    canResubmit?: boolean
     caseId?: number
     latestScore?: number | null
     latestComment?: string | null
     createdAt?: string | null
+    totalResponses?: number
   } | null
 }
 
@@ -262,9 +264,23 @@ export interface VolunteerDashboard {
     totalPatients: number
     activePatients: number
     completedTreatments: number
+    beneficiariesImpacted?: number
+    impactedBeneficiaries?: number
+    activeTreatments?: number
     monthlyAppointments: number
     pendingApprovals?: number
     approvedProcedures?: number
+    averageRating?: number
+    awardScore?: number
+  }
+  impact?: {
+    beneficiariesImpacted?: number
+    completedTreatments?: number
+    activeTreatments?: number
+    averageRating?: number
+    awardScore?: number
+    currentEvaluations?: number
+    feedbackEntries?: number
   }
   upcomingAppointments: Array<{
     id: number

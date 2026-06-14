@@ -80,6 +80,11 @@ export default function VoluntarioDashboardPage() {
   const hasMessages = (volunteerData?.recentMessages || []).length > 0
   const nextAppointment = volunteerData?.upcomingAppointments?.[0]
   const pendingApprovals = volunteerData?.stats?.pendingApprovals || 0
+  const impactValue = volunteerData?.impact?.beneficiariesImpacted
+    ?? volunteerData?.stats?.beneficiariesImpacted
+    ?? volunteerData?.stats?.impactedBeneficiaries
+    ?? volunteerData?.stats?.completedTreatments
+    ?? 0
   const nextAction = hasUpcomingAppointments
     ? {
         title: "Ver agenda",
@@ -533,8 +538,8 @@ export default function VoluntarioDashboardPage() {
                 {/* Impact Card */}
                 <HighlightStat
                   title="Seu Impacto"
-                  value={volunteerData?.stats?.completedTreatments || 0}
-                  description="sorrisos transformados"
+                  value={impactValue}
+                  description="beneficiários impactados"
                   icon={<Heart />}
                   variant="primary"
                 />
