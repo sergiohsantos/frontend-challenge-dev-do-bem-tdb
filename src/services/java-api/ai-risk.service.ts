@@ -14,6 +14,8 @@ function queryString(params: AIRiskDashboardParams = {}): string {
   if (params.classification && params.classification !== "all") search.set("classification", params.classification)
   if (params.program && params.program !== "all") search.set("program", params.program)
   if (params.region && params.region !== "all") search.set("region", params.region)
+  if (params.beneficiary && params.beneficiary !== "all") search.set("beneficiary", params.beneficiary)
+  if (params.approvalRequest && params.approvalRequest !== "all") search.set("approvalRequest", params.approvalRequest)
 
   const value = search.toString()
   return value ? `?${value}` : ""
