@@ -210,8 +210,35 @@ function AppointmentStatusBadge({ appointment }: { appointment: Appointment }) {
 }
 
 function AppointmentActions({ appointment, compact = false }: { appointment: Appointment; compact?: boolean }) {
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+        {appointment.patientId ? (
+          <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" title="Ver paciente" aria-label="Ver paciente" asChild>
+            <Link to={`/dashboard/voluntario/pacientes/${appointment.patientId}`}>
+              <User className="h-4 w-4" />
+              <span className="sr-only">Ver paciente</span>
+            </Link>
+          </Button>
+        ) : null}
+        <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" title="Nova solicitação" aria-label="Nova solicitação" asChild>
+          <Link to="/dashboard/voluntario/solicitacoes/nova">
+            <FilePlus className="h-4 w-4" />
+            <span className="sr-only">Nova solicitação</span>
+          </Link>
+        </Button>
+        <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" title="Mensagens" aria-label="Mensagens" asChild>
+          <Link to="/dashboard/voluntario/mensagens">
+            <MessageSquare className="h-4 w-4" />
+            <span className="sr-only">Mensagens</span>
+          </Link>
+        </Button>
+      </div>
+    )
+  }
+
   return (
-    <div className={cn("grid gap-2 sm:grid-cols-3", !compact && "lg:min-w-[420px]")}>
+    <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[420px]">
       {appointment.patientId ? (
         <Button size="sm" variant="outline" asChild>
           <Link to={`/dashboard/voluntario/pacientes/${appointment.patientId}`}>
@@ -283,7 +310,7 @@ function AppointmentItem({ appointment, compact = false }: { appointment: Appoin
               )}
             </div>
           </div>
-        <AppointmentActions appointment={appointment} />
+        <AppointmentActions appointment={appointment} compact={compact} />
         </div>
       </div>
     </div>
@@ -296,7 +323,7 @@ function ClinicalAppointmentRow({ appointment }: { appointment: Appointment }) {
   const procedure = appointment.procedureTitle || appointment.program || appointment.specialty || appointment.type || "Consulta"
 
   return (
-    <div className={cn("grid gap-4 border-b px-4 py-4 last:border-b-0 lg:grid-cols-[120px_minmax(0,1.1fr)_minmax(0,1fr)_170px_260px] lg:items-center", meta.attention && "bg-amber-50/50")}>
+    <div className={cn("grid gap-4 border-b px-4 py-4 last:border-b-0 lg:grid-cols-[120px_minmax(0,1.1fr)_minmax(0,1fr)_170px_120px] lg:items-center", meta.attention && "bg-amber-50/50")}>
       <div>
         <p className="text-sm font-semibold text-foreground">{formatDateShort(appointment.date)}</p>
         <p className="text-sm text-muted-foreground">{appointment.time || "Horario nao informado"}</p>
@@ -796,7 +823,7 @@ export default function AgendaPage() {
                     </Card>
                   ) : (
                     <Card className="overflow-hidden">
-                      <div className="hidden border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid lg:grid-cols-[120px_minmax(0,1.1fr)_minmax(0,1fr)_170px_260px]">
+                      <div className="hidden border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid lg:grid-cols-[120px_minmax(0,1.1fr)_minmax(0,1fr)_170px_120px]">
                         <span>Data/hora</span>
                         <span>Beneficiario</span>
                         <span>Procedimento</span>
@@ -817,7 +844,7 @@ export default function AgendaPage() {
                     </Card>
                   ) : (
                     <Card className="overflow-hidden">
-                      <div className="hidden border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid lg:grid-cols-[120px_minmax(0,1.1fr)_minmax(0,1fr)_170px_260px]">
+                      <div className="hidden border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid lg:grid-cols-[120px_minmax(0,1.1fr)_minmax(0,1fr)_170px_120px]">
                         <span>Data/hora</span>
                         <span>Beneficiario</span>
                         <span>Procedimento</span>
