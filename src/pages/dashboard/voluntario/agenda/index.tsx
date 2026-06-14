@@ -81,6 +81,15 @@ function parseDateKey(date?: string) {
   return parsed
 }
 
+function parseAppointmentDateTime(appointment: Pick<Appointment, "date" | "time">) {
+  const parsed = parseDateKey(appointment.date)
+  if (!parsed) return null
+  const [hours, minutes] = (appointment.time || "").split(":").map(Number)
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null
+  parsed.setHours(hours, minutes, 0, 0)
+  return parsed
+}
+
 function toDateKey(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -209,10 +218,45 @@ function AppointmentStatusBadge({ appointment }: { appointment: Appointment }) {
   return <Badge variant="outline" className={cn("gap-1", meta.badge)}><span className={cn("h-2 w-2 rounded-full", meta.dot)} />{meta.label}</Badge>
 }
 
-function AppointmentActions({ appointment, compact = false }: { appointment: Appointment; compact?: boolean }) {
+function canCompleteAppointment(appointment: Appointment) {
+  const appointmentDateTime = parseAppointmentDateTime(appointment)
+  if (!appointmentDateTime) return false
+  return (
+    (appointment.status === "scheduled" || appointment.status === "confirmed")
+    && appointmentDateTime <= new Date()
+  )
+}
+
+function AppointmentActions({
+  appointment,
+  compact = false,
+  completing = false,
+  onComplete,
+}: {
+  appointment: Appointment
+  compact?: boolean
+  completing?: boolean
+  onComplete?: (appointment: Appointment) => void
+}) {
+  const showComplete = canCompleteAppointment(appointment) && Boolean(onComplete)
+
   if (compact) {
     return (
       <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+        {showComplete ? (
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-9 w-9 shrink-0 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+            title="Marcar consulta realizada"
+            aria-label="Marcar consulta realizada"
+            onClick={() => onComplete?.(appointment)}
+            disabled={completing}
+          >
+            {completing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            <span className="sr-only">Marcar consulta realizada</span>
+          </Button>
+        ) : null}
         {appointment.patientId ? (
           <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" title="Ver paciente" aria-label="Ver paciente" asChild>
             <Link to={`/dashboard/voluntario/pacientes/${appointment.patientId}`}>
@@ -238,7 +282,19 @@ function AppointmentActions({ appointment, compact = false }: { appointment: App
   }
 
   return (
-    <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[420px]">
+    <div className="flex flex-wrap gap-2 lg:min-w-[420px] lg:justify-end">
+      {showComplete ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+          onClick={() => onComplete?.(appointment)}
+          disabled={completing}
+        >
+          {completing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+          Consulta realizada
+        </Button>
+      ) : null}
       {appointment.patientId ? (
         <Button size="sm" variant="outline" asChild>
           <Link to={`/dashboard/voluntario/pacientes/${appointment.patientId}`}>
@@ -263,7 +319,17 @@ function AppointmentActions({ appointment, compact = false }: { appointment: App
   )
 }
 
-function AppointmentItem({ appointment, compact = false }: { appointment: Appointment; compact?: boolean }) {
+function AppointmentItem({
+  appointment,
+  compact = false,
+  completing = false,
+  onComplete,
+}: {
+  appointment: Appointment
+  compact?: boolean
+  completing?: boolean
+  onComplete?: (appointment: Appointment) => void
+}) {
   const meta = getStatusMeta(appointment)
   const location = [appointment.city, appointment.state].filter(Boolean).join("/")
   const procedure = appointment.procedureTitle || appointment.program || appointment.specialty || appointment.type || "Consulta"
@@ -310,14 +376,22 @@ function AppointmentItem({ appointment, compact = false }: { appointment: Appoin
               )}
             </div>
           </div>
-        <AppointmentActions appointment={appointment} compact={compact} />
+        <AppointmentActions appointment={appointment} compact={compact} completing={completing} onComplete={onComplete} />
         </div>
       </div>
     </div>
   )
 }
 
-function ClinicalAppointmentRow({ appointment }: { appointment: Appointment }) {
+function ClinicalAppointmentRow({
+  appointment,
+  completing = false,
+  onComplete,
+}: {
+  appointment: Appointment
+  completing?: boolean
+  onComplete?: (appointment: Appointment) => void
+}) {
   const meta = getStatusMeta(appointment)
   const location = [appointment.city, appointment.state].filter(Boolean).join("/")
   const procedure = appointment.procedureTitle || appointment.program || appointment.specialty || appointment.type || "Consulta"
@@ -342,7 +416,7 @@ function ClinicalAppointmentRow({ appointment }: { appointment: Appointment }) {
         <AppointmentStatusBadge appointment={appointment} />
         {meta.attention && <p className="text-xs font-medium text-amber-800">{meta.attention}</p>}
       </div>
-      <AppointmentActions appointment={appointment} compact />
+      <AppointmentActions appointment={appointment} compact completing={completing} onComplete={onComplete} />
     </div>
   )
 }
@@ -417,6 +491,7 @@ export default function AgendaPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [completingAppointmentId, setCompletingAppointmentId] = useState<number | null>(null)
   const [userName, setUserName] = useState("...")
   const [agendaView, setAgendaView] = useState<AgendaView>(() => {
     if (typeof window === "undefined") return "calendar"
@@ -531,6 +606,33 @@ export default function AgendaPage() {
       next.setHours(0, 0, 0, 0)
       return next
     })
+  }
+
+  const handleCompleteAppointment = async (appointment: Appointment) => {
+    if (!canCompleteAppointment(appointment) || completingAppointmentId) return
+
+    try {
+      setCompletingAppointmentId(appointment.id)
+      setError(null)
+
+      const token = getToken()
+      if (!token) {
+        navigate("/login", { replace: true })
+        return
+      }
+
+      const response = await apiFetch<unknown>(
+        `/api/volunteers/appointments/${appointment.id}/complete`,
+        { method: "POST" },
+        token,
+      )
+      const updated = normalizeAppointment(response as Record<string, unknown>)
+      setAppointments((current) => current.map((item) => (item.id === appointment.id ? { ...item, ...updated } : item)))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nao foi possivel marcar a consulta como realizada.")
+    } finally {
+      setCompletingAppointmentId(null)
+    }
   }
 
   const resetToToday = () => {
@@ -738,7 +840,15 @@ export default function AgendaPage() {
                       <EmptyPanel icon={<Calendar className="h-6 w-6" />} title="Dia livre" description="Não há consultas agendadas para este dia." />
                     ) : (
                       <div className="space-y-3">
-                        {selectedAppointments.map((appointment) => <AppointmentItem key={appointment.id} appointment={appointment} compact />)}
+                        {selectedAppointments.map((appointment) => (
+                          <AppointmentItem
+                            key={appointment.id}
+                            appointment={appointment}
+                            compact
+                            completing={completingAppointmentId === appointment.id}
+                            onComplete={handleCompleteAppointment}
+                          />
+                        ))}
                       </div>
                     )}
                   </CardContent>
@@ -759,7 +869,14 @@ export default function AgendaPage() {
                         <section key={key} className="space-y-3">
                           <h3 className="text-sm font-semibold capitalize text-foreground">{formatDateLong(key)}</h3>
                           <div className="space-y-3">
-                            {groupedUpcoming[key].sort(sortAppointmentsAsc).map((appointment) => <AppointmentItem key={appointment.id} appointment={appointment} />)}
+                            {groupedUpcoming[key].sort(sortAppointmentsAsc).map((appointment) => (
+                              <AppointmentItem
+                                key={appointment.id}
+                                appointment={appointment}
+                                completing={completingAppointmentId === appointment.id}
+                                onComplete={handleCompleteAppointment}
+                              />
+                            ))}
                           </div>
                         </section>
                       ))}
@@ -805,6 +922,7 @@ export default function AgendaPage() {
                         <TabsTrigger value="confirmed">Confirmadas</TabsTrigger>
                         <TabsTrigger value="scheduled">Sem confirmação</TabsTrigger>
                         <TabsTrigger value="rescheduled">Reagendamento</TabsTrigger>
+                        <TabsTrigger value="completed">Realizadas</TabsTrigger>
                         <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
                       </TabsList>
                     </Tabs>
@@ -830,7 +948,14 @@ export default function AgendaPage() {
                         <span>Status</span>
                         <span>Acoes</span>
                       </div>
-                      {clinicalAppointments.map((appointment) => <ClinicalAppointmentRow key={appointment.id} appointment={appointment} />)}
+                      {clinicalAppointments.map((appointment) => (
+                        <ClinicalAppointmentRow
+                          key={appointment.id}
+                          appointment={appointment}
+                          completing={completingAppointmentId === appointment.id}
+                          onComplete={handleCompleteAppointment}
+                        />
+                      ))}
                     </Card>
                   )}
                 </TabsContent>
@@ -851,7 +976,14 @@ export default function AgendaPage() {
                         <span>Status</span>
                         <span>Acoes</span>
                       </div>
-                      {clinicalAppointments.map((appointment) => <ClinicalAppointmentRow key={appointment.id} appointment={appointment} />)}
+                      {clinicalAppointments.map((appointment) => (
+                        <ClinicalAppointmentRow
+                          key={appointment.id}
+                          appointment={appointment}
+                          completing={completingAppointmentId === appointment.id}
+                          onComplete={handleCompleteAppointment}
+                        />
+                      ))}
                     </Card>
                   )}
                 </TabsContent>

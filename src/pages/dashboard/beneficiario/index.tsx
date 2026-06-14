@@ -319,6 +319,12 @@ export default function BeneficiarioDashboardPage() {
     }
   }
 
+  const openSatisfactionDialog = () => {
+    setSatisfactionScore(userData?.satisfaction?.latestScore ?? null)
+    setSatisfactionComment(userData?.satisfaction?.latestComment ?? "")
+    setShowSatisfactionDialog(true)
+  }
+
   // Loading state
   if (isLoading) {
     return (
@@ -671,9 +677,9 @@ export default function BeneficiarioDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   {userData?.satisfaction?.canSubmit !== false ? (
-                    <Button className="w-full gap-2" onClick={() => setShowSatisfactionDialog(true)} disabled={!userData?.caseId}>
+                    <Button className="w-full gap-2" onClick={openSatisfactionDialog} disabled={!userData?.caseId}>
                       <Star className="h-4 w-4" aria-hidden="true" />
-                      Avaliar atendimento
+                      {userData?.satisfaction?.canResubmit ? "Atualizar avaliação" : "Avaliar atendimento"}
                     </Button>
                   ) : (
                     <div className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
