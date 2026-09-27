@@ -22,7 +22,7 @@ Crie o Environment `production` e suas Variables (não são credenciais):
 `PRODUCTION_BRANCH` deve ser a branch efetivamente implantada, não presumir que seja a branch padrão.
 O OIDC da role precisa permitir apenas este repositório e o Environment production.
 Restrinja também as branches permitidas no Environment; use reviewers se o plano GitHub permitir.
-Secrets da aplicação ficam na AWS, referenciados na Task Definition, nunca em VITE_*.
+Configuração das APIs usa ENV comuns na Task Definition, sem Secrets Manager/Parameter Store. Valores privados podem entrar por Secret do GitHub APP_ENVIRONMENTS_JSON na esteira de infraestrutura; não colocar em VITE_*.
 
 ## Operação
 Abra Actions → Validate and deploy to AWS → Run workflow e selecione a branch configurada.
