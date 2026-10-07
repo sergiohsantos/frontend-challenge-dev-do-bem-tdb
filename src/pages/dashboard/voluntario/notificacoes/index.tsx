@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
+import { HelpButton } from "@/components/layout/help-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -196,12 +197,12 @@ export default function VoluntarioNotificacoesPage() {
                           {getNotificationIcon(notification.type)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
                               <p className={`font-black ${notification.read ? "text-muted-foreground" : "text-foreground"}`}>{notification.title}</p>
                               {!notification.read ? <Badge variant="secondary" className="rounded-full">Nova</Badge> : null}
                             </div>
-                            <span className="text-xs text-muted-foreground">{notification.date ? new Date(notification.date).toLocaleString("pt-BR") : ""}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">{notification.date ? new Date(notification.date).toLocaleString("pt-BR") : ""}</span>
                           </div>
                           <p className="mt-1 text-sm leading-6 text-muted-foreground">{notification.message}</p>
                           <div className="mt-3 text-xs font-black text-primary">{openingId === notification.id ? "Abrindo..." : "Clique para abrir"}</div>
@@ -215,6 +216,8 @@ export default function VoluntarioNotificacoesPage() {
           </div>
         </div>
       </main>
+
+      <HelpButton />
     </div>
   )
 }

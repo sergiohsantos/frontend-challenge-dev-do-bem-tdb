@@ -1,0 +1,230 @@
+/* Admin refinements layered after premium-experience.css.
+   Keep Admin aligned with Volunteer/Beneficiary tokens: primary, secondary, accent, background and card. */
+
+.tdb-admin-sidebar {
+  background:
+    radial-gradient(circle at 8% 8%, color-mix(in oklch, var(--secondary) 34%, transparent), transparent 18rem),
+    radial-gradient(circle at 88% 92%, color-mix(in oklch, var(--accent) 24%, transparent), transparent 16rem),
+    var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.tdb-admin-sidebar a,
+.tdb-admin-sidebar button,
+.tdb-admin-sidebar h3,
+.tdb-admin-sidebar span {
+  color: inherit;
+}
+
+.tdb-admin-sidebar a[class*="bg-accent"] {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  box-shadow: 0 16px 34px color-mix(in oklch, var(--accent) 28%, transparent) !important;
+}
+
+.tdb-admin-sidebar a:not([class*="bg-accent"]) {
+  color: color-mix(in oklch, var(--primary-foreground) 78%, transparent) !important;
+}
+
+.tdb-admin-sidebar a:not([class*="bg-accent"]):hover,
+.tdb-admin-sidebar button:hover {
+  background: color-mix(in oklch, var(--primary-foreground) 10%, transparent) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.tdb-admin-mobile-sheet {
+  border-color: color-mix(in oklch, var(--primary-foreground) 12%, transparent) !important;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.tdb-admin-mobile-sheet > button {
+  color: var(--primary-foreground) !important;
+  opacity: 0.88;
+}
+
+.tdb-admin-sidebar + div {
+  background:
+    radial-gradient(circle at 10% 0%, color-mix(in oklch, var(--secondary) 18%, transparent), transparent 28rem),
+    radial-gradient(circle at 94% 12%, color-mix(in oklch, var(--accent) 14%, transparent), transparent 24rem),
+    linear-gradient(180deg, var(--background) 0%, var(--background) 48%, color-mix(in oklch, var(--secondary) 8%, var(--background)) 100%) !important;
+}
+
+.tdb-admin-sidebar + div > header {
+  border-color: color-mix(in oklch, var(--border) 86%, transparent) !important;
+  background: color-mix(in oklch, var(--background) 88%, transparent) !important;
+  color: var(--foreground) !important;
+  box-shadow: 0 14px 45px color-mix(in oklch, var(--primary) 10%, transparent) !important;
+  backdrop-filter: blur(18px);
+}
+
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1),
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1),
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1),
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 15rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 2.5rem;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  padding: 1.5rem;
+  box-shadow: 0 26px 70px color-mix(in oklch, var(--primary) 24%, transparent);
+}
+
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1)::before,
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1)::after,
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1)::before,
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1)::after,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1)::before,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1)::after,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1)::before,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1)::after {
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(34px);
+  opacity: 0.60;
+}
+
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1)::before,
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1)::before,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1)::before,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1)::before {
+  left: -5rem;
+  top: -2rem;
+  width: 14rem;
+  height: 14rem;
+  background: var(--secondary) !important;
+}
+
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1)::after,
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1)::after,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1)::after,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1)::after {
+  right: -4rem;
+  bottom: -3rem;
+  width: 16rem;
+  height: 16rem;
+  background: var(--accent) !important;
+}
+
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1) h1,
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) h1,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) h1,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) h1 {
+  max-width: 52rem;
+  color: var(--primary-foreground) !important;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 900;
+}
+
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1) p,
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) p,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) p,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) p {
+  max-width: 44rem;
+  color: color-mix(in oklch, var(--primary-foreground) 84%, transparent) !important;
+  line-height: 1.85;
+}
+
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1) button,
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1) a[role="button"],
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) button,
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) a[role="button"],
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) button,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) a[role="button"],
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) button,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) a[role="button"] {
+  min-height: 2.75rem;
+  border-radius: 9999px;
+  font-weight: 900;
+}
+
+.tdb-admin-sidebar + div > main.space-y-6 > section:has(h1) [role="combobox"],
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) [role="combobox"],
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) [role="combobox"],
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) [role="combobox"] {
+  min-height: 2.75rem;
+  border-radius: 9999px;
+  border-color: color-mix(in oklch, var(--primary-foreground) 24%, transparent) !important;
+  background: color-mix(in oklch, var(--primary-foreground) 10%, transparent) !important;
+  color: var(--primary-foreground) !important;
+  font-weight: 800;
+}
+
+.tdb-admin-sidebar + div > main [data-slot="card"] {
+  border-color: color-mix(in oklch, var(--border) 88%, transparent) !important;
+  border-radius: 2rem !important;
+  background: color-mix(in oklch, var(--card) 94%, transparent) !important;
+  box-shadow: 0 22px 58px color-mix(in oklch, var(--primary) 10%, transparent) !important;
+}
+
+.tdb-admin-sidebar + div > main [class*="rounded-xl"],
+.tdb-admin-sidebar + div > main [class*="rounded-2xl"] {
+  box-shadow: none;
+}
+
+.tdb-admin-sidebar + div > main [class*="border-primary/20"] {
+  border-color: color-mix(in oklch, var(--primary) 18%, transparent) !important;
+}
+
+.tdb-admin-sidebar + div > main [class*="bg-muted/30"],
+.tdb-admin-sidebar + div > main [class*="bg-muted/40"] {
+  background: color-mix(in oklch, var(--muted) 72%, transparent) !important;
+}
+
+.tdb-admin-sidebar + div > main [class*="border-dashed"] {
+  border-radius: 2rem;
+  background: color-mix(in oklch, var(--card) 72%, transparent);
+}
+
+@media (max-width: 767px) {
+  .tdb-admin-sidebar + div > main {
+    padding: 1rem !important;
+  }
+
+  .tdb-admin-sidebar + div > main.space-y-6 > section:has(h1),
+  .tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1),
+  .tdb-admin-sidebar + div > main.space-y-6 > div:has(h1),
+  .tdb-admin-sidebar + div > main > .mb-6:has(h1) {
+    min-height: auto !important;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.35rem !important;
+    border-radius: 2rem;
+  }
+
+  .tdb-admin-sidebar + div > main.space-y-6 > section:has(h1) > *,
+  .tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) > *,
+  .tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) > *,
+  .tdb-admin-sidebar + div > main > .mb-6:has(h1) > * {
+    width: 100%;
+  }
+
+  .tdb-admin-sidebar + div > main.space-y-6 > section:has(h1) h1,
+  .tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) h1,
+  .tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) h1,
+  .tdb-admin-sidebar + div > main > .mb-6:has(h1) h1 {
+    font-size: clamp(1.85rem, 9vw, 2.55rem);
+  }
+
+  .tdb-admin-sidebar + div > main [data-slot="card"] {
+    border-radius: 1.65rem !important;
+  }
+
+  .tdb-admin-sidebar + div > main [role="tablist"] {
+    border-radius: 1.25rem !important;
+  }
+}

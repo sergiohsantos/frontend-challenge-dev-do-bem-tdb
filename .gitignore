@@ -19,3 +19,7 @@ dist/
 build/
 *.tsbuildinfo
 .DS_Store
+
+# Python deployment test cache
+__pycache__/
+*.pyc

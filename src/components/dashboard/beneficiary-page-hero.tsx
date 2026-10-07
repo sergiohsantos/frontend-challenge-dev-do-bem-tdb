@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-interface VolunteerPageHeroProps {
+interface BeneficiaryPageHeroProps {
   eyebrow: string
   title: string
   description: string
@@ -15,17 +15,17 @@ interface VolunteerPageHeroProps {
   meta?: ReactNode
 }
 
-export function VolunteerPageHero({
+export function BeneficiaryPageHero({
   eyebrow,
   title,
   description,
   icon,
-  backTo = "/dashboard/voluntario",
+  backTo = "/dashboard/beneficiario",
   backLabel = "Voltar ao painel",
   primaryAction,
   secondaryAction,
   meta,
-}: VolunteerPageHeroProps) {
+}: BeneficiaryPageHeroProps) {
   return (
     <section className="tdb-premium-shell relative mb-8 min-h-[21.5rem] overflow-hidden rounded-[2.5rem] bg-primary p-6 text-primary-foreground shadow-2xl shadow-primary/20 lg:p-8">
       <div className="tdb-orb -left-16 top-4 h-56 w-56 bg-secondary" aria-hidden="true" />
@@ -57,11 +57,11 @@ export function VolunteerPageHero({
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-primary-foreground/84">{description}</p>
 
-          {meta ? <div className="tdb-volunteer-hero-meta mt-6 flex flex-wrap items-center gap-2 text-sm text-primary-foreground/82">{meta}</div> : null}
+          {meta ? <div className="tdb-beneficiary-hero-meta mt-6 flex flex-wrap items-center gap-2 text-sm text-primary-foreground/82">{meta}</div> : null}
         </div>
 
         {(primaryAction || secondaryAction) && (
-          <div className="tdb-volunteer-hero-actions flex w-full flex-wrap gap-3 lg:w-auto lg:min-w-[360px] lg:justify-end">
+          <div className="tdb-beneficiary-hero-actions flex w-full flex-wrap gap-3 lg:w-auto lg:min-w-[360px] lg:justify-end">
             {primaryAction}
             {secondaryAction}
           </div>

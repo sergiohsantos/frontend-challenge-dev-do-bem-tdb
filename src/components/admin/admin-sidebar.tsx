@@ -13,7 +13,6 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  Bell,
   TrendingUp,
   Smile,
   FileCheck,
@@ -34,82 +33,26 @@ interface AdminSidebarProps {
 }
 
 const mainNavItems = [
-  {
-    title: "Dashboard",
-    href: "/admin",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Triagem",
-    href: "/admin/triagem",
-    icon: ClipboardList,
-  },
-  {
-    title: "Onboarding",
-    href: "/admin/onboarding",
-    icon: UserRoundCheck,
-  },
-  {
-    title: "IA Preditiva",
-    href: "/admin/ia-preditiva",
-    icon: BrainCircuit,
-  },
-  {
-    title: "Análise Regional",
-    href: "/admin/regional",
-    icon: MapPin,
-  },
-  {
-    title: "Programas",
-    href: "/admin/programas",
-    icon: Heart,
-  },
-  {
-    title: "Satisfação",
-    href: "/admin/satisfacao",
-    icon: Smile,
-  },
+  { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { title: "Triagem", href: "/admin/triagem", icon: ClipboardList },
+  { title: "Onboarding", href: "/admin/onboarding", icon: UserRoundCheck },
+  { title: "IA Preditiva", href: "/admin/ia-preditiva", icon: BrainCircuit },
+  { title: "Análise Regional", href: "/admin/regional", icon: MapPin },
+  { title: "Programas", href: "/admin/programas", icon: Heart },
+  { title: "Satisfação", href: "/admin/satisfacao", icon: Smile },
 ]
 
 const managementItems = [
-  {
-    title: "Aprovacoes",
-    href: "/admin/aprovacoes",
-    icon: FileCheck,
-  },
-  {
-    title: "Parceiros",
-    href: "/admin/parceiros",
-    icon: Building2,
-  },
-  {
-    title: "Beneficiarios",
-    href: "/admin/beneficiarios",
-    icon: Users,
-  },
-  {
-    title: "Voluntarios",
-    href: "/admin/voluntarios",
-    icon: UserCheck,
-  },
+  { title: "Aprovações", href: "/admin/aprovacoes", icon: FileCheck },
+  { title: "Parceiros", href: "/admin/parceiros", icon: Building2 },
+  { title: "Beneficiários", href: "/admin/beneficiarios", icon: Users },
+  { title: "Voluntários", href: "/admin/voluntarios", icon: UserCheck },
 ]
 
 const systemItems = [
-  {
-    title: "Mensagens",
-    href: "/admin/mensagens",
-    icon: MessageSquare,
-  },
-  {
-    title: "Relatórios",
-    href: "/admin/relatorios",
-    icon: FileBarChart,
-  },
-  {
-    title: "Configurações",
-    href: "/admin/configuracoes",
-    icon: Settings,
-  },
+  { title: "Mensagens", href: "/admin/mensagens", icon: MessageSquare },
+  { title: "Relatórios", href: "/admin/relatorios", icon: FileBarChart },
+  { title: "Configurações", href: "/admin/configuracoes", icon: Settings },
 ]
 
 export function AdminSidebar({ collapsed, onToggle, onNavigate, variant = "desktop" }: AdminSidebarProps) {
@@ -135,10 +78,10 @@ export function AdminSidebar({ collapsed, onToggle, onNavigate, variant = "deskt
         to={item.href}
         onClick={onNavigate}
         className={cn(
-          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          "group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold transition-all",
           isActive
-            ? "bg-sidebar-primary text-sidebar-primary-foreground"
-            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            ? "bg-accent text-accent-foreground shadow-lg shadow-accent/20"
+            : "text-primary-foreground/78 hover:bg-primary-foreground/10 hover:text-primary-foreground",
           isCollapsed && "justify-center px-2"
         )}
       >
@@ -146,11 +89,7 @@ export function AdminSidebar({ collapsed, onToggle, onNavigate, variant = "deskt
         {showLabel && !isCollapsed && (
           <span className="flex flex-1 items-center justify-between">
             {item.title}
-            {item.badge && (
-              <span className="ml-auto rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
-                {item.badge}
-              </span>
-            )}
+            {item.badge && <span className="ml-auto rounded-full bg-primary-foreground/15 px-2 py-0.5 text-xs font-black text-primary-foreground">{item.badge}</span>}
           </span>
         )}
       </Link>
@@ -174,111 +113,52 @@ export function AdminSidebar({ collapsed, onToggle, onNavigate, variant = "deskt
     <TooltipProvider>
       <aside
         className={cn(
-          "tdb-admin-sidebar flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 h-dvh max-h-dvh min-h-0",
+          "tdb-admin-sidebar relative flex-col overflow-hidden border-r border-primary-foreground/10 bg-primary text-primary-foreground transition-all duration-300 h-dvh max-h-dvh min-h-0 shadow-2xl shadow-primary/20",
+          "before:pointer-events-none before:absolute before:-left-20 before:top-10 before:h-56 before:w-56 before:rounded-full before:bg-secondary/50 before:blur-3xl before:content-['']",
+          "after:pointer-events-none after:absolute after:-bottom-20 after:right-0 after:h-64 after:w-64 after:rounded-full after:bg-accent/35 after:blur-3xl after:content-['']",
           isDrawer ? "flex w-full" : "hidden shrink-0 lg:flex",
           !isDrawer && (isCollapsed ? "w-16" : "w-64")
         )}
       >
-        {/* Logo */}
-        <div className={cn(
-          "flex h-16 items-center border-b border-sidebar-border px-4",
-          isCollapsed && "justify-center px-2"
-        )}>
+        <div className={cn("relative z-10 flex h-16 items-center border-b border-primary-foreground/10 px-4", isCollapsed && "justify-center px-2")}>
           <Link to="/admin" className="flex items-center gap-2">
             {!isCollapsed && (
               <div className="flex flex-col leading-none">
-                <span className="text-lg font-bold text-sidebar-foreground">
-                  Turma do Bem
-                </span>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-primary">
-                  Painel Admin
-                </span>
+                <span className="text-lg font-black text-primary-foreground">Turma do Bem</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.22em] text-accent">Painel Admin</span>
               </div>
             )}
-            {isCollapsed && (
-              <span className="text-xl font-bold text-sidebar-primary">TdB</span>
-            )}
+            {isCollapsed && <span className="text-xl font-black text-accent">TdB</span>}
           </Link>
         </div>
 
-        {/* Navigation */}
-        <ScrollArea className="min-h-0 flex-1 px-3 py-4">
+        <ScrollArea className="relative z-10 min-h-0 flex-1 px-3 py-4">
           <nav className="flex flex-col gap-6">
-            {/* Main Navigation */}
             <div>
-              {!isCollapsed && (
-                <h3 className="mb-3 px-3 text-sm font-bold uppercase tracking-[0.18em] text-sidebar-foreground">
-                  Principal
-                </h3>
-              )}
-              <div className="space-y-1">
-                {mainNavItems.map((item) => (
-                  <NavLink key={item.href} item={item} />
-                ))}
-              </div>
+              {!isCollapsed && <h3 className="mb-3 px-3 text-xs font-black uppercase tracking-[0.18em] text-primary-foreground/56">Principal</h3>}
+              <div className="space-y-1">{mainNavItems.map((item) => <NavLink key={item.href} item={item} />)}</div>
             </div>
 
-            {/* Management */}
-            <div className="border-t border-orange-500/70 pt-4">
-              {!isCollapsed && (
-                <h3 className="mb-3 px-3 text-sm font-bold uppercase tracking-[0.18em] text-sidebar-foreground">
-                  Gestão
-                </h3>
-              )}
-              <div className="space-y-1">
-                {managementItems.map((item) => (
-                  <NavLink key={item.href} item={item} />
-                ))}
-              </div>
+            <div className="border-t border-primary-foreground/12 pt-4">
+              {!isCollapsed && <h3 className="mb-3 px-3 text-xs font-black uppercase tracking-[0.18em] text-primary-foreground/56">Gestão</h3>}
+              <div className="space-y-1">{managementItems.map((item) => <NavLink key={item.href} item={item} />)}</div>
             </div>
 
-            {/* System */}
-            <div className="border-t border-orange-500/70 pt-4">
-              {!isCollapsed && (
-                <h3 className="mb-3 px-3 text-sm font-bold uppercase tracking-[0.18em] text-sidebar-foreground">
-                  Sistema
-                </h3>
-              )}
-              <div className="space-y-1">
-                {systemItems.map((item) => (
-                  <NavLink key={item.href} item={item} />
-                ))}
-              </div>
+            <div className="border-t border-primary-foreground/12 pt-4">
+              {!isCollapsed && <h3 className="mb-3 px-3 text-xs font-black uppercase tracking-[0.18em] text-primary-foreground/56">Sistema</h3>}
+              <div className="space-y-1">{systemItems.map((item) => <NavLink key={item.href} item={item} />)}</div>
             </div>
           </nav>
         </ScrollArea>
 
-        {/* Footer */}
-        <div className={cn(
-          "shrink-0 border-t border-sidebar-border p-3 space-y-2",
-          isCollapsed && "flex flex-col items-center"
-        )}>
+        <div className={cn("relative z-10 shrink-0 space-y-2 border-t border-primary-foreground/10 p-3", isCollapsed && "flex flex-col items-center")}>
           {!isDrawer && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggle}
-              className={cn(
-                "w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                isCollapsed && "w-auto justify-center px-2"
-              )}
-            >
-              <ChevronLeft className={cn(
-                "h-4 w-4 transition-transform",
-                isCollapsed && "rotate-180"
-              )} />
+            <Button variant="ghost" size="sm" onClick={handleToggle} className={cn("w-full justify-start rounded-2xl text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground", isCollapsed && "w-auto justify-center px-2")}>
+              <ChevronLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
               {!isCollapsed && <span className="ml-2">Recolher menu</span>}
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className={cn(
-              "w-full justify-start text-destructive/70 hover:bg-destructive/10 hover:text-destructive",
-              isCollapsed && "w-auto justify-center px-2"
-            )}
-          >
+          <Button variant="ghost" size="sm" onClick={handleLogout} className={cn("w-full justify-start rounded-2xl text-destructive-foreground/80 hover:bg-destructive/20 hover:text-destructive-foreground", isCollapsed && "w-auto justify-center px-2")}>
             <LogOut className="h-4 w-4" />
             {!isCollapsed && <span className="ml-2">Sair</span>}
           </Button>

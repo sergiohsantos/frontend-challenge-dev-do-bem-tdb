@@ -1,3 +1,4 @@
+import { getToken } from "@/lib/auth"
 import type {
   AIHealthResponse,
   AIModelStatusResponse,
@@ -22,12 +23,13 @@ function joinUrl(path: string): string {
 }
 
 async function aiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = new Headers(options.headers)
+  headers.set("Content-Type", "application/json")
+  const token = getToken()
+  if (token) headers.set("Authorization", `Bearer ${token}`)
   const response = await fetch(joinUrl(path), {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
+    headers,
   })
 
   let data: unknown = null
@@ -37,6 +39,12 @@ async function aiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     data = null
   }
 
+  if (response.status === 401) {
+    throw new Error("Sua sessão é inválida ou expirou. Entre novamente para consultar a IA.")
+  }
+  if (response.status === 403) {
+    throw new Error("Seu perfil não tem permissão para consultar a IA.")
+  }
   if (!response.ok) {
     throw new Error("Nao foi possivel consultar o servico de IA agora.")
   }
@@ -62,3 +70,4 @@ export function predictNoShowRisk(payload: PredictRequest): Promise<PredictRespo
     body: JSON.stringify(payload),
   })
 }
+

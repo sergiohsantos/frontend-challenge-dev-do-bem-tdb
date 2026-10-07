@@ -124,6 +124,18 @@ function normalizeAdminSettings(raw: Record<string, unknown> | null | undefined)
   }
 }
 
+function SettingRow({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="font-black text-foreground">{title}</p>
+        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export default function AdminConfiguracoesPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -187,10 +199,7 @@ export default function AdminConfiguracoesPage() {
         site_description: settings.system.siteDescription,
         support_phone: settings.system.supportPhone,
       }
-      await apiFetch("/api/admin/settings", {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      }, token)
+      await apiFetch("/api/admin/settings", { method: "PUT", body: JSON.stringify(payload) }, token)
       toast.success("Configurações salvas com sucesso")
     } catch (error) {
       console.error("Erro ao salvar:", error)
@@ -260,131 +269,76 @@ export default function AdminConfiguracoesPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <AdminSidebar />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <AdminHeader />
-          <main className="flex items-center justify-center p-6">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </main>
+          <main className="flex items-center justify-center p-6"><Loader2 className="h-8 w-8 animate-spin text-primary" /></main>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="p-4 sm:p-6">
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+        <main className="overflow-x-hidden p-4 sm:p-6">
+          <div className="mb-6 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">Configurações</h1>
-              <p className="text-sm text-muted-foreground">Gerencie o perfil do admin e as configurações do sistema</p>
+              <p className="text-sm text-muted-foreground">Gerencie o perfil do admin e as configurações do sistema.</p>
             </div>
-            <Button onClick={handleSaveSettings} disabled={saving} className="gap-2">
+            <Button onClick={handleSaveSettings} disabled={saving} className="h-11 gap-2 rounded-full font-black">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Salvar alterações
             </Button>
           </div>
 
           <Tabs defaultValue="perfil" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="perfil" className="gap-2">
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">Perfil</span>
-              </TabsTrigger>
-              <TabsTrigger value="geral" className="gap-2">
-                <Globe className="h-4 w-4" />
-                <span className="hidden sm:inline">Geral</span>
-              </TabsTrigger>
-              <TabsTrigger value="notificacoes" className="gap-2">
-                <Bell className="h-4 w-4" />
-                <span className="hidden sm:inline">Notificações</span>
-              </TabsTrigger>
-              <TabsTrigger value="seguranca" className="gap-2">
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Segurança</span>
-              </TabsTrigger>
+            <TabsList className="grid h-auto w-full grid-cols-4 rounded-2xl p-1">
+              <TabsTrigger value="perfil" className="gap-2 rounded-full"><User className="h-4 w-4" /><span className="hidden sm:inline">Perfil</span></TabsTrigger>
+              <TabsTrigger value="geral" className="gap-2 rounded-full"><Globe className="h-4 w-4" /><span className="hidden sm:inline">Geral</span></TabsTrigger>
+              <TabsTrigger value="notificacoes" className="gap-2 rounded-full"><Bell className="h-4 w-4" /><span className="hidden sm:inline">Notificações</span></TabsTrigger>
+              <TabsTrigger value="seguranca" className="gap-2 rounded-full"><Shield className="h-4 w-4" /><span className="hidden sm:inline">Segurança</span></TabsTrigger>
             </TabsList>
 
             <TabsContent value="perfil">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-primary" />Perfil do administrador</CardTitle>
-                  <CardDescription>Atualize os dados do usuário logado. As alterações ficam persistidas no frontend atual.</CardDescription>
-                </CardHeader>
+              <Card className="min-w-0">
+                <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-primary" />Perfil do administrador</CardTitle><CardDescription>Atualize os dados do usuário logado. As alterações ficam persistidas no frontend atual.</CardDescription></CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2 sm:col-span-2"><Label htmlFor="admin-nome">Nome</Label><Input id="admin-nome" value={profile.nome || ""} onChange={(e) => updateProfile("nome", e.target.value)} /></div>
-                  <div className="space-y-2"><Label htmlFor="admin-email">E-mail</Label><Input id="admin-email" type="email" value={profile.email || ""} onChange={(e) => updateProfile("email", e.target.value)} /></div>
-                  <div className="space-y-2"><Label htmlFor="admin-role">Perfil</Label><Input id="admin-role" value={profile.role || "admin"} onChange={(e) => updateProfile("role", e.target.value)} /></div>
+                  <div className="space-y-2 sm:col-span-2"><Label htmlFor="admin-nome">Nome</Label><Input id="admin-nome" className="h-11" value={profile.nome || ""} onChange={(e) => updateProfile("nome", e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="admin-email">E-mail</Label><Input id="admin-email" className="h-11" type="email" value={profile.email || ""} onChange={(e) => updateProfile("email", e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="admin-role">Perfil</Label><Input id="admin-role" className="h-11" value={profile.role || "admin"} onChange={(e) => updateProfile("role", e.target.value)} /></div>
                   <div className="space-y-2 sm:col-span-2"><Label htmlFor="admin-observacoes">Observações</Label><Textarea id="admin-observacoes" rows={4} value={profile.observacoes || ""} onChange={(e) => updateProfile("observacoes", e.target.value)} /></div>
-                  <div className="sm:col-span-2">
-                    <Button onClick={() => void handleSaveProfile()} disabled={profileSaving} className="gap-2">
-                      {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                      Salvar perfil
-                    </Button>
-                  </div>
+                  <div className="sm:col-span-2"><Button onClick={() => void handleSaveProfile()} disabled={profileSaving} className="h-11 gap-2 rounded-full font-black">{profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Salvar perfil</Button></div>
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="geral">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5 text-primary" />Configurações gerais</CardTitle>
-                  <CardDescription>Informações básicas e preferências do sistema</CardDescription>
-                </CardHeader>
+              <Card className="min-w-0">
+                <CardHeader><CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5 text-primary" />Configurações gerais</CardTitle><CardDescription>Informações básicas e preferências do sistema</CardDescription></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="site_name">Nome do site</Label>
-                      <Input id="site_name" value={settings.system.siteName} onChange={(e) => updateSystem("siteName", e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="support_phone">Telefone de suporte</Label>
-                      <Input id="support_phone" value={settings.system.supportPhone} onChange={(e) => updateSystem("supportPhone", e.target.value)} />
-                    </div>
+                    <div className="space-y-2"><Label htmlFor="site_name">Nome do site</Label><Input id="site_name" className="h-11" value={settings.system.siteName} onChange={(e) => updateSystem("siteName", e.target.value)} /></div>
+                    <div className="space-y-2"><Label htmlFor="support_phone">Telefone de suporte</Label><Input id="support_phone" className="h-11" value={settings.system.supportPhone} onChange={(e) => updateSystem("supportPhone", e.target.value)} /></div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="site_description">Descrição do site</Label>
-                    <Textarea id="site_description" value={settings.system.siteDescription} onChange={(e) => updateSystem("siteDescription", e.target.value)} rows={4} />
-                  </div>
+                  <div className="space-y-2"><Label htmlFor="site_description">Descrição do site</Label><Textarea id="site_description" value={settings.system.siteDescription} onChange={(e) => updateSystem("siteDescription", e.target.value)} rows={4} /></div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="language">Idioma padrão</Label>
-                      <Input id="language" value={settings.system.language} onChange={(e) => updateSystem("language", e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="timezone">Timezone</Label>
-                      <Input id="timezone" value={settings.system.timezone} onChange={(e) => updateSystem("timezone", e.target.value)} />
-                    </div>
+                    <div className="space-y-2"><Label htmlFor="language">Idioma padrão</Label><Input id="language" className="h-11" value={settings.system.language} onChange={(e) => updateSystem("language", e.target.value)} /></div>
+                    <div className="space-y-2"><Label htmlFor="timezone">Timezone</Label><Input id="timezone" className="h-11" value={settings.system.timezone} onChange={(e) => updateSystem("timezone", e.target.value)} /></div>
                   </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <p className="font-medium">Modo de manutenção</p>
-                      <p className="text-sm text-muted-foreground">Quando ativado, o sistema pode operar em modo restrito.</p>
-                    </div>
-                    <Switch checked={settings.system.maintenanceMode} onCheckedChange={(checked) => updateSystem("maintenanceMode", checked)} />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <p className="font-medium">Modo debug</p>
-                      <p className="text-sm text-muted-foreground">Use apenas para diagnóstico.</p>
-                    </div>
-                    <Switch checked={settings.system.debugMode} onCheckedChange={(checked) => updateSystem("debugMode", checked)} />
-                  </div>
+                  <SettingRow title="Modo de manutenção" description="Quando ativado, o sistema pode operar em modo restrito."><Switch checked={settings.system.maintenanceMode} onCheckedChange={(checked) => updateSystem("maintenanceMode", checked)} /></SettingRow>
+                  <SettingRow title="Modo debug" description="Use apenas para diagnóstico."><Switch checked={settings.system.debugMode} onCheckedChange={(checked) => updateSystem("debugMode", checked)} /></SettingRow>
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="notificacoes">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Configurações de notificações</CardTitle>
-                  <CardDescription>Gerencie como os alertas administrativos são enviados</CardDescription>
-                </CardHeader>
+              <Card className="min-w-0">
+                <CardHeader><CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5 text-primary" />Configurações de notificações</CardTitle><CardDescription>Gerencie como os alertas administrativos são enviados</CardDescription></CardHeader>
                 <CardContent className="space-y-4">
                   {([
                     ["emailAlerts", "Alertas por e-mail", "Receba avisos administrativos no e-mail"],
@@ -392,26 +346,11 @@ export default function AdminConfiguracoesPage() {
                     ["systemAlerts", "Eventos do sistema", "Notificações sobre mudanças e incidentes"],
                     ["dailyDigest", "Resumo diário", "Consolida notificações importantes do dia"],
                     ["weeklyReport", "Relatório semanal", "Resumo semanal para acompanhamento gerencial"],
-                  ] as Array<[keyof AdminSettingsState["notifications"], string, string]>).map(([key, title, description]) => (
-                    <div key={key} className="flex items-center justify-between rounded-lg border p-4">
-                      <div>
-                        <p className="font-medium">{title}</p>
-                        <p className="text-sm text-muted-foreground">{description}</p>
-                      </div>
-                      <Switch checked={settings.notifications[key]} onCheckedChange={(checked) => updateNotifications(key, checked)} />
-                    </div>
-                  ))}
-                  <div className="rounded-lg border p-4">
+                  ] as Array<[keyof AdminSettingsState["notifications"], string, string]>).map(([key, title, description]) => <SettingRow key={key} title={title} description={description}><Switch checked={settings.notifications[key]} onCheckedChange={(checked) => updateNotifications(key, checked)} /></SettingRow>)}
+
+                  <div className="rounded-2xl border p-4">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <MessageCircle className="h-5 w-5 text-primary" />
-                          <p className="font-medium">Notificações WhatsApp</p>
-                        </div>
-                        <p className="max-w-2xl text-sm text-muted-foreground">
-                          Ativa ou pausa os disparos automáticos de WhatsApp para aprovações, agendamentos, confirmações e reagendamentos.
-                        </p>
-                      </div>
+                      <div className="space-y-2"><div className="flex items-center gap-2"><MessageCircle className="h-5 w-5 text-primary" /><p className="font-black text-foreground">Notificações WhatsApp</p></div><p className="max-w-2xl text-sm leading-6 text-muted-foreground">Ativa ou pausa os disparos automáticos de WhatsApp para aprovações, agendamentos, confirmações e reagendamentos.</p></div>
                       <Switch checked={settings.notifications.whatsappEnabled} onCheckedChange={(checked) => updateNotifications("whatsappEnabled", checked)} />
                     </div>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -421,62 +360,25 @@ export default function AdminConfiguracoesPage() {
                         ["Template configurado", whatsAppStatus?.templateDefaultPresent],
                         ["Webhook configurado", whatsAppStatus?.webhookConfigured],
                         ["Número forçado ativo", whatsAppStatus?.forceRecipientPresent],
-                      ] as Array<[string, boolean | undefined]>).map(([label, active]) => (
-                        <div key={label} className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
-                          <span className="text-muted-foreground">{label}</span>
-                          <span className={active ? "font-medium text-emerald-600" : "font-medium text-muted-foreground"}>{active ? "Sim" : "Não"}</span>
-                        </div>
-                      ))}
-                      <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
-                        <span className="text-muted-foreground">Modo atual</span>
-                        <span className="font-medium">{whatsAppStatus?.messageMode || "indefinido"}</span>
-                      </div>
+                      ] as Array<[string, boolean | undefined]>).map(([label, active]) => <div key={label} className="flex items-center justify-between rounded-2xl bg-muted/50 px-3 py-2 text-sm"><span className="text-muted-foreground">{label}</span><span className={active ? "font-black text-emerald-600" : "font-black text-muted-foreground"}>{active ? "Sim" : "Não"}</span></div>)}
+                      <div className="flex items-center justify-between rounded-2xl bg-muted/50 px-3 py-2 text-sm"><span className="text-muted-foreground">Modo atual</span><span className="font-black">{whatsAppStatus?.messageMode || "indefinido"}</span></div>
                     </div>
-                    {whatsAppStatus?.templateDefault ? (
-                      <p className="mt-3 text-sm text-muted-foreground">Template: {whatsAppStatus.templateDefault} ({whatsAppStatus.templateLanguage})</p>
-                    ) : null}
-                    {whatsAppStatus?.warning ? (
-                      <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                        {whatsAppStatus.warning}
-                      </div>
-                    ) : null}
-                    <Button type="button" variant="outline" onClick={() => void handleWhatsAppTest()} disabled={testingWhatsApp} className="mt-4 gap-2">
-                      {testingWhatsApp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                      Enviar teste
-                    </Button>
+                    {whatsAppStatus?.templateDefault ? <p className="mt-3 text-sm text-muted-foreground">Template: {whatsAppStatus.templateDefault} ({whatsAppStatus.templateLanguage})</p> : null}
+                    {whatsAppStatus?.warning ? <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{whatsAppStatus.warning}</div> : null}
+                    <Button type="button" variant="outline" onClick={() => void handleWhatsAppTest()} disabled={testingWhatsApp} className="mt-4 h-11 gap-2 rounded-full font-bold">{testingWhatsApp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Enviar teste</Button>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="seguranca">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-primary" />Segurança</CardTitle>
-                  <CardDescription>Gerencie as configurações de segurança do sistema</CardDescription>
-                </CardHeader>
+              <Card className="min-w-0">
+                <CardHeader><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-primary" />Segurança</CardTitle><CardDescription>Gerencie as configurações de segurança do sistema</CardDescription></CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <p className="font-medium">Autenticação em dois fatores</p>
-                      <p className="text-sm text-muted-foreground">Ativa proteção adicional para logins administrativos.</p>
-                    </div>
-                    <Switch checked={settings.security.twoFactorEnabled} onCheckedChange={(checked) => updateSecurity("twoFactorEnabled", checked)} />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <p className="font-medium">Whitelist de IP</p>
-                      <p className="text-sm text-muted-foreground">Limita o acesso administrativo a endereços aprovados.</p>
-                    </div>
-                    <Switch checked={settings.security.ipWhitelist} onCheckedChange={(checked) => updateSecurity("ipWhitelist", checked)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="session-timeout">Timeout de sessão (minutos)</Label>
-                    <Input id="session-timeout" type="number" min={5} max={480} value={settings.security.sessionTimeout} onChange={(e) => updateSecurity("sessionTimeout", Number(e.target.value || 30))} />
-                  </div>
-                  <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-                    As configurações de e-mail e integrações avançadas continuam sendo gerenciadas pelo servidor quando disponíveis.
-                  </div>
+                  <SettingRow title="Autenticação em dois fatores" description="Ativa proteção adicional para logins administrativos."><Switch checked={settings.security.twoFactorEnabled} onCheckedChange={(checked) => updateSecurity("twoFactorEnabled", checked)} /></SettingRow>
+                  <SettingRow title="Whitelist de IP" description="Limita o acesso administrativo a endereços aprovados."><Switch checked={settings.security.ipWhitelist} onCheckedChange={(checked) => updateSecurity("ipWhitelist", checked)} /></SettingRow>
+                  <div className="space-y-2"><Label htmlFor="session-timeout">Timeout de sessão (minutos)</Label><Input id="session-timeout" className="h-11" type="number" min={5} max={480} value={settings.security.sessionTimeout} onChange={(e) => updateSecurity("sessionTimeout", Number(e.target.value || 30))} /></div>
+                  <div className="rounded-2xl border p-4 text-sm leading-6 text-muted-foreground">As configurações de e-mail e integrações avançadas continuam sendo gerenciadas pelo servidor quando disponíveis.</div>
                 </CardContent>
               </Card>
             </TabsContent>

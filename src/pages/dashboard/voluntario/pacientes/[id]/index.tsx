@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
+import { HelpButton } from "@/components/layout/help-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +14,7 @@ import { Label } from "@/components/ui/label"
 import { apiFetch, apiUpload } from "@/lib/api"
 import { downloadFromApi } from "@/lib/file-download"
 import { getToken, getUser } from "@/lib/auth"
-import { ArrowLeft, Calendar, Download, FileText, Loader2, Mail, MapPin, MessageSquare, Phone, User, ClipboardList, GraduationCap, HeartPulse, Users, Home, Save } from "lucide-react"
+import { Calendar, Download, FileText, Loader2, Mail, MapPin, MessageSquare, Phone, User, ClipboardList, GraduationCap, HeartPulse, Users, Home, Save } from "lucide-react"
 import { toast } from "sonner"
 
 interface PatientDetail {
@@ -225,6 +227,7 @@ export default function VoluntarioPacienteDetailPage() {
             <AlertBanner type="error" title="Erro" message={error || "Paciente não encontrado"} />
           </div>
         </main>
+        <HelpButton />
       </div>
     )
   }
@@ -234,46 +237,45 @@ export default function VoluntarioPacienteDetailPage() {
       <DashboardHeader userName={user?.full_name || "Voluntário"} userType="voluntario" notificationCount={0} />
       <main className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
-          <Button variant="ghost" size="sm" className="mb-4" asChild>
-            <Link to="/dashboard/voluntario/pacientes">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar aos pacientes
-            </Link>
-          </Button>
+          <VolunteerPageHero
+            eyebrow="Paciente"
+            title={patientName}
+            description="Prontuário, consultas, mensagens e anexos do paciente reunidos no mesmo fluxo de acompanhamento."
+            icon={<User className="h-4 w-4" aria-hidden="true" />}
+            backTo="/dashboard/voluntario/pacientes"
+            backLabel="Voltar aos pacientes"
+            primaryAction={(
+              <Button size="lg" asChild className="h-14 rounded-full bg-accent text-base font-black text-accent-foreground hover:bg-accent/90">
+                <Link to={`/dashboard/voluntario/agenda/novo?patientId=${patient.id}`}><Calendar className="mr-2 h-5 w-5" />Agendar consulta</Link>
+              </Button>
+            )}
+            secondaryAction={(
+              <Button size="lg" variant="outline" asChild className="h-14 rounded-full border-primary-foreground/30 bg-transparent text-base font-black text-primary-foreground hover:bg-primary-foreground/10">
+                <Link to={`/dashboard/voluntario/mensagens?thread=case-public-${caseId}`}><MessageSquare className="mr-2 h-5 w-5" />Mensagem</Link>
+              </Button>
+            )}
+            meta={(
+              <>
+                {patient.status ? <span>{patient.status}</span> : null}
+                <span>{patientProgram}</span>
+                {patient.etapa ? <span>Etapa: {patient.etapa}</span> : null}
+              </>
+            )}
+          />
 
           {error && <AlertBanner type="error" title="Erro" message={error} dismissible onDismiss={() => setError(null)} className="mb-4" />}
 
-          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{patientName}</h1>
-              <p className="text-muted-foreground">Prontuário, consultas, mensagens e anexos do paciente.</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {patient.status ? <Badge variant="outline">{patient.status}</Badge> : null}
-                <Badge variant="secondary">{patientProgram}</Badge>
-                {patient.etapa ? <Badge variant="secondary">Etapa: {patient.etapa}</Badge> : null}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild>
-                <Link to={`/dashboard/voluntario/agenda/novo?patientId=${patient.id}`}><Calendar className="mr-2 h-4 w-4" />Agendar consulta</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to={`/dashboard/voluntario/mensagens?thread=case-public-${caseId}`}><MessageSquare className="mr-2 h-4 w-4" />Mensagem</Link>
-              </Button>
-            </div>
-          </div>
-
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4 lg:w-[640px]">
-              <TabsTrigger value="overview">Visão geral</TabsTrigger>
-              <TabsTrigger value="consultas">Consultas</TabsTrigger>
-              <TabsTrigger value="anotacoes">Anotações</TabsTrigger>
-              <TabsTrigger value="documentos">Documentos</TabsTrigger>
+            <TabsList className="h-auto w-full flex-wrap justify-start rounded-2xl bg-muted p-1 lg:w-fit">
+              <TabsTrigger value="overview" className="rounded-full">Visão geral</TabsTrigger>
+              <TabsTrigger value="consultas" className="rounded-full">Consultas</TabsTrigger>
+              <TabsTrigger value="anotacoes" className="rounded-full">Anotações</TabsTrigger>
+              <TabsTrigger value="documentos" className="rounded-full">Documentos</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview">
               <div className="grid gap-4 lg:grid-cols-3">
-                <Card className="lg:col-span-2">
+                <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5 lg:col-span-2">
                   <CardHeader>
                     <CardTitle>Dados completos do beneficiário</CardTitle>
                     <CardDescription>Informações pessoais, contato, cadastro social e acompanhamento do caso</CardDescription>
@@ -300,7 +302,7 @@ export default function VoluntarioPacienteDetailPage() {
                   </CardContent>
                 </Card>
                 <div className="space-y-4">
-                  <Card>
+                  <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                     <CardHeader>
                       <CardTitle>Resumo do caso</CardTitle>
                       <CardDescription>Andamento clínico e status geral</CardDescription>
@@ -313,7 +315,7 @@ export default function VoluntarioPacienteDetailPage() {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                     <CardHeader>
                       <CardTitle>Histórico clínico</CardTitle>
                       <CardDescription>Dados relevantes para o atendimento</CardDescription>
@@ -322,7 +324,7 @@ export default function VoluntarioPacienteDetailPage() {
                       {medicalHistory.length === 0 ? (
                         <p className="text-sm text-muted-foreground">Nenhum histórico clínico complementar informado.</p>
                       ) : medicalHistory.map((item, index) => (
-                        <div key={`${item}-${index}`} className="rounded-lg border p-3 text-muted-foreground">{item}</div>
+                        <div key={`${item}-${index}`} className="rounded-2xl border p-3 text-muted-foreground">{item}</div>
                       ))}
                     </CardContent>
                   </Card>
@@ -331,20 +333,20 @@ export default function VoluntarioPacienteDetailPage() {
             </TabsContent>
 
             <TabsContent value="consultas">
-              <Card>
+              <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                 <CardHeader>
                   <CardTitle>Consultas</CardTitle>
                   <CardDescription>Agendamentos vinculados ao caso</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {sortedAppointments.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma consulta registrada.</p> : sortedAppointments.map((appt) => (
-                    <div key={appt.id} className="rounded-xl border p-4">
+                    <div key={appt.id} className="rounded-2xl border p-4">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="font-medium">{appt.type || "Consulta"}</p>
                           <p className="text-sm text-muted-foreground">{appt.date || "-"} {appt.time ? `às ${appt.time}` : ""}</p>
                         </div>
-                        <Badge variant="outline">{appt.status || "sem status"}</Badge>
+                        <Badge variant="outline" className="rounded-full">{appt.status || "sem status"}</Badge>
                       </div>
                       {appt.notes ? <p className="mt-2 text-sm text-muted-foreground">{appt.notes}</p> : null}
                     </div>
@@ -355,14 +357,14 @@ export default function VoluntarioPacienteDetailPage() {
 
             <TabsContent value="anotacoes">
               <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                <Card>
+                <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                   <CardHeader>
                     <CardTitle>Anotações do prontuário</CardTitle>
                     <CardDescription>Histórico clínico e observações do caso</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {notes.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma anotação disponível.</p> : notes.map((note) => (
-                      <div key={note.id} className="rounded-xl border p-4">
+                      <div key={note.id} className="rounded-2xl border p-4">
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-medium">{note.author || "Registro"}</p>
                           <span className="text-xs text-muted-foreground">{note.date || ""}</span>
@@ -372,7 +374,7 @@ export default function VoluntarioPacienteDetailPage() {
                     ))}
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                   <CardHeader>
                     <CardTitle>Nova anotação</CardTitle>
                     <CardDescription>Registre observações clínicas diretamente no prontuário do beneficiário.</CardDescription>
@@ -386,9 +388,10 @@ export default function VoluntarioPacienteDetailPage() {
                         onChange={(event) => setNewNote(event.target.value)}
                         placeholder="Escreva uma observação, evolução do atendimento ou informação clínica relevante..."
                         rows={8}
+                        className="rounded-2xl"
                       />
                     </div>
-                    <Button onClick={() => void handleSaveNote()} disabled={isSavingNote} className="gap-2">
+                    <Button onClick={() => void handleSaveNote()} disabled={isSavingNote} className="h-11 gap-2 rounded-full font-black">
                       {isSavingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                       Enviar ao prontuário
                     </Button>
@@ -408,21 +411,21 @@ export default function VoluntarioPacienteDetailPage() {
                   helperText="Anexe exames, laudos, evidências e documentos clínicos do paciente."
                   error={error}
                 />
-                <Card>
+                <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5 text-primary" />Arquivos anexados</CardTitle>
                     <CardDescription>Downloads e histórico do prontuário</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {documents.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum documento anexado.</p> : documents.map((document) => (
-                      <div key={document.id} className="rounded-xl border p-4">
-                        <div className="flex items-start justify-between gap-3">
+                      <div key={document.id} className="rounded-2xl border p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <p className="font-medium">{document.title}</p>
                             <p className="text-xs text-muted-foreground">{document.category || "documento"} • {document.uploadedAt || "Sem data"}</p>
                             {document.notes ? <p className="mt-2 text-sm text-muted-foreground">{document.notes}</p> : null}
                           </div>
-                          <Button variant="outline" onClick={() => void handleDownloadDocument(document)} disabled={downloadingId === document.id}>
+                          <Button variant="outline" onClick={() => void handleDownloadDocument(document)} disabled={downloadingId === document.id} className="h-10 rounded-full font-bold">
                             {downloadingId === document.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                             Baixar
                           </Button>
@@ -436,6 +439,8 @@ export default function VoluntarioPacienteDetailPage() {
           </Tabs>
         </div>
       </main>
+
+      <HelpButton />
     </div>
   )
 }

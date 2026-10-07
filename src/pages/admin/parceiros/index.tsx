@@ -42,16 +42,34 @@ type PartnersResponse = {
 function getStatusBadge(status?: string) {
   switch (status) {
     case "ativo":
-      return <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+      return <Badge className="rounded-full bg-green-100 text-green-800">Ativo</Badge>
     case "inativo":
-      return <Badge className="bg-gray-100 text-gray-800">Inativo</Badge>
+      return <Badge className="rounded-full bg-gray-100 text-gray-800">Inativo</Badge>
     default:
-      return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>
+      return <Badge className="rounded-full bg-yellow-100 text-yellow-800">Pendente</Badge>
   }
 }
 
 function getTypeBadge(type?: string) {
-  return <Badge variant="outline">{type || "Outro"}</Badge>
+  return <Badge variant="outline" className="rounded-full">{type || "Outro"}</Badge>
+}
+
+function MetricCard({ label, value, icon, tone = "primary" }: { label: string; value: number; icon: React.ReactNode; tone?: "primary" | "green" | "yellow" }) {
+  const toneClass = tone === "green" ? "bg-green-500/10 text-green-600" : tone === "yellow" ? "bg-yellow-500/10 text-yellow-600" : "bg-primary/10 text-primary"
+
+  return (
+    <Card className="min-w-0">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <p className="truncate text-3xl font-black text-foreground">{value}</p>
+          </div>
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${toneClass}`}>{icon}</div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 export default function AdminParceirosPage() {
@@ -115,192 +133,91 @@ export default function AdminParceirosPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <AdminSidebar />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <AdminHeader />
-          <main className="p-4 sm:p-6">
-            <DashboardSkeleton />
-          </main>
+          <main className="overflow-x-hidden p-4 sm:p-6"><DashboardSkeleton /></main>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="p-4 sm:p-6">
-          {error && (
-            <AlertBanner
-              type="error"
-              title="Erro"
-              message={error}
-              dismissible
-              onDismiss={() => setError(null)}
-              className="mb-6"
-            />
-          )}
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-                Parceiros
-              </h1>
-              <p className="text-muted-foreground">
-                Gerencie parceiros, clínicas e organizacões vinculadas aos programas
-              </p>
+        <main className="overflow-x-hidden p-4 sm:p-6">
+          {error && <AlertBanner type="error" title="Erro" message={error} dismissible onDismiss={() => setError(null)} className="mb-6" />}
+
+          <div className="mb-6 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Parceiros</h1>
+              <p className="text-muted-foreground">Gerencie parceiros, clínicas e organizações vinculadas aos programas.</p>
             </div>
           </div>
+
           <div className="mb-6 grid gap-4 sm:grid-cols-3">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total de parceiros</p>
-                    <p className="text-2xl font-bold">{stats.total}</p>
-                  </div>
-                  <Building className="h-8 w-8 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Parceiros ativos</p>
-                    <p className="text-2xl font-bold text-green-600">{stats.ativos}</p>
-                  </div>
-                  <Building className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pendentes</p>
-                    <p className="text-2xl font-bold text-yellow-600">{stats.aguardando}</p>
-                  </div>
-                  <Building className="h-8 w-8 text-yellow-600" />
-                </div>
-              </CardContent>
-            </Card>
+            <MetricCard label="Total de parceiros" value={stats.total} icon={<Building className="h-6 w-6" />} />
+            <MetricCard label="Parceiros ativos" value={stats.ativos} icon={<Building className="h-6 w-6" />} tone="green" />
+            <MetricCard label="Pendentes" value={stats.aguardando} icon={<Building className="h-6 w-6" />} tone="yellow" />
           </div>
 
-          <Card>
+          <Card className="min-w-0">
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building className="h-5 w-5 text-primary" />
-                    Parceiros
-                  </CardTitle>
-                  <CardDescription>
-                    {filteredPartners.length} parceiro(s) encontrado(s)
-                  </CardDescription>
+                <div className="min-w-0">
+                  <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" />Parceiros</CardTitle>
+                  <CardDescription>{filteredPartners.length} parceiro(s) encontrado(s)</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+              <div className="mb-6 flex flex-col gap-4 lg:flex-row">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome, cidade, contato ou email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                  <Input placeholder="Buscar por nome, cidade, contato ou email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-11 pl-10" />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[150px]">
-                    <Filter className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="ativo">Ativos</SelectItem>
-                    <SelectItem value="inativo">Inativos</SelectItem>
-                  </SelectContent>
+                  <SelectTrigger className="h-11 w-full lg:w-[150px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="ativo">Ativos</SelectItem><SelectItem value="inativo">Inativos</SelectItem></SelectContent>
                 </Select>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <Building className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {partnerTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
+                  <SelectTrigger className="h-11 w-full lg:w-[180px]"><Building className="mr-2 h-4 w-4" /><SelectValue placeholder="Tipo" /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Todos</SelectItem>{partnerTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
 
               {filteredPartners.length > 0 ? (
                 <div className="space-y-4">
                   {filteredPartners.map((partner) => (
-                    <div
-                      key={partner.id}
-                      className="rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-sm"
-                    >
+                    <div key={partner.id} className="rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
-                            <Building className="h-6 w-6 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground">{partner.nome || "Parceiro"}</p>
+                        <div className="flex min-w-0 items-start gap-4">
+                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/10"><Building className="h-6 w-6 text-primary" /></div>
+                          <div className="min-w-0">
+                            <p className="font-black text-foreground">{partner.nome || "Parceiro"}</p>
                             <p className="text-sm text-muted-foreground">Contato: {partner.contato || "Não informado"}</p>
                             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-4 w-4" />
-                                {[partner.cidade, partner.uf].filter(Boolean).join(", ") || "Local não informado"}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Phone className="h-4 w-4" />
-                                {partner.telefone || "Telefone não informado"}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                Programa: {partner.programa || "Não informado"}
-                              </div>
+                              <div className="flex items-center gap-1"><MapPin className="h-4 w-4" />{[partner.cidade, partner.uf].filter(Boolean).join(", ") || "Local não informado"}</div>
+                              <div className="flex items-center gap-1"><Phone className="h-4 w-4" />{partner.telefone || "Telefone não informado"}</div>
+                              <div className="flex items-center gap-1"><Calendar className="h-4 w-4" />Programa: {partner.programa || "Não informado"}</div>
                             </div>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              {partner.voluntarios ?? 0} voluntário(s) | {partner.atendimentos ?? 0} atendimento(s)
-                            </p>
+                            <p className="mt-2 text-sm text-muted-foreground">{partner.voluntarios ?? 0} voluntário(s) | {partner.atendimentos ?? 0} atendimento(s)</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           {getTypeBadge(partner.tipo)}
                           {getStatusBadge(partner.status)}
-                          <Button size="sm" variant="outline" asChild>
-                            <Link to={`/admin/parceiros/${partner.id}`}>
-                              <Eye className="mr-1 h-4 w-4" />
-                              Ver
-                            </Link>
-                          </Button>
+                          <Button size="sm" variant="outline" asChild className="h-10 rounded-full font-bold"><Link to={`/admin/parceiros/${partner.id}`}><Eye className="mr-1 h-4 w-4" />Ver</Link></Button>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <Empty variant="subtle" className="py-12">
-                  <EmptyMedia variant="primary">
-                    <Building className="h-8 w-8" />
-                  </EmptyMedia>
-                  <EmptyTitle>Nenhum parceiro encontrado</EmptyTitle>
-                  <EmptyDescription>
-                    {searchQuery || statusFilter !== "all" || typeFilter !== "all"
-                      ? "Tente ajustar os filtros de busca"
-                      : "Nenhum parceiro cadastrado ainda"}
-                  </EmptyDescription>
-                </Empty>
+                <Empty variant="subtle" className="py-12"><EmptyMedia variant="primary"><Building className="h-8 w-8" /></EmptyMedia><EmptyTitle>Nenhum parceiro encontrado</EmptyTitle><EmptyDescription>{searchQuery || statusFilter !== "all" || typeFilter !== "all" ? "Tente ajustar os filtros de busca" : "Nenhum parceiro cadastrado ainda"}</EmptyDescription></Empty>
               )}
             </CardContent>
           </Card>

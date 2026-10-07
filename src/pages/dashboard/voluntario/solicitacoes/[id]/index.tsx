@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
 import { HelpButton } from "@/components/layout/help-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -117,12 +118,12 @@ export default function SolicitacaoDetailPage() {
 
   const handleSendComment = async () => {
     if (!newComment.trim() || !request) return
-    
+
     setIsSending(true)
     try {
       const token = getToken()
       if (!token) return
-      
+
       const sentMessage = await apiFetch<ApprovalMessage>(
         `/api/volunteers/procedure-requests/${params.id}/comments`,
         {
@@ -131,7 +132,7 @@ export default function SolicitacaoDetailPage() {
         },
         token
       )
-      
+
       setRequest(prev => prev ? {
         ...prev,
         messages: [...(prev.messages || []), sentMessage]
@@ -147,7 +148,7 @@ export default function SolicitacaoDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col bg-secondary">
+      <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName="..." userType="voluntario" notificationCount={0} />
         <main className="flex flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-4">
@@ -161,16 +162,16 @@ export default function SolicitacaoDetailPage() {
 
   if (error || !request) {
     return (
-      <div className="flex min-h-screen flex-col bg-secondary">
+      <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
         <main className="flex-1 py-6 lg:py-8">
           <div className="container mx-auto px-4">
             <div className="space-y-4 py-12">
-              <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+              <div className="flex items-center gap-2 rounded-2xl border border-destructive/50 bg-destructive/10 p-4 text-destructive">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
                 {error || "Solicitação não encontrada"}
               </div>
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild className="h-10 rounded-full font-bold">
                 <Link to="/dashboard/voluntario/solicitacoes">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Voltar para Solicitações
@@ -179,6 +180,7 @@ export default function SolicitacaoDetailPage() {
             </div>
           </div>
         </main>
+        <HelpButton />
       </div>
     )
   }
@@ -188,39 +190,34 @@ export default function SolicitacaoDetailPage() {
   const StatusIcon = status.icon
 
   return (
-    <div className="flex min-h-screen flex-col bg-secondary">
+    <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
-      
+
       <main className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="mb-6">
-            <Button variant="ghost" size="sm" asChild className="mb-2">
-              <Link to="/dashboard/voluntario/solicitacoes">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar para Solicitações
-              </Link>
-            </Button>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold">{request.public_id || request.id}</h1>
-              <Badge className={prioridade.color}>{prioridade.label}</Badge>
-              <Badge variant="outline" className={status.color}>
-                <StatusIcon className="mr-1 h-3 w-3" />
-                {status.label}
-              </Badge>
-            </div>
-            <p className="mt-1 text-lg text-muted-foreground">{request.procedimento}</p>
-          </div>
+          <VolunteerPageHero
+            eyebrow="Solicitação"
+            title={request.public_id || request.id}
+            description={request.procedimento}
+            icon={<FileText className="h-4 w-4" aria-hidden="true" />}
+            backTo="/dashboard/voluntario/solicitacoes"
+            backLabel="Voltar para solicitações"
+            meta={(
+              <>
+                <span>{prioridade.label}</span>
+                <span>{status.label}</span>
+                <span>{request.beneficiario}</span>
+              </>
+            )}
+          />
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {/* Main Content */}
             <div className="space-y-6 lg:col-span-2">
-              {/* Procedure Details */}
-              <Card>
+              <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
-                    Detalhes do Procedimento
+                    Detalhes do procedimento
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -228,6 +225,14 @@ export default function SolicitacaoDetailPage() {
                     <User className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">Beneficiário:</span>
                     <span>{request.beneficiario}</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className={`rounded-full ${prioridade.color}`}>{prioridade.label}</Badge>
+                    <Badge variant="outline" className={`rounded-full ${status.color}`}>
+                      <StatusIcon className="mr-1 h-3 w-3" />
+                      {status.label}
+                    </Badge>
                   </div>
 
                   <Separator />
@@ -261,8 +266,7 @@ export default function SolicitacaoDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Messages / Comments */}
-              <Card>
+              <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MessageSquare className="h-5 w-5 text-primary" />
@@ -273,7 +277,7 @@ export default function SolicitacaoDetailPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4 max-h-[400px] overflow-y-auto mb-4">
+                  <div className="mb-4 max-h-[400px] space-y-4 overflow-y-auto rounded-[2rem] border border-border bg-muted/30 p-4">
                     {(request.messages || []).length > 0 ? (
                       request.messages?.map((msg) => (
                         <div
@@ -281,17 +285,17 @@ export default function SolicitacaoDetailPage() {
                           className={`flex ${msg.senderRole === "volunteer" ? "justify-end" : "justify-start"}`}
                         >
                           <div
-                            className={`max-w-[80%] p-4 rounded-2xl ${
+                            className={`max-w-[82%] rounded-2xl p-4 shadow-sm ${
                               msg.senderRole === "volunteer"
-                                ? "bg-primary text-primary-foreground rounded-br-md"
-                                : "bg-muted rounded-bl-md"
+                                ? "bg-primary text-primary-foreground"
+                                : "border border-border bg-background text-foreground"
                             }`}
                           >
                             {msg.senderRole !== "volunteer" && (
-                              <p className="text-xs font-semibold mb-1 opacity-70">{msg.senderName || "Admin"}</p>
+                              <p className="mb-1 text-xs font-semibold opacity-70">{msg.senderName || "Admin"}</p>
                             )}
-                            <p className="text-sm">{msg.content}</p>
-                            <p className={`text-xs mt-2 ${msg.senderRole === "volunteer" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                            <p className="text-sm leading-6">{msg.content}</p>
+                            <p className={`mt-2 text-xs ${msg.senderRole === "volunteer" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                               {msg.createdAt ? new Date(msg.createdAt).toLocaleString("pt-BR") : ""}
                             </p>
                           </div>
@@ -299,34 +303,34 @@ export default function SolicitacaoDetailPage() {
                       ))
                     ) : (
                       <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                        <MessageSquare className="h-10 w-10 mb-2 opacity-50" />
+                        <MessageSquare className="mb-2 h-10 w-10 opacity-50" />
                         <p>Nenhuma mensagem ainda</p>
                       </div>
                     )}
                   </div>
 
-                  {/* Send comment */}
                   <div className="space-y-2">
                     <Label htmlFor="comment">Enviar mensagem</Label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <Textarea
                         id="comment"
                         placeholder="Digite sua mensagem..."
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         rows={2}
-                        className="flex-1"
+                        className="min-h-[88px] flex-1 rounded-2xl"
                       />
                       <Button
                         onClick={handleSendComment}
                         disabled={!newComment.trim() || isSending}
-                        className="self-end"
+                        className="h-12 rounded-full px-6 font-black sm:h-auto sm:min-h-[88px] sm:rounded-2xl"
                       >
                         {isSending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Send className="h-4 w-4" />
                         )}
+                        <span className="ml-2 sm:sr-only">Enviar</span>
                       </Button>
                     </div>
                   </div>
@@ -334,10 +338,8 @@ export default function SolicitacaoDetailPage() {
               </Card>
             </div>
 
-            {/* Sidebar */}
             <div className="space-y-6">
-              {/* Info Card */}
-              <Card>
+              <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                 <CardHeader>
                   <CardTitle className="text-base">Informações</CardTitle>
                 </CardHeader>
@@ -351,7 +353,7 @@ export default function SolicitacaoDetailPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   {request.dataAtualizacao && (
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
@@ -374,9 +376,8 @@ export default function SolicitacaoDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* History */}
               {request.historico && request.historico.length > 0 && (
-                <Card>
+                <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <History className="h-5 w-5 text-primary" />
@@ -411,14 +412,13 @@ export default function SolicitacaoDetailPage() {
                 </Card>
               )}
 
-              {/* Status Info */}
               {request.status === "info_adicional" && (
-                <Card className="border-accent/50 bg-accent/5">
+                <Card className="tdb-polished-card rounded-[2rem] border-accent/50 bg-accent/5 shadow-xl shadow-primary/5">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-accent flex-shrink-0" />
+                      <AlertTriangle className="h-5 w-5 flex-shrink-0 text-accent" />
                       <div>
-                        <p className="font-medium">Informações Solicitadas</p>
+                        <p className="font-medium">Informações solicitadas</p>
                         <p className="mt-1 text-sm text-muted-foreground">
                           O admin solicitou informações adicionais. Por favor, responda usando o campo de mensagens acima.
                         </p>

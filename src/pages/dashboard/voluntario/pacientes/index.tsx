@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
+import { HelpButton } from "@/components/layout/help-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -197,20 +198,20 @@ export default function VoluntarioPacientesPage() {
                         </div>
                       )}
 
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <Button size="sm" asChild className="rounded-full">
+                      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                        <Button size="sm" asChild className="h-10 w-full rounded-full font-bold sm:w-auto">
                           <Link to={`/dashboard/voluntario/pacientes/${patient.id}`}>
                             <FileText className="mr-2 h-4 w-4" />
                             Ver prontuário
                           </Link>
                         </Button>
-                        <Button size="sm" variant="outline" asChild className="rounded-full">
+                        <Button size="sm" variant="outline" asChild className="h-10 w-full rounded-full font-bold sm:w-auto">
                           <Link to={`/dashboard/voluntario/mensagens?caseId=${patient.caseId || patient.id}`}>
                             <MessageSquare className="mr-2 h-4 w-4" />
                             Mensagem
                           </Link>
                         </Button>
-                        <Button size="sm" variant="outline" asChild className="rounded-full">
+                        <Button size="sm" variant="outline" asChild className="h-10 w-full rounded-full font-bold sm:w-auto">
                           <Link to={`/dashboard/voluntario/agenda/novo?patientId=${patient.id}`}>
                             <Calendar className="mr-2 h-4 w-4" />
                             Agendar
@@ -233,6 +234,8 @@ export default function VoluntarioPacientesPage() {
           </Card>
         </div>
       </main>
+
+      <HelpButton />
     </div>
   )
 }

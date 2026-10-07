@@ -95,45 +95,41 @@ export default function AdminNotificacoesPage() {
   const unreadCount = notifications.filter((item) => !item.read).length
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="p-4 sm:p-6">
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+        <main className="overflow-x-hidden p-4 sm:p-6">
+          <div className="mb-6 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">Notificações</h1>
               <p className="text-sm text-muted-foreground">Clique em uma notificação para abrir a tela relacionada.</p>
             </div>
-            {unreadCount > 0 && (
-              <Button variant="outline" onClick={handleMarkAllRead}>Marcar todas como lidas</Button>
-            )}
+            {unreadCount > 0 && <Button variant="outline" onClick={handleMarkAllRead} className="h-11 rounded-full font-bold">Marcar todas como lidas</Button>}
           </div>
 
-          <Card>
+          <Card className="min-w-0">
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
+                <div className="min-w-0">
+                  <CardTitle className="flex flex-wrap items-center gap-2">
                     <Bell className="h-5 w-5 text-primary" />
                     Notificações do sistema
-                    {unreadCount > 0 && <Badge>{unreadCount} novas</Badge>}
+                    {unreadCount > 0 && <Badge className="rounded-full">{unreadCount} novas</Badge>}
                   </CardTitle>
                   <CardDescription>Abra aprovações, mensagens internas e outros alertas do painel.</CardDescription>
                 </div>
-                <div className="relative w-full sm:w-72">
+                <div className="relative w-full sm:w-80">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar notificações..." className="pl-10" />
+                  <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar notificações..." className="h-11 pl-10" />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : filteredNotifications.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground">Nenhuma notificação encontrada.</div>
+                <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhuma notificação encontrada.</div>
               ) : (
                 <div className="space-y-4">
                   {filteredNotifications.map((item) => {
@@ -141,21 +137,19 @@ export default function AdminNotificacoesPage() {
                     const Icon = typeConfig[type].icon
                     return (
                       <button key={item.id} type="button" className="block w-full text-left" onClick={() => void handleOpenNotification(item)}>
-                        <div className={`rounded-xl border p-4 transition-colors hover:border-primary/40 ${item.read ? 'bg-card' : 'bg-muted/40'}`}>
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-3">
-                              <div className={`mt-1 rounded-lg p-2 ${typeConfig[type].bgColor}`}>
-                                <Icon className={`h-4 w-4 ${typeConfig[type].color}`} />
+                        <div className={`rounded-2xl border p-4 transition-all hover:border-primary/40 hover:shadow-md ${item.read ? "bg-card" : "bg-primary/5"}`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl ${typeConfig[type].bgColor}`}>
+                              <Icon className={`h-5 w-5 ${typeConfig[type].color}`} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-black text-foreground">{item.title}</p>
+                                {!item.read && <Badge variant="secondary" className="rounded-full">Nova</Badge>}
                               </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium text-foreground">{item.title}</p>
-                                  {!item.read && <Badge variant="secondary">Nova</Badge>}
-                                </div>
-                                <p className="mt-1 text-sm text-muted-foreground">{item.message}</p>
-                                <p className="mt-2 text-xs text-muted-foreground">{item.createdAt || "Sem data"}</p>
-                                <p className="mt-2 text-xs font-medium text-primary">{openingId === item.id ? "Abrindo..." : "Clique para abrir"}</p>
-                              </div>
+                              <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.message}</p>
+                              <p className="mt-2 text-xs text-muted-foreground">{item.createdAt || "Sem data"}</p>
+                              <p className="mt-2 text-xs font-black text-primary">{openingId === item.id ? "Abrindo..." : "Clique para abrir"}</p>
                             </div>
                           </div>
                         </div>
