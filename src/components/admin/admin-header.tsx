@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { apiFetch } from "@/lib/api"
 import { clearAuth, getToken, getUser } from "@/lib/auth"
+import { useTheme } from "@/components/theme-provider"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +36,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const pathname = location.pathname
-  const [darkMode, setDarkMode] = useState(false)
+  const { resolvedTheme, setTheme } = useTheme()
   const [adminName, setAdminName] = useState("Administrador")
   const [adminEmail, setAdminEmail] = useState("admin@turmadobem.org.br")
   const [notifications, setNotifications] = useState<HeaderNotification[]>([])
@@ -80,8 +81,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   }, [pathname, loadNotifications])
 
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode)
-    document.documentElement.classList.toggle("dark")
+    setTheme(resolvedTheme === "dark" ? "light" : "dark")
   }
 
   const handleLogout = () => {
@@ -129,16 +129,16 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const unreadCount = notifications.filter((item) => !item.read).length
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background px-4 lg:px-6">
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border/60 bg-background/85 px-4 shadow-sm shadow-primary/5 backdrop-blur-xl lg:px-6">
       <div className="flex items-center gap-4">
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
+            <Button variant="ghost" size="icon" className="rounded-full lg:hidden" onClick={onMenuClick}>
               <Menu className="h-5 w-5" />
               <span className="sr-only">Abrir menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 max-w-[85vw] p-0">
+          <SheetContent side="left" className="tdb-admin-mobile-sheet w-72 max-w-[85vw] border-r-0 bg-[#102842] p-0 text-white">
             <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
             <SheetDescription className="sr-only">Navegue pelas opções do painel administrativo</SheetDescription>
             <AdminSidebar variant="drawer" onNavigate={() => setMobileMenuOpen(false)} />
@@ -148,35 +148,35 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         <div className="hidden w-72 sm:block lg:w-96">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input type="search" placeholder="Buscar beneficiários, voluntários, parceiros..." className="h-10 pl-10 pr-4" />
+            <Input type="search" placeholder="Buscar beneficiários, voluntários, parceiros..." className="h-10 rounded-full border-border/70 bg-background/80 pl-10 pr-4 shadow-sm" />
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
-          {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="rounded-full">
+          {resolvedTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           <span className="sr-only">Alternar tema</span>
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative rounded-full">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 ? <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs">{unreadCount > 9 ? "9+" : unreadCount}</Badge> : null}
               <span className="sr-only">Notificações</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="w-80 rounded-2xl">
             <DropdownMenuLabel className="flex items-center justify-between">
               <span>Notificações</span>
-              <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-primary" onClick={handleMarkAllRead} disabled={isMarking}>
+              <Button variant="ghost" size="sm" className="h-auto rounded-full p-0 text-xs text-primary" onClick={handleMarkAllRead} disabled={isMarking}>
                 {isMarking ? <Loader2 className="h-3 w-3 animate-spin" /> : "Marcar todas como lidas"}
               </Button>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {notifications.length > 0 ? notifications.map((notification) => (
-              <DropdownMenuItem key={notification.id} className="flex cursor-pointer flex-col items-start gap-1 p-3" onSelect={(e) => { e.preventDefault(); void handleOpenNotification(notification) }}>
+              <DropdownMenuItem key={notification.id} className="flex cursor-pointer flex-col items-start gap-1 rounded-xl p-3" onSelect={(e) => { e.preventDefault(); void handleOpenNotification(notification) }}>
                 <div className="flex w-full items-start gap-2">
                   <div className={`mt-1 h-2 w-2 rounded-full ${notification.read ? "bg-muted-foreground/40" : "bg-primary"}`} />
                   <div className="min-w-0 flex-1">
@@ -189,11 +189,11 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 </div>
               </DropdownMenuItem>
             )) : (
-              <DropdownMenuItem className="text-muted-foreground">Nenhuma notificação recente</DropdownMenuItem>
+              <DropdownMenuItem className="rounded-xl text-muted-foreground">Nenhuma notificação recente</DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/admin/notificacoes" className="w-full justify-center text-primary">
+              <Link to="/admin/notificacoes" className="w-full justify-center rounded-xl text-primary">
                 Ver todas as notificações
               </Link>
             </DropdownMenuItem>
@@ -202,17 +202,17 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-2 pl-2 pr-3">
+            <Button variant="ghost" className="gap-2 rounded-full pl-2 pr-3">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">{initials}</AvatarFallback>
+                <AvatarFallback className="bg-primary text-sm text-primary-foreground">{initials}</AvatarFallback>
               </Avatar>
               <div className="hidden flex-col items-start text-left md:flex">
-                <span className="text-sm font-medium">{adminName}</span>
+                <span className="text-sm font-black">{adminName}</span>
                 <span className="text-xs text-muted-foreground">Administradora</span>
               </div>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-56 rounded-2xl">
             <DropdownMenuLabel>
               <div className="flex flex-col">
                 <span>{adminName}</span>
@@ -220,20 +220,20 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="rounded-xl">
               <Link to="/admin/configuracoes">
                 <Settings className="mr-2 h-4 w-4" />
                 Configurações
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="rounded-xl">
               <Link to="/admin/mensagens">
                 <User className="mr-2 h-4 w-4" />
                 Central de mensagens
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-xl text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </DropdownMenuItem>

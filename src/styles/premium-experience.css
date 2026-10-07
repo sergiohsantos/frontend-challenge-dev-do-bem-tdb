@@ -1,4 +1,4 @@
-/* Premium experience layer: visual depth, subtle motion and emotional storytelling */
+/* Premium experience layer: visual depth, subtle motion and logged area polish */
 :root {
   --tdb-ink: #102842;
   --tdb-teal-soft: rgba(91, 191, 186, 0.24);
@@ -6,9 +6,7 @@
   --tdb-blue-soft: rgba(26, 58, 92, 0.12);
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   background:
@@ -28,11 +26,11 @@ body {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background-image:
-    linear-gradient(rgba(26, 58, 92, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(26, 58, 92, 0.045) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: linear-gradient(to bottom, black 0%, transparent 78%);
+  background:
+    radial-gradient(circle at 12% 12%, rgba(91, 191, 186, 0.30), transparent 20rem),
+    radial-gradient(circle at 86% 34%, rgba(255, 255, 255, 0.08), transparent 18rem),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 58%);
+  opacity: 0.95;
 }
 
 .tdb-orb {
@@ -44,9 +42,7 @@ body {
   animation: tdb-float 9s ease-in-out infinite;
 }
 
-.tdb-orb-delayed {
-  animation-delay: -4s;
-}
+.tdb-orb-delayed { animation-delay: -4s; }
 
 .tdb-glass {
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -82,25 +78,13 @@ body {
   animation: tdb-shimmer 900ms ease forwards;
 }
 
-.tdb-reveal {
-  animation: tdb-rise 720ms ease both;
-}
-
+.tdb-reveal { animation: tdb-rise 720ms ease both; }
 .tdb-reveal-delay-1 { animation-delay: 90ms; }
 .tdb-reveal-delay-2 { animation-delay: 180ms; }
 .tdb-reveal-delay-3 { animation-delay: 270ms; }
-
-.tdb-floating-card {
-  animation: tdb-soft-breathe 5.8s ease-in-out infinite;
-}
-
-.tdb-floating-card:nth-child(2) {
-  animation-delay: -1.8s;
-}
-
-.tdb-floating-card:nth-child(3) {
-  animation-delay: -3.2s;
-}
+.tdb-floating-card { animation: tdb-soft-breathe 5.8s ease-in-out infinite; }
+.tdb-floating-card:nth-child(2) { animation-delay: -1.8s; }
+.tdb-floating-card:nth-child(3) { animation-delay: -3.2s; }
 
 .tdb-metric-pill {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
@@ -108,60 +92,218 @@ body {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 18px 40px rgba(0,0,0,0.12);
 }
 
-/* Conservative polish for legacy logged pages such as the volunteer agenda.
-   This keeps existing React logic intact and only improves hierarchy, spacing and touch feel. */
-.bg-secondary main > .container > .mb-8.flex.flex-col.gap-4 {
+.tdb-volunteer-hero-actions > a,
+.tdb-volunteer-hero-actions > button,
+.tdb-beneficiary-hero-actions > a,
+.tdb-beneficiary-hero-actions > button {
+  height: 3.5rem;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.tdb-volunteer-hero-meta > span,
+.tdb-beneficiary-hero-meta > span {
+  display: inline-flex;
+  min-height: 1.75rem;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  background: rgba(255, 255, 255, 0.10);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+/* Logged area width alignment */
+main > .container.max-w-7xl,
+.flex.min-h-screen.flex-col.bg-background > main > .container,
+.flex.min-h-screen.flex-col.bg-secondary > main > .container {
+  max-width: 1536px !important;
+}
+
+/* Admin premium shell: shared visual polish for all logged Admin pages */
+.tdb-admin-sidebar + div {
+  min-width: 0;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(91, 191, 186, 0.18), transparent 28rem),
+    radial-gradient(circle at 94% 12%, rgba(245, 132, 31, 0.14), transparent 24rem),
+    linear-gradient(180deg, hsl(204 100% 99%) 0%, hsl(0 0% 100%) 48%, hsl(178 44% 98%) 100%);
+}
+
+.tdb-admin-sidebar + div > header {
+  border-color: rgba(16, 40, 66, 0.10);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 14px 45px rgba(16, 40, 66, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.tdb-admin-sidebar + div > main {
+  padding: 1.5rem;
+}
+
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1),
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1),
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 2rem;
+  min-height: 15rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 2.5rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
   padding: 1.5rem;
-  border: 1px solid hsl(var(--primary) / 0.12);
-  background:
-    radial-gradient(circle at top left, rgba(91, 191, 186, 0.22), transparent 18rem),
-    radial-gradient(circle at 90% 10%, rgba(245, 132, 31, 0.14), transparent 18rem),
-    linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary) / 0.55));
-  box-shadow: 0 24px 64px rgba(16, 40, 66, 0.10);
+  box-shadow: 0 26px 70px rgba(16, 40, 66, 0.20);
 }
 
-.bg-secondary main > .container > .mb-8.flex.flex-col.gap-4 h1 {
-  font-weight: 900;
-  letter-spacing: -0.035em;
-}
-
-.bg-secondary main > .container > .mb-8.flex.flex-col.gap-4 p {
-  max-width: 42rem;
-  line-height: 1.7;
-}
-
-.bg-secondary main > .container > .mb-6,
-.bg-secondary main > .container .grid.gap-4 > .rounded-lg,
-.bg-secondary main > .container .grid.gap-6 > .overflow-hidden,
-.bg-secondary main > .container .grid.gap-6 > .rounded-2xl,
-.bg-secondary main > .container .space-y-6 > .rounded-2xl,
-.bg-secondary main > .container .space-y-6 > .border {
-  border-radius: 1.5rem;
-  border-color: hsl(var(--border) / 0.75);
-  box-shadow: 0 18px 52px rgba(16, 40, 66, 0.08);
-}
-
-.bg-secondary main > .container button,
-.bg-secondary main > .container a[data-slot="button"] {
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1)::before,
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1)::after,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1)::before,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1)::after,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1)::before,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1)::after {
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  z-index: -1;
   border-radius: 9999px;
+  filter: blur(34px);
+  opacity: 0.60;
 }
 
-.bg-secondary main > .container .grid.grid-cols-7 button {
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1)::before,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1)::before,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1)::before {
+  left: -5rem;
+  top: -2rem;
+  width: 14rem;
+  height: 14rem;
+  background: hsl(var(--secondary));
+}
+
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1)::after,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1)::after,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1)::after {
+  right: -4rem;
+  bottom: -3rem;
+  width: 16rem;
+  height: 16rem;
+  background: hsl(var(--accent));
+}
+
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) h1,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) h1,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) h1 {
+  max-width: 52rem;
+  color: hsl(var(--primary-foreground));
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 900;
+}
+
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) p,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) p,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) p {
+  max-width: 44rem;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.85;
+}
+
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) button,
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) a[role="button"],
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) button,
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) a[role="button"],
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) button,
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) a[role="button"] {
+  min-height: 2.75rem;
+  border-radius: 9999px;
+  font-weight: 900;
+}
+
+.tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) [role="combobox"],
+.tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) [role="combobox"],
+.tdb-admin-sidebar + div > main > .mb-6:has(h1) [role="combobox"] {
+  min-height: 2.75rem;
+  border-radius: 9999px;
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.10);
+  color: hsl(var(--primary-foreground));
+  font-weight: 800;
+}
+
+.tdb-admin-sidebar + div > main [data-slot="card"] {
+  border-color: rgba(16, 40, 66, 0.10);
+  border-radius: 2rem;
+  box-shadow: 0 22px 58px rgba(16, 40, 66, 0.08);
+}
+
+.tdb-admin-sidebar + div > main [data-slot="card"]:hover {
+  box-shadow: 0 26px 70px rgba(16, 40, 66, 0.13);
+}
+
+.tdb-admin-sidebar + div > main .rounded-lg {
+  border-radius: 1.35rem;
+}
+
+.tdb-admin-sidebar + div > main .rounded-md {
   border-radius: 1rem;
 }
 
-.bg-secondary main > .container .grid.grid-cols-7 button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 32px rgba(16, 40, 66, 0.10);
+.tdb-admin-sidebar + div > main button:not([role="combobox"]),
+.tdb-admin-sidebar + div > main a[role="button"] {
+  border-radius: 9999px;
+  font-weight: 800;
 }
 
-.bg-secondary main > .container .rounded-lg.border.bg-card.shadow-sm {
+.tdb-admin-sidebar + div > main input,
+.tdb-admin-sidebar + div > main textarea,
+.tdb-admin-sidebar + div > main [role="combobox"] {
+  border-radius: 1rem;
+}
+
+.tdb-admin-sidebar + div > main table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tdb-admin-sidebar + div > main thead tr {
+  background: rgba(16, 40, 66, 0.035);
+}
+
+.tdb-admin-sidebar + div > main tbody tr {
+  transition: background-color 180ms ease, transform 180ms ease;
+}
+
+.tdb-admin-sidebar + div > main tbody tr:hover {
+  background: rgba(91, 191, 186, 0.08);
+}
+
+.tdb-admin-sidebar + div > main [role="tablist"] {
+  height: auto;
   border-radius: 1.25rem;
-  box-shadow: 0 14px 34px rgba(16, 40, 66, 0.08);
+  padding: 0.25rem;
+}
+
+.tdb-admin-sidebar + div > main [role="tab"] {
+  border-radius: 9999px;
+  font-weight: 800;
+}
+
+.tdb-admin-sidebar + div > main [class*="bg-green-100"],
+.tdb-admin-sidebar + div > main [class*="bg-blue-100"],
+.tdb-admin-sidebar + div > main [class*="bg-yellow-100"],
+.tdb-admin-sidebar + div > main [class*="bg-gray-100"] {
+  border-radius: 9999px;
+  font-weight: 800;
 }
 
 @keyframes tdb-float {
@@ -184,6 +326,33 @@ body {
   to { transform: translateX(120%); }
 }
 
+@media (max-width: 767px) {
+  .tdb-volunteer-hero-actions > a,
+  .tdb-volunteer-hero-actions > button,
+  .tdb-beneficiary-hero-actions > a,
+  .tdb-beneficiary-hero-actions > button {
+    width: 100%;
+  }
+
+  .tdb-admin-sidebar + div > main {
+    padding: 1rem;
+  }
+
+  .tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1),
+  .tdb-admin-sidebar + div > main.space-y-6 > div:has(h1),
+  .tdb-admin-sidebar + div > main > .mb-6:has(h1) {
+    min-height: 17rem;
+    align-items: stretch;
+    padding: 1.25rem;
+  }
+
+  .tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) > *,
+  .tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) > *,
+  .tdb-admin-sidebar + div > main > .mb-6:has(h1) > * {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .tdb-orb,
@@ -192,8 +361,7 @@ body {
   .tdb-polished-card:hover::after {
     animation: none !important;
   }
-  .tdb-polished-card:hover,
-  .bg-secondary main > .container .grid.grid-cols-7 button:hover {
+  .tdb-polished-card:hover {
     transform: none;
   }
 }

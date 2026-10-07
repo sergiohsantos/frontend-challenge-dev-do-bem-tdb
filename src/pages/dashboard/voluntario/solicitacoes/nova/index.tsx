@@ -172,7 +172,7 @@ export default function NovaSolicitacaoPage() {
       <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
 
       <main className="flex-1 py-6 lg:py-8">
-        <div className="container mx-auto max-w-5xl px-4">
+        <div className="container mx-auto px-4">
           <VolunteerPageHero
             eyebrow="Nova solicitação"
             title="Solicite aprovação de procedimento com contexto clínico."
@@ -194,7 +194,7 @@ export default function NovaSolicitacaoPage() {
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[0.8fr_1.2fr]">
             <aside className="space-y-4">
               <Card className="tdb-polished-card rounded-[2rem] border-primary/20 bg-primary/5">
                 <CardContent className="flex flex-col gap-3 p-5">
@@ -281,8 +281,8 @@ export default function NovaSolicitacaoPage() {
                   </div>
 
                   <div className="flex flex-col gap-3 pt-4 sm:flex-row">
-                    <Button type="button" variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting} className="rounded-full">Cancelar</Button>
-                    <Button type="submit" disabled={isSubmitting || isLoadingCases || cases.length === 0} className="flex-1 rounded-full font-black">
+                    <Button type="button" variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting} className="h-11 rounded-full sm:flex-1">Cancelar</Button>
+                    <Button type="submit" disabled={isSubmitting || isLoadingCases || cases.length === 0} className="h-11 flex-1 rounded-full font-black">
                       {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando...</> : <><FilePlus className="mr-2 h-4 w-4" />Enviar solicitação</>}
                     </Button>
                   </div>

@@ -275,7 +275,7 @@ export default function NovaConsultaPage() {
       <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
 
       <main className="flex-1 py-6 lg:py-8">
-        <div className="container mx-auto max-w-5xl px-4">
+        <div className="container mx-auto px-4">
           <VolunteerPageHero
             eyebrow="Agendar consulta"
             title="Agende somente procedimentos liberados para atendimento."
@@ -298,7 +298,7 @@ export default function NovaConsultaPage() {
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[0.8fr_1.2fr]">
             <aside className="space-y-4">
               <Card className="tdb-polished-card rounded-[2rem] border-primary/20 bg-primary/5">
                 <CardContent className="space-y-3 p-5 text-sm leading-7 text-muted-foreground">
@@ -365,8 +365,8 @@ export default function NovaConsultaPage() {
                   <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground"><div className="flex items-start gap-3"><ClipboardCheck className="mt-0.5 h-4 w-4 text-primary" /><p>Esse vínculo ajuda a manter tratamento, aprovação e agendamento conectados no histórico do caso.</p></div></div>
 
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    <Button type="button" variant="outline" className="rounded-full sm:flex-1" onClick={() => navigate("/dashboard/voluntario/agenda")}>Cancelar</Button>
-                    <Button type="submit" className="rounded-full font-black sm:flex-1" disabled={isSubmitting || !formData.patientId || !formData.approvalRequestId || !formData.date || !formData.time || !formData.type || Boolean(scheduleConflict)}>
+                    <Button type="button" variant="outline" className="h-11 rounded-full sm:flex-1" onClick={() => navigate("/dashboard/voluntario/agenda")}>Cancelar</Button>
+                    <Button type="submit" className="h-11 rounded-full font-black sm:flex-1" disabled={isSubmitting || !formData.patientId || !formData.approvalRequestId || !formData.date || !formData.time || !formData.type || Boolean(scheduleConflict)}>
                       {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Agendar consulta
                     </Button>
                   </div>

@@ -141,7 +141,7 @@ export default function SolicitacoesPage() {
 
           <div className="mb-6 grid gap-4 md:grid-cols-4">
             <SummaryCard title="Pendentes" value={pendingRequests.length} icon={Clock} tone="warning" />
-            <SummaryCard title="Aprovadas" value={approvedRequests.length} icon={CheckCircle2} tone="success" />
+            <SummaryCard title="Aprovadas" value={approvedRequests.length} icon={ShieldCheck} tone="success" />
             <SummaryCard title="Em ajuste" value={actionRequiredRequests.length} icon={AlertTriangle} tone="accent" />
             <SummaryCard title="Rejeitadas" value={rejectedRequests.length} icon={XCircle} tone="danger" />
           </div>
@@ -156,7 +156,7 @@ export default function SolicitacoesPage() {
                     <p className="text-sm leading-6 text-muted-foreground">Revise os comentários da equipe TDB e envie as informações solicitadas.</p>
                   </div>
                 </div>
-                <Button variant="outline" asChild className="rounded-full">
+                <Button variant="outline" asChild className="h-10 rounded-full px-4 font-bold sm:w-auto">
                   <Link to={`/dashboard/voluntario/solicitacoes/${actionRequiredRequests[0].public_id || actionRequiredRequests[0].id}`}>Responder primeira</Link>
                 </Button>
               </CardContent>
@@ -179,13 +179,13 @@ export default function SolicitacoesPage() {
 
           <Tabs defaultValue="pendentes" className="space-y-4">
             <TabsList className="h-auto w-full flex-wrap justify-start rounded-2xl bg-muted p-1 sm:w-fit">
-              <TabsTrigger value="pendentes" className="gap-2 rounded-xl">
+              <TabsTrigger value="pendentes" className="gap-2 rounded-full">
                 <Clock className="h-4 w-4" />Pendentes<Badge variant="secondary" className="ml-1 rounded-full">{pendingRequests.length}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="aprovados" className="gap-2 rounded-xl">
+              <TabsTrigger value="aprovados" className="gap-2 rounded-full">
                 <CheckCircle2 className="h-4 w-4" />Aprovados<Badge variant="secondary" className="ml-1 rounded-full">{approvedRequests.length}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="rejeitados" className="gap-2 rounded-xl">
+              <TabsTrigger value="rejeitados" className="gap-2 rounded-full">
                 <XCircle className="h-4 w-4" />Rejeitados<Badge variant="secondary" className="ml-1 rounded-full">{rejectedRequests.length}</Badge>
               </TabsTrigger>
             </TabsList>
@@ -255,12 +255,12 @@ function RequestCard({ request }: { request: ProcedureRequest }) {
             )}
           </div>
 
-          <div className="flex flex-col gap-2 lg:ml-6 lg:w-44">
-            <Button variant="outline" size="sm" asChild className="rounded-full">
+          <div className="flex flex-col gap-2 sm:flex-row lg:ml-6 lg:w-44 lg:flex-col">
+            <Button variant="outline" size="sm" asChild className="h-10 w-full rounded-full font-bold">
               <Link to={`/dashboard/voluntario/solicitacoes/${request.public_id || request.id}`}><Eye className="mr-2 h-4 w-4" />Ver detalhes</Link>
             </Button>
             {request.status === "info_adicional" && (
-              <Button size="sm" asChild className="rounded-full">
+              <Button size="sm" asChild className="h-10 w-full rounded-full font-bold">
                 <Link to={`/dashboard/voluntario/solicitacoes/${request.public_id || request.id}`}><MessageSquare className="mr-2 h-4 w-4" />Responder</Link>
               </Button>
             )}

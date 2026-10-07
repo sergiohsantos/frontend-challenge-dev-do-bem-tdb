@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
+import { HelpButton } from "@/components/layout/help-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -156,7 +157,7 @@ export default function VoluntarioConfiguracoesPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={user?.full_name || "Voluntário"} userType="voluntario" notificationCount={0} />
       <main className="flex-1 py-6 lg:py-8">
-        <div className="container mx-auto max-w-5xl px-4">
+        <div className="container mx-auto px-4">
           <VolunteerPageHero
             eyebrow="Configurações"
             title="Ajuste como a plataforma acompanha sua rotina."
@@ -176,59 +177,63 @@ export default function VoluntarioConfiguracoesPage() {
             )}
           />
 
-          {error ? <AlertBanner type="error" title="Atenção" message={error} dismissible onDismiss={() => setError(null)} className="mb-6" /> : null}
-          {success ? <AlertBanner type="success" title="Sucesso" message={success} dismissible onDismiss={() => setSuccess(null)} className="mb-6" /> : null}
+          <div className="mx-auto max-w-5xl">
+            {error ? <AlertBanner type="error" title="Atenção" message={error} dismissible onDismiss={() => setError(null)} className="mb-6" /> : null}
+            {success ? <AlertBanner type="success" title="Sucesso" message={success} dismissible onDismiss={() => setSuccess(null)} className="mb-6" /> : null}
 
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl font-black"><Bell className="h-6 w-6 text-primary" />Notificações</CardTitle>
-                <CardDescription>Controle os alertas enviados para seu perfil.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {notificationOptions.map(([key, title, description]) => (
-                  <div key={key} className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4">
-                    <div className="space-y-0.5">
-                      <Label htmlFor={key} className="font-black text-foreground">{title}</Label>
-                      <p className="text-sm leading-6 text-muted-foreground">{description}</p>
-                    </div>
-                    <Switch id={key} checked={settings[key] as boolean} onCheckedChange={() => handleToggle(key)} />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-xl font-black"><CalendarCheck2 className="h-5 w-5 text-primary" />Agenda e preferências</CardTitle>
-                  <CardDescription>Defina comportamentos básicos do fluxo de agenda.</CardDescription>
+                  <CardTitle className="flex items-center gap-2 text-2xl font-black"><Bell className="h-6 w-6 text-primary" />Notificações</CardTitle>
+                  <CardDescription>Controle os alertas enviados para seu perfil.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-border p-4">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="autoConfirm" className="font-black text-foreground">Confirmação automática</Label>
-                      <p className="text-sm leading-6 text-muted-foreground">Quando ativado, simplifica a confirmação do seu lado para novos agendamentos.</p>
+                  {notificationOptions.map(([key, title, description]) => (
+                    <div key={key} className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor={key} className="font-black text-foreground">{title}</Label>
+                        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+                      </div>
+                      <Switch id={key} checked={settings[key] as boolean} onCheckedChange={() => handleToggle(key)} />
                     </div>
-                    <Switch id="autoConfirm" checked={settings.autoConfirm} onCheckedChange={() => handleToggle("autoConfirm")} />
-                  </div>
+                  ))}
                 </CardContent>
               </Card>
 
-              <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-xl font-black"><Mail className="h-5 w-5 text-primary" />Comunicação</CardTitle>
-                  <CardDescription>Preferências usadas nas próximas interações.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
-                  <p>Use mensagens e notificações para acompanhar casos, pacientes e aprovações em andamento.</p>
-                  <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4"><Shield className="mb-2 h-5 w-5 text-primary" /><p>As configurações respeitam os canais disponíveis no backend atual e não criam integrações novas.</p></div>
-                </CardContent>
-              </Card>
+              <div className="space-y-6">
+                <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl font-black"><CalendarCheck2 className="h-5 w-5 text-primary" />Agenda e preferências</CardTitle>
+                    <CardDescription>Defina comportamentos básicos do fluxo de agenda.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-border p-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="autoConfirm" className="font-black text-foreground">Confirmação automática</Label>
+                        <p className="text-sm leading-6 text-muted-foreground">Quando ativado, simplifica a confirmação do seu lado para novos agendamentos.</p>
+                      </div>
+                      <Switch id="autoConfirm" checked={settings.autoConfirm} onCheckedChange={() => handleToggle("autoConfirm")} />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl font-black"><Mail className="h-5 w-5 text-primary" />Comunicação</CardTitle>
+                    <CardDescription>Preferências usadas nas próximas interações.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
+                    <p>Use mensagens e notificações para acompanhar casos, pacientes e aprovações em andamento.</p>
+                    <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4"><Shield className="mb-2 h-5 w-5 text-primary" /><p>As configurações respeitam os canais disponíveis no backend atual e não criam integrações novas.</p></div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>
       </main>
+
+      <HelpButton />
     </div>
   )
 }

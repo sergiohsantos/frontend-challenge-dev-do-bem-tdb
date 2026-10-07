@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
+import { HelpButton } from "@/components/layout/help-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -328,9 +329,9 @@ export default function VoluntarioMensagensPage() {
                               if ((event.ctrlKey || event.metaKey) && event.key === "Enter") void handleSendMessage()
                             }}
                           />
-                          <Button onClick={handleSendMessage} disabled={!newMessage.trim() || isSending} className="min-h-[88px] rounded-2xl px-6 font-black">
+                          <Button onClick={handleSendMessage} disabled={!newMessage.trim() || isSending} className="h-12 rounded-full px-6 font-black sm:h-auto sm:min-h-[88px] sm:rounded-2xl">
                             {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                            <span className="sr-only">Enviar</span>
+                            <span className="ml-2 sm:sr-only">Enviar</span>
                           </Button>
                         </div>
                       </div>
@@ -348,6 +349,8 @@ export default function VoluntarioMensagensPage() {
           </Tabs>
         </div>
       </main>
+
+      <HelpButton />
     </div>
   )
 }

@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
+import { HelpButton } from "@/components/layout/help-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -273,7 +273,7 @@ export default function VoluntarioDisponibilidadePage() {
                       </Label>
                     </div>
                     {dayData.enabled && (
-                      <Button variant="outline" size="sm" onClick={() => addSlot(dayData.day)} className="gap-2 rounded-full">
+                      <Button variant="outline" size="sm" onClick={() => addSlot(dayData.day)} className="h-9 gap-2 rounded-full px-4 font-bold">
                         <Plus className="h-4 w-4" />
                         Adicionar horário
                       </Button>
@@ -311,6 +311,8 @@ export default function VoluntarioDisponibilidadePage() {
           </Card>
         </div>
       </main>
+
+      <HelpButton />
     </div>
   )
 }

@@ -92,7 +92,12 @@ function findInitialThread(rawThreads: ThreadItem[], threads: UnifiedThread[], r
 }
 
 function getThreadBadges(thread: UnifiedThread) {
-  return <><Badge variant="outline">{thread.threadType === "case_public" ? "Público" : "Interno"}</Badge>{thread.threadType === "case_internal" && thread.approvalIds.length > 0 ? <Badge variant="secondary">Aprovação vinculada</Badge> : null}</>
+  return (
+    <>
+      <Badge variant="outline" className="rounded-full">{thread.threadType === "case_public" ? "Público" : "Interno"}</Badge>
+      {thread.threadType === "case_internal" && thread.approvalIds.length > 0 ? <Badge variant="secondary" className="rounded-full">Aprovação vinculada</Badge> : null}
+    </>
+  )
 }
 
 export default function AdminMensagensPage() {
@@ -190,24 +195,46 @@ export default function AdminMensagensPage() {
   }, [threads, searchTerm, activeTab])
 
   return (
-    <div className="flex min-h-screen"><AdminSidebar /><div className="flex-1"><AdminHeader />
-      <main className="p-4 sm:p-6">
-        <div className="mb-6"><h1 className="text-xl font-bold text-foreground sm:text-2xl">Mensagens</h1><p className="text-sm text-muted-foreground">O chat interno reúne Admin + voluntário + histórico de aprovação por beneficiário, em uma única conversa.</p></div>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ViewTab)}>
-          <TabsList className="mb-4 grid w-full grid-cols-2 lg:w-[320px]"><TabsTrigger value="public" className="gap-2"><Users className="h-4 w-4" />Público</TabsTrigger><TabsTrigger value="internal" className="gap-2"><Shield className="h-4 w-4" />Interno</TabsTrigger></TabsList>
-          <TabsContent value={activeTab}>
-            <Card><CardHeader><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary" />Central de mensagens</CardTitle><CardDescription>{activeTab === "public" ? "Beneficiário + voluntário" : "Admin + voluntário, por beneficiário, com aprovações unificadas"}</CardDescription></div><div className="relative w-full sm:w-72"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar conversas..." /></div></div></CardHeader>
-              <CardContent>{loading ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : (
-                <div className="grid gap-6 lg:grid-cols-3"><div className="space-y-3 lg:col-span-1">{filteredThreads.length === 0 ? <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">Nenhuma conversa encontrada. Ajuste a busca ou volte para aprovações e beneficiários para abrir um caso relacionado.</div> : filteredThreads.map((thread) => (
-                  <button key={thread.threadId} onClick={() => void openThread(thread)} className={`w-full rounded-xl border p-4 text-left transition-all hover:border-primary/30 ${activeThread?.threadId === thread.threadId ? "border-primary bg-primary/5" : "bg-card"}`}><div className="flex items-start justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><p className="font-medium text-foreground">{thread.title || thread.beneficiaryName || "Conversa"}</p>{getThreadBadges(thread)}{thread.statusLabel ? <Badge variant="secondary">{thread.statusLabel}</Badge> : null}</div><p className="mt-1 text-xs text-muted-foreground line-clamp-2">{thread.lastMessage || thread.subtitle || "Sem mensagens"}</p></div>{!!thread.unreadCount && <Badge className="bg-primary text-primary-foreground">{thread.unreadCount}</Badge>}</div></button>
-                ))}</div>
-                <div className="lg:col-span-2">{!activeThread ? <div className="rounded-xl border bg-card p-10 text-center text-muted-foreground">Selecione uma conversa para ver o histórico e responder com segurança.</div> : <div className="space-y-4"><div className="rounded-xl border bg-card p-4"><div className="flex flex-wrap items-center gap-2"><p className="font-medium text-foreground">{activeThread.title || activeThread.beneficiaryName}</p>{getThreadBadges(activeThread)}{activeThread.statusLabel ? <Badge variant="secondary">{activeThread.statusLabel}</Badge> : null}</div>{activeThread.subtitle ? <p className="mt-1 text-sm text-muted-foreground">{activeThread.subtitle}</p> : null}</div>
-                  <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-xl border bg-muted/30 p-4">{isLoadingMessages ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : messages.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhuma mensagem nesta conversa. Envie uma orientação curta quando houver uma ação pendente.</div> : messages.map((message, index) => { const mine = message.senderRole === "admin" || message.senderRole === "ADMIN"; return <div key={message.id || index} className={`flex ${mine ? "justify-end" : "justify-start"}`}><div className={`max-w-[80%] rounded-lg p-3 ${mine ? "bg-primary text-primary-foreground" : "border bg-background"}`}><p className="text-sm">{message.content}</p><div className="mt-1 flex items-center gap-2 text-xs opacity-70"><span>{message.senderName}</span>{message.createdAt ? <span>{new Date(message.createdAt).toLocaleString("pt-BR")}</span> : null}</div></div></div> })}<div ref={bottomRef} /></div>
-                  <div className="rounded-xl border bg-card p-4"><div className="flex gap-3"><Textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={activeThread.threadType === "case_public" ? "Digite uma mensagem para o chat do caso..." : "Digite uma mensagem interna para o voluntário responsável por este beneficiário..."} className="min-h-[96px]" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSendMessage() } }} /><Button onClick={() => void handleSendMessage()} disabled={!newMessage.trim() || sending} className="self-end gap-2">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Enviar</Button></div></div></div>}</div></div>
-              )}</CardContent></Card>
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div></div>
+    <div className="flex min-h-screen overflow-x-hidden">
+      <AdminSidebar />
+      <div className="min-w-0 flex-1">
+        <AdminHeader />
+        <main className="overflow-x-hidden p-4 sm:p-6">
+          <div className="mb-6 min-w-0">
+            <h1 className="text-xl font-bold text-foreground sm:text-2xl">Mensagens</h1>
+            <p className="text-sm text-muted-foreground">O chat interno reúne Admin + voluntário + histórico de aprovação por beneficiário, em uma única conversa.</p>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ViewTab)}>
+            <TabsList className="mb-4 grid h-auto w-full grid-cols-2 rounded-2xl p-1 lg:w-[360px]"><TabsTrigger value="public" className="gap-2 rounded-full"><Users className="h-4 w-4" />Público</TabsTrigger><TabsTrigger value="internal" className="gap-2 rounded-full"><Shield className="h-4 w-4" />Interno</TabsTrigger></TabsList>
+            <TabsContent value={activeTab}>
+              <Card className="min-w-0">
+                <CardHeader>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0"><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary" />Central de mensagens</CardTitle><CardDescription>{activeTab === "public" ? "Beneficiário + voluntário" : "Admin + voluntário, por beneficiário, com aprovações unificadas"}</CardDescription></div>
+                    <div className="relative w-full sm:w-80"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input className="h-11 pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar conversas..." /></div>
+                  </div>
+                </CardHeader>
+                <CardContent>{loading ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : (
+                  <div className="grid gap-6 lg:grid-cols-3">
+                    <div className="space-y-3 lg:col-span-1">
+                      {filteredThreads.length === 0 ? <div className="rounded-2xl border bg-card p-6 text-center text-sm leading-6 text-muted-foreground">Nenhuma conversa encontrada. Ajuste a busca ou volte para aprovações e beneficiários para abrir um caso relacionado.</div> : filteredThreads.map((thread) => (
+                        <button key={thread.threadId} onClick={() => void openThread(thread)} className={`w-full rounded-2xl border p-4 text-left transition-all hover:border-primary/30 hover:shadow-sm ${activeThread?.threadId === thread.threadId ? "border-primary bg-primary/5" : "bg-card"}`}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-foreground">{thread.title || thread.beneficiaryName || "Conversa"}</p>{getThreadBadges(thread)}{thread.statusLabel ? <Badge variant="secondary" className="rounded-full">{thread.statusLabel}</Badge> : null}</div><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{thread.lastMessage || thread.subtitle || "Sem mensagens"}</p></div>{!!thread.unreadCount && <Badge className="rounded-full bg-primary text-primary-foreground">{thread.unreadCount}</Badge>}</div></button>
+                      ))}
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      {!activeThread ? <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Selecione uma conversa para ver o histórico e responder com segurança.</div> : <div className="space-y-4"><div className="rounded-2xl border bg-card p-4"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-foreground">{activeThread.title || activeThread.beneficiaryName}</p>{getThreadBadges(activeThread)}{activeThread.statusLabel ? <Badge variant="secondary" className="rounded-full">{activeThread.statusLabel}</Badge> : null}</div>{activeThread.subtitle ? <p className="mt-1 text-sm text-muted-foreground">{activeThread.subtitle}</p> : null}</div>
+                        <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-2xl border bg-muted/30 p-4">{isLoadingMessages ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : messages.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhuma mensagem nesta conversa. Envie uma orientação curta quando houver uma ação pendente.</div> : messages.map((message, index) => { const mine = message.senderRole === "admin" || message.senderRole === "ADMIN"; return <div key={message.id || index} className={`flex ${mine ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl p-3 shadow-sm ${mine ? "bg-primary text-primary-foreground" : "border bg-background"}`}><p className="text-sm leading-6">{message.content}</p><div className="mt-1 flex flex-wrap items-center gap-2 text-xs opacity-70"><span>{message.senderName}</span>{message.createdAt ? <span>{new Date(message.createdAt).toLocaleString("pt-BR")}</span> : null}</div></div></div> })}<div ref={bottomRef} /></div>
+                        <div className="rounded-2xl border bg-card p-4"><div className="flex flex-col gap-3 sm:flex-row"><Textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={activeThread.threadType === "case_public" ? "Digite uma mensagem para o chat do caso..." : "Digite uma mensagem interna para o voluntário responsável por este beneficiário..."} className="min-h-[96px] rounded-2xl" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSendMessage() } }} /><Button onClick={() => void handleSendMessage()} disabled={!newMessage.trim() || sending} className="h-12 gap-2 rounded-full font-black sm:h-auto sm:min-h-[96px] sm:rounded-2xl">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Enviar</Button></div></div></div>}
+                    </div>
+                  </div>
+                )}</CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </main>
+      </div>
+    </div>
   )
 }

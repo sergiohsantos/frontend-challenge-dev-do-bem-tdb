@@ -1,27 +1,16 @@
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { BeneficiaryPageHero } from "@/components/dashboard/beneficiary-page-hero"
 import { HelpButton } from "@/components/layout/help-button"
+import { BeneficiaryAppointmentCard, BeneficiaryPastAppointmentCard, AppointmentEmptyState } from "@/components/dashboard/beneficiary-appointment-cards"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  User, 
-  Phone, 
-  CheckCircle2, 
-  AlertCircle,
-  Loader2,
-  ArrowLeft,
-  MessageSquare,
-  FileText
-} from "lucide-react"
-import { LocationIndicator } from "@/components/ui/breadcrumb-nav"
+import { Calendar, CheckCircle2, AlertCircle, Loader2, MessageSquare, FileText } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { getToken, getUser } from "@/lib/auth"
 
@@ -63,9 +52,7 @@ export default function ConsultasPage() {
 
   useEffect(() => {
     const user = getUser()
-    if (user?.full_name) {
-      setUserName(user.full_name)
-    }
+    if (user?.full_name) setUserName(user.full_name)
   }, [])
 
   const loadAppointments = async () => {
@@ -77,12 +64,7 @@ export default function ConsultasPage() {
       }
 
       const data = await apiFetch<AppointmentsResponse & { items?: Appointment[] }>("/api/beneficiaries/me/appointments", {}, token)
-      const allAppointments = [
-        ...(data.upcoming || []),
-        ...(data.past || []),
-        ...(data.appointments || []),
-        ...(data.items || []),
-      ]
+      const allAppointments = [...(data.upcoming || []), ...(data.past || []), ...(data.appointments || []), ...(data.items || [])]
       const uniqueAppointments = allAppointments.filter((item, index, array) => array.findIndex((entry) => entry.id === item.id) === index)
       setAppointments(uniqueAppointments)
       setError(null)
@@ -99,25 +81,24 @@ export default function ConsultasPage() {
 
   const upcomingAppointments = appointments.filter(a => a.status === "scheduled" || a.status === "confirmed" || a.status === "rescheduled")
   const pastAppointments = appointments.filter(a => a.status === "completed" || a.status === "cancelled")
+  const needsConfirmation = upcomingAppointments.filter((item) => item.status === "scheduled" && item.canConfirm !== false).length
 
   const getStatusBadge = (status: Appointment["status"]) => {
     switch (status) {
       case "scheduled":
-        return <Badge variant="secondary">Agendada</Badge>
+        return <Badge variant="secondary" className="rounded-full">Agendada</Badge>
       case "confirmed":
-        return <Badge className="bg-success text-success-foreground">Confirmada</Badge>
+        return <Badge className="rounded-full bg-success text-success-foreground">Confirmada</Badge>
       case "completed":
-        return <Badge variant="outline">Realizada</Badge>
+        return <Badge variant="outline" className="rounded-full">Realizada</Badge>
       case "cancelled":
-        return <Badge variant="destructive">Cancelada</Badge>
+        return <Badge variant="destructive" className="rounded-full">Cancelada</Badge>
       case "rescheduled":
-        return <Badge variant="secondary">Reagendamento solicitado</Badge>
+        return <Badge variant="secondary" className="rounded-full">Reagendamento solicitado</Badge>
       default:
         return null
     }
   }
-
-
 
   const handleConfirmAppointment = async (appointmentId: number) => {
     try {
@@ -129,15 +110,12 @@ export default function ConsultasPage() {
         return
       }
 
-      const result = await apiFetch<{ message?: string }>(`/api/beneficiaries/appointments/${appointmentId}/confirm`, {
-        method: "POST",
-      }, token)
-
+      const result = await apiFetch<{ message?: string }>(`/api/beneficiaries/appointments/${appointmentId}/confirm`, { method: "POST" }, token)
       setAppointments((prev) => prev.map((item) => item.id === appointmentId ? { ...item, status: "confirmed" } : item))
       await loadAppointments()
       setError(result.message || "Presença confirmada com sucesso")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível confirmar sua presença agora. Tente novamente em instantes.")
+    } catch {
+      setError("Não foi possível confirmar sua presença agora. Tente novamente em instantes.")
     } finally {
       setConfirmingAppointmentId(null)
     }
@@ -179,8 +157,8 @@ export default function ConsultasPage() {
       setRescheduleDialogOpen(false)
       setSelectedAppointmentId(null)
       setRescheduleReason("")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível solicitar o reagendamento agora. Tente novamente em instantes.")
+    } catch {
+      setError("Não foi possível solicitar o reagendamento agora. Tente novamente em instantes.")
     } finally {
       setRequestingAppointmentId(null)
     }
@@ -188,7 +166,7 @@ export default function ConsultasPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col bg-secondary">
+      <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={userName} userType="beneficiario" notificationCount={0} />
         <main className="flex flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-4">
@@ -201,237 +179,102 @@ export default function ConsultasPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-secondary">
+    <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={userName} userType="beneficiario" notificationCount={0} />
-      
+
       <main className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
-          <LocationIndicator currentPage="Consultas" parentPage="Painel" />
+          <BeneficiaryPageHero
+            eyebrow="Consultas"
+            title="Veja suas consultas e confirme presença com segurança."
+            description="Acompanhe data, horário, local, profissional responsável, orientações e histórico do seu atendimento."
+            icon={<Calendar className="h-4 w-4" aria-hidden="true" />}
+            primaryAction={(
+              <Button size="lg" asChild className="h-14 rounded-full bg-accent text-base font-black text-accent-foreground hover:bg-accent/90">
+                <Link to="/dashboard/beneficiario/mensagens"><MessageSquare className="mr-2 h-5 w-5" />Mensagens</Link>
+              </Button>
+            )}
+            secondaryAction={(
+              <Button size="lg" variant="outline" asChild className="h-14 rounded-full border-primary-foreground/30 bg-transparent text-base font-black text-primary-foreground hover:bg-primary-foreground/10">
+                <Link to="/dashboard/beneficiario/documentos"><FileText className="mr-2 h-5 w-5" />Documentos</Link>
+              </Button>
+            )}
+            meta={(
+              <>
+                <span>{upcomingAppointments.length} próxima(s)</span>
+                <span>{pastAppointments.length} no histórico</span>
+                <span>{needsConfirmation} pendente(s) de confirmação</span>
+              </>
+            )}
+          />
 
-          {/* Back button */}
-          <Button variant="ghost" size="sm" className="mb-4" asChild>
-            <Link to="/dashboard/beneficiario">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar ao painel
-            </Link>
-          </Button>
-
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-              Minhas Consultas
-            </h1>
-            <p className="mt-1 text-muted-foreground">
-              Acompanhe suas consultas agendadas e historico
-            </p>
-          </div>
-
-          {/* Feedback */}
           {error && (
-            <div className={`mb-4 flex flex-col gap-3 rounded-lg border p-3 text-sm sm:flex-row sm:items-center sm:justify-between ${
-              isPositiveFeedback
-                ? "border-success/50 bg-success/10 text-success"
-                : "border-destructive/50 bg-destructive/10 text-destructive"
-            }`}>
+            <div className={`mb-6 flex flex-col gap-3 rounded-2xl border p-4 text-sm sm:flex-row sm:items-center sm:justify-between ${isPositiveFeedback ? "border-success/50 bg-success/10 text-success" : "border-destructive/50 bg-destructive/10 text-destructive"}`}>
               <div className="flex items-center gap-2">
                 {isPositiveFeedback ? <CheckCircle2 className="h-4 w-4 flex-shrink-0" /> : <AlertCircle className="h-4 w-4 flex-shrink-0" />}
                 <span>{error}</span>
               </div>
-              {!isPositiveFeedback && (
-                <Button variant="outline" size="sm" onClick={() => void loadAppointments()}>
-                  Tentar novamente
-                </Button>
-              )}
+              {!isPositiveFeedback && <Button variant="outline" size="sm" className="rounded-full" onClick={() => void loadAppointments()}>Tentar novamente</Button>}
             </div>
           )}
 
-          <Card className="mb-6 border-primary/20 bg-primary/5">
-            <CardContent className="grid gap-3 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Calendar className="h-5 w-5" />
-              </div>
+          <Card className="tdb-polished-card mb-6 rounded-[2rem] border-primary/20 bg-primary/5">
+            <CardContent className="grid gap-3 p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Calendar className="h-5 w-5" /></div>
               <div>
-                <p className="font-semibold text-foreground">Antes da consulta</p>
-                <p className="text-sm text-muted-foreground">
-                  Chegue com antecedência, leve documento com foto, avise se não puder comparecer e mantenha seu telefone disponível.
-                </p>
+                <p className="font-black text-foreground">Antes da consulta</p>
+                <p className="text-sm leading-6 text-muted-foreground">Chegue com antecedência, leve documento com foto, avise se não puder comparecer e mantenha seu telefone disponível.</p>
               </div>
-              <Button variant="outline" asChild>
-                <Link to="/dashboard/beneficiario/mensagens">Ver mensagens</Link>
-              </Button>
+              <Button variant="outline" asChild className="h-10 rounded-full font-bold"><Link to="/dashboard/beneficiario/mensagens">Ver mensagens</Link></Button>
             </CardContent>
           </Card>
 
-          {/* Tabs */}
           <Tabs defaultValue="upcoming" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="upcoming">
-                Proximas ({upcomingAppointments.length})
-              </TabsTrigger>
-              <TabsTrigger value="past">
-                Historico ({pastAppointments.length})
-              </TabsTrigger>
+            <TabsList className="h-auto w-full flex-wrap justify-start rounded-2xl bg-muted p-1 sm:w-fit">
+              <TabsTrigger value="upcoming" className="gap-2 rounded-full">Próximas ({upcomingAppointments.length})</TabsTrigger>
+              <TabsTrigger value="past" className="gap-2 rounded-full">Histórico ({pastAppointments.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="upcoming" className="space-y-4">
               {upcomingAppointments.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <Calendar className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-medium">Nenhuma consulta agendada</h3>
-                    <p className="mt-2 text-muted-foreground">
-                      Voce sera notificado quando uma nova consulta for agendada.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                upcomingAppointments.map((apt) => (
-                  <Card key={apt.id}>
-                    <CardContent className="p-6">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                              <User className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-foreground">{apt.doctor}</p>
-                              <p className="text-sm text-muted-foreground">{apt.specialty}</p>
-                              {(apt.procedureTitle || apt.approvalRequestId) && (
-                                <p className="text-sm text-foreground/80">
-                                  {apt.procedureTitle || "Procedimento"}
-                                  {apt.approvalRequestId ? ` • ${apt.approvalRequestId}` : ""}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-foreground">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{apt.date}</span>
-                            <span>as</span>
-                            <span className="font-medium">{apt.time}</span>
-                          </div>
-                          <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                            <span>{apt.address}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-4 w-4" />
-                            <a href={`tel:${apt.phone}`} className="hover:text-foreground">
-                              {apt.phone}
-                            </a>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2 sm:min-w-[220px] sm:items-end">
-                          {getStatusBadge(apt.status)}
-                          {(apt.status === "scheduled" || apt.status === "rescheduled" || apt.status === "confirmed") && (
-                            <>
-                              {apt.canConfirm !== false && apt.status !== "confirmed" && (
-                                <Button size="sm" className="w-full gap-2 bg-success text-success-foreground hover:bg-success/90" onClick={() => handleConfirmAppointment(apt.id)} disabled={confirmingAppointmentId === apt.id}>
-                                  <CheckCircle2 className="h-4 w-4" />
-                                  {confirmingAppointmentId === apt.id ? "Confirmando..." : "Confirmar presenca"}
-                                </Button>
-                              )}
-                              {apt.canReschedule !== false && (
-                                <Button size="sm" variant="outline" className="w-full" onClick={() => openRescheduleDialog(apt.id)} disabled={requestingAppointmentId === apt.id}>
-                                  {requestingAppointmentId === apt.id ? "Enviando..." : "Solicitar reagendamento"}
-                                </Button>
-                              )}
-                            </>
-                          )}
-                          <Button size="sm" variant="outline" className="w-full" asChild>
-                            <Link to="/dashboard/beneficiario/mensagens">
-                              <MessageSquare className="mr-2 h-4 w-4" />
-                              Ver mensagens
-                            </Link>
-                          </Button>
-                          <Button size="sm" variant="ghost" className="w-full" asChild>
-                            <Link to="/dashboard/beneficiario/documentos">
-                              <FileText className="mr-2 h-4 w-4" />
-                              Ver documentos
-                            </Link>
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+                <AppointmentEmptyState title="Nenhuma consulta agendada" description="Você será notificado quando uma nova consulta for agendada." />
+              ) : upcomingAppointments.map((apt) => (
+                <BeneficiaryAppointmentCard
+                  key={apt.id}
+                  appointment={apt}
+                  statusBadge={getStatusBadge(apt.status)}
+                  confirming={confirmingAppointmentId === apt.id}
+                  requesting={requestingAppointmentId === apt.id}
+                  onConfirm={() => handleConfirmAppointment(apt.id)}
+                  onReschedule={() => openRescheduleDialog(apt.id)}
+                />
+              ))}
             </TabsContent>
 
             <TabsContent value="past" className="space-y-4">
               {pastAppointments.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <Calendar className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-medium">Nenhuma consulta no historico</h3>
-                    <p className="mt-2 text-muted-foreground">
-                      Suas consultas realizadas aparecerão aqui.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                pastAppointments.map((apt) => (
-                  <Card key={apt.id} className="opacity-75">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                              <User className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{apt.doctor}</p>
-                              <p className="text-sm text-muted-foreground">{apt.specialty}</p>
-                              {(apt.procedureTitle || apt.approvalRequestId) && (
-                                <p className="text-sm text-foreground/80">
-                                  {apt.procedureTitle || "Procedimento"}
-                                  {apt.approvalRequestId ? ` • ${apt.approvalRequestId}` : ""}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            <span>{apt.date} as {apt.time}</span>
-                          </div>
-                        </div>
-                        {getStatusBadge(apt.status)}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+                <AppointmentEmptyState title="Nenhuma consulta no histórico" description="Suas consultas realizadas aparecerão aqui." />
+              ) : pastAppointments.map((apt) => (
+                <BeneficiaryPastAppointmentCard key={apt.id} appointment={apt} statusBadge={getStatusBadge(apt.status)} />
+              ))}
             </TabsContent>
           </Tabs>
         </div>
       </main>
 
       <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-[2rem]">
           <DialogHeader>
             <DialogTitle>Solicitar reagendamento</DialogTitle>
-            <DialogDescription>
-              Informe o motivo para que a equipe avalie uma nova data de consulta.
-            </DialogDescription>
+            <DialogDescription>Informe o motivo para que a equipe avalie uma nova data de consulta.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Textarea
-              value={rescheduleReason}
-              onChange={(event) => {
-                setRescheduleReason(event.target.value)
-                setRescheduleError(null)
-              }}
-              placeholder="Explique brevemente o motivo do reagendamento..."
-              className="min-h-[120px]"
-            />
+            <Textarea value={rescheduleReason} onChange={(event) => { setRescheduleReason(event.target.value); setRescheduleError(null) }} placeholder="Explique brevemente o motivo do reagendamento..." className="min-h-[120px] rounded-2xl" />
             {rescheduleError && <p className="text-sm text-destructive">{rescheduleError}</p>}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRescheduleDialogOpen(false)} disabled={requestingAppointmentId !== null}>
-              Cancelar
-            </Button>
-            <Button onClick={() => void handleReschedule()} disabled={requestingAppointmentId !== null || !rescheduleReason.trim()}>
+            <Button variant="outline" className="rounded-full" onClick={() => setRescheduleDialogOpen(false)} disabled={requestingAppointmentId !== null}>Cancelar</Button>
+            <Button className="rounded-full font-black" onClick={() => void handleReschedule()} disabled={requestingAppointmentId !== null || !rescheduleReason.trim()}>
               {requestingAppointmentId !== null && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {requestingAppointmentId !== null ? "Enviando..." : "Enviar solicitação"}
             </Button>

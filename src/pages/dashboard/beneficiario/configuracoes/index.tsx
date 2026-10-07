@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { BeneficiaryPageHero } from "@/components/dashboard/beneficiary-page-hero"
+import { HelpButton } from "@/components/layout/help-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { DashboardSkeleton } from "@/components/ui/page-loader"
 import { AlertBanner } from "@/components/ui/alert-banner"
-import { ArrowLeft, Bell, Mail, Shield, Loader2, Save } from "lucide-react"
+import { Bell, Mail, Shield, Loader2, Save, Settings } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { getToken, getUser } from "@/lib/auth"
 
@@ -98,8 +100,8 @@ export default function BeneficiarioConfiguracoesPage() {
 
         const data = await apiFetch<BeneficiarySettingsApi>("/api/beneficiaries/me/settings", {}, token)
         setSettings(mapApiToForm(data))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao carregar configurações")
+      } catch {
+        setError("Não foi possível carregar suas configurações agora. Tente novamente em instantes.")
       } finally {
         setIsLoading(false)
       }
@@ -120,10 +122,10 @@ export default function BeneficiarioConfiguracoesPage() {
         body: JSON.stringify(payload),
       }, token)
 
-      setSuccess("Configurações salvas com sucesso!")
+      setSuccess("Configurações salvas com sucesso.")
       setTimeout(() => setSuccess(null), 3000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar configurações")
+    } catch {
+      setError("Não foi possível salvar suas configurações agora.")
     } finally {
       setIsSaving(false)
     }
@@ -132,6 +134,15 @@ export default function BeneficiarioConfiguracoesPage() {
   const handleToggle = (key: keyof BeneficiarySettingsForm) => {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }))
   }
+
+  const enabledNotifications = [
+    settings.emailNotifications,
+    settings.smsNotifications,
+    settings.pushNotifications,
+    settings.appointmentReminders,
+    settings.messageAlerts,
+    settings.treatmentUpdates,
+  ].filter(Boolean).length
 
   if (isLoading) {
     return (
@@ -150,84 +161,94 @@ export default function BeneficiarioConfiguracoesPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={user?.full_name || "Beneficiário"} userType="beneficiario" notificationCount={0} />
       <main className="flex-1 py-6 lg:py-8">
-        <div className="container mx-auto max-w-3xl px-4">
-          <div className="mb-4 flex items-center justify-between">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/dashboard/beneficiario">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
-              </Link>
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Salvar
-            </Button>
-          </div>
+        <div className="container mx-auto px-4">
+          <BeneficiaryPageHero
+            eyebrow="Configurações"
+            title="Ajuste como a plataforma acompanha você."
+            description="Defina preferências de comunicação, lembretes, atualizações do tratamento e privacidade sem alterar regras do atendimento."
+            icon={<Settings className="h-4 w-4" aria-hidden="true" />}
+            primaryAction={(
+              <Button size="lg" onClick={handleSave} disabled={isSaving} className="h-14 rounded-full bg-accent text-base font-black text-accent-foreground hover:bg-accent/90">
+                {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+                Salvar configurações
+              </Button>
+            )}
+            meta={(
+              <>
+                <span>{enabledNotifications} alerta(s) ativos</span>
+                <span>{settings.allowContact ? "Contato permitido" : "Contato restrito"}</span>
+              </>
+            )}
+          />
 
-          {error ? <AlertBanner type="error" title="Erro" message={error} dismissible onDismiss={() => setError(null)} className="mb-6" /> : null}
-          {success ? <AlertBanner type="success" title="Sucesso" message={success} dismissible onDismiss={() => setSuccess(null)} className="mb-6" /> : null}
+          <div className="mx-auto max-w-5xl">
+            {error ? <AlertBanner type="error" title="Atenção" message={error} dismissible onDismiss={() => setError(null)} className="mb-6" /> : null}
+            {success ? <AlertBanner type="success" title="Sucesso" message={success} dismissible onDismiss={() => setSuccess(null)} className="mb-6" /> : null}
 
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5 text-primary" />Notificações</CardTitle>
-                <CardDescription>Configure como deseja receber avisos e atualizações.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {[
-                  ["emailNotifications", "Notificações por e-mail", "Receba avisos importantes por e-mail"],
-                  ["smsNotifications", "Notificações por SMS", "Receba avisos urgentes por SMS"],
-                  ["pushNotifications", "Notificações push", "Receba lembretes e alertas no navegador"],
-                  ["appointmentReminders", "Lembretes de consultas", "Receba alertas sobre consultas agendadas"],
-                  ["messageAlerts", "Alertas de mensagens", "Seja avisado quando houver novas mensagens"],
-                  ["treatmentUpdates", "Atualizações do tratamento", "Receba mudanças de status do seu caso"],
-                ].map(([key, title, description]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor={key}>{title}</Label>
-                      <p className="text-sm text-muted-foreground">{description}</p>
+            <div className="space-y-6">
+              <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-2xl font-black"><Bell className="h-6 w-6 text-primary" />Notificações</CardTitle>
+                  <CardDescription>Configure como deseja receber avisos e atualizações.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[
+                    ["emailNotifications", "Notificações por e-mail", "Receba avisos importantes por e-mail"],
+                    ["smsNotifications", "Notificações por SMS", "Receba avisos urgentes por SMS"],
+                    ["pushNotifications", "Notificações push", "Receba lembretes e alertas no navegador"],
+                    ["appointmentReminders", "Lembretes de consultas", "Receba alertas sobre consultas agendadas"],
+                    ["messageAlerts", "Alertas de mensagens", "Seja avisado quando houver novas mensagens"],
+                    ["treatmentUpdates", "Atualizações do tratamento", "Receba mudanças de status do seu caso"],
+                  ].map(([key, title, description]) => (
+                    <div key={key} className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor={key} className="font-black text-foreground">{title}</Label>
+                        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+                      </div>
+                      <Switch id={key} checked={settings[key as keyof BeneficiarySettingsForm] as boolean} onCheckedChange={() => handleToggle(key as keyof BeneficiarySettingsForm)} />
                     </div>
-                    <Switch id={key} checked={settings[key as keyof BeneficiarySettingsForm] as boolean} onCheckedChange={() => handleToggle(key as keyof BeneficiarySettingsForm)} />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+                  ))}
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-primary" />Privacidade</CardTitle>
-                <CardDescription>Gerencie preferências de compartilhamento e contato.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="shareProgress">Compartilhar progresso</Label>
-                    <p className="text-sm text-muted-foreground">Autoriza o compartilhamento do progresso para fins de acompanhamento.</p>
+              <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl font-black"><Shield className="h-5 w-5 text-primary" />Privacidade</CardTitle>
+                  <CardDescription>Gerencie preferências de compartilhamento e contato.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-border p-4">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="shareProgress" className="font-black text-foreground">Compartilhar progresso</Label>
+                      <p className="text-sm leading-6 text-muted-foreground">Autoriza o compartilhamento do progresso para fins de acompanhamento.</p>
+                    </div>
+                    <Switch id="shareProgress" checked={settings.shareProgress} onCheckedChange={() => handleToggle("shareProgress")} />
                   </div>
-                  <Switch id="shareProgress" checked={settings.shareProgress} onCheckedChange={() => handleToggle("shareProgress")} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="allowContact">Permitir contato</Label>
-                    <p className="text-sm text-muted-foreground">Permite contato da equipe pelos canais cadastrados.</p>
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-border p-4">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="allowContact" className="font-black text-foreground">Permitir contato</Label>
+                      <p className="text-sm leading-6 text-muted-foreground">Permite contato da equipe pelos canais cadastrados.</p>
+                    </div>
+                    <Switch id="allowContact" checked={settings.allowContact} onCheckedChange={() => handleToggle("allowContact")} />
                   </div>
-                  <Switch id="allowContact" checked={settings.allowContact} onCheckedChange={() => handleToggle("allowContact")} />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5 text-primary" />Comunicação</CardTitle>
-                <CardDescription>As preferências são salvas no seu perfil e usadas nas próximas interações.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">Caso tenha dúvidas sobre mensagens ou privacidade, utilize a página de contato ou fale com a equipe pelo módulo de mensagens.</p>
-              </CardContent>
-            </Card>
+              <Card className="tdb-polished-card rounded-[2rem] shadow-xl shadow-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl font-black"><Mail className="h-5 w-5 text-primary" />Comunicação</CardTitle>
+                  <CardDescription>As preferências são salvas no seu perfil e usadas nas próximas interações.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-7 text-muted-foreground">Caso tenha dúvidas sobre mensagens ou privacidade, fale com a equipe pelo módulo de mensagens.</p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </main>
+
+      <HelpButton />
     </div>
   )
 }
