@@ -1,0 +1,21 @@
+name: AI client security
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - run: node --version && npm ci
+      - run: npm run test:ai
+      - run: npm run build
+        env:
+          VITE_API_URL: https://example.invalid
+          VITE_AI_API_URL: https://example.invalid/ai
+          VITE_JAVA_API_URL: https://example.invalid/java

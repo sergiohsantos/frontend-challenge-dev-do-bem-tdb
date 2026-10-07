@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:ai": "node --test tests/ai-api.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
