@@ -1,3 +1,4 @@
+import { getFreshToken } from "@/lib/auth"
 function getJavaApiBaseUrl(): string {
   const configuredUrl = import.meta.env.VITE_JAVA_API_URL
   if (configuredUrl) return configuredUrl
@@ -60,12 +61,14 @@ export async function javaApiFetch<T>(
     ...(options.headers || {}),
   }
 
+  const fresh = token ? await getFreshToken() : null
   const response = await fetch(joinUrl(path), {
     ...options,
-    headers: token
+    credentials: "omit",
+    headers: fresh
       ? {
           ...headers,
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${fresh}`,
         }
       : headers,
   })
@@ -140,3 +143,4 @@ export function asBoolean(value: unknown): boolean | undefined {
 
   return undefined
 }
+

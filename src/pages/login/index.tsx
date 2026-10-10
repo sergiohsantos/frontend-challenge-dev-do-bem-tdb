@@ -83,7 +83,7 @@ export default function LoginPage() {
       const login = userType === "beneficiario" ? normalizeDigits(data.cpf) : normalizeEmail(data.email)
       const payload: LoginPayload = { login, password: data.password, role: userType }
 
-      const response = await apiFetch<LoginResponse>("/api/auth/login", {
+      const response = await apiFetch<LoginResponse>("/api/auth/browser/login", {
         method: "POST",
         body: JSON.stringify(payload),
       })
@@ -93,8 +93,8 @@ export default function LoginPage() {
 
       saveAuth(response.access_token, userWithNormalizedRole)
       navigate(getRedirectPath(response.user.role), { replace: true })
-    } catch {
-      setError("Não foi possível entrar agora. Confira seus dados e tente novamente.")
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Não foi possível entrar agora. Confira seus dados e tente novamente.")
     } finally {
       setIsLoading(false)
     }
@@ -293,3 +293,4 @@ export default function LoginPage() {
     </div>
   )
 }
+

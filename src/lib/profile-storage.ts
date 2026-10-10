@@ -1,4 +1,4 @@
-import { getUser, saveAuth, type AuthUser } from "@/lib/auth"
+import { getToken, getUser, saveAuth, type AuthUser } from "@/lib/auth"
 
 export type ManagedProfileRole = "beneficiario" | "voluntario" | "admin"
 
@@ -68,7 +68,7 @@ export function mergeProfile<T extends Record<string, unknown>>(base: T, overrid
 export function syncAuthUserFromProfile(profile: ManagedProfileData) {
   if (typeof window === "undefined") return
   const currentUser = getUser()
-  const token = window.localStorage.getItem("tdb_token")
+  const token = getToken()
   if (!currentUser || !token) return
 
   const updatedUser: AuthUser = {
@@ -80,3 +80,4 @@ export function syncAuthUserFromProfile(profile: ManagedProfileData) {
 
   saveAuth(token, updatedUser)
 }
+

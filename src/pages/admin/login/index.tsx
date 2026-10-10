@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
         role: formData.role as LoginPayload["role"],
       }
 
-      const response = await apiFetch<LoginResponse>("/api/auth/login", {
+      const response = await apiFetch<LoginResponse>("/api/auth/browser/login", {
         method: "POST",
         body: JSON.stringify(payload),
       })
@@ -248,3 +248,4 @@ export default function AdminLoginPage() {
     </div>
   )
 }
+

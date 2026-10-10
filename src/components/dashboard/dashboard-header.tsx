@@ -75,8 +75,9 @@ export function DashboardHeader({ userName, userType, notificationCount = 0 }: D
     }
   }, [notificationCount, pathname, userType])
 
-  const handleLogout = () => {
-    clearAuth()
+  const handleLogout = async () => {
+    try { await clearAuth() }
+    catch { window.alert("Não foi possível encerrar a sessão. Tente novamente."); return }
     navigate("/login")
   }
 
@@ -220,3 +221,4 @@ export function DashboardHeader({ userName, userType, notificationCount = 0 }: D
     </header>
   )
 }
+

@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Suspense, lazy, type ReactNode } from 'react'
+import { Suspense, lazy, useSyncExternalStore, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
-import { getToken, getUser, normalizeRole } from '@/lib/auth'
+import { getToken, getUser, normalizeRole, isAuthReady, subscribeAuth, getAuthVersion } from '@/lib/auth'
 
 const HomePage = lazy(() => import('./pages/home/index'))
 const LoginPage = lazy(() => import('./pages/login/index'))
@@ -77,10 +77,12 @@ function PageLoader() {
 }
 
 function RequireRole({ children, role, loginPath }: { children: ReactNode; role: 'admin' | 'beneficiario' | 'voluntario'; loginPath: string }) {
+  useSyncExternalStore(subscribeAuth, getAuthVersion)
   const location = useLocation()
   const token = getToken()
   const user = getUser()
 
+  if (!isAuthReady()) return <PageLoader />
   if (!token) return <Navigate to={loginPath} replace state={{ from: location.pathname }} />
 
   const normalized = normalizeRole(user?.role || '')
@@ -163,3 +165,4 @@ function App() {
 }
 
 export default App
+
