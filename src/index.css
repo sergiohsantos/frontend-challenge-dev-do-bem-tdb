@@ -31,14 +31,14 @@
   
   /* Accent: Laranja TdB #f5841f - CTAs e destaques */
   --accent: oklch(0.70 0.19 50);
-  --accent-foreground: oklch(0.99 0 0);
+  --accent-foreground: oklch(0.15 0.03 50);
   
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
   
   /* Success: Turquesa/Verde água TdB para estados positivos */
   --success: oklch(0.68 0.12 175);
-  --success-foreground: oklch(0.99 0 0);
+  --success-foreground: oklch(0.15 0.03 175);
   
   /* Warning: Amarelo/Ambar para alertas */
   --warning: oklch(0.82 0.14 85);
@@ -54,6 +54,9 @@
   --chart-4: oklch(0.82 0.14 85);
   --chart-5: oklch(0.72 0.10 180);
   
+  --accent-ink: #994000;
+  --success-ink: #096357;
+  --destructive-ink: #ba102b;
   --radius: 0.5rem;
   
   --sidebar: oklch(0.28 0.08 250);
@@ -67,6 +70,9 @@
 }
 
 .dark {
+  --accent-ink: #ffb37d;
+  --success-ink: #91d6c5;
+  --destructive-ink: #ff8fa2;
   --background: oklch(0.14 0.02 250);
   --foreground: oklch(0.96 0.005 220);
   
@@ -76,7 +82,7 @@
   --popover: oklch(0.18 0.02 250);
   --popover-foreground: oklch(0.96 0.005 220);
   
-  --primary: oklch(0.58 0.10 250);
+  --primary: oklch(0.68 0.10 250);
   --primary-foreground: oklch(0.10 0.02 250);
   
   --secondary: oklch(0.55 0.08 180);
@@ -348,3 +354,18 @@ div[vw-plugin-wrapper] {
     bottom: 1.5rem !important;
   }
 }
+
+
+/* Text accents stay readable without changing brand-colored surfaces. */
+@layer utilities {
+  .text-accent { color: var(--accent-ink); }
+  .text-success { color: var(--success-ink); }
+  .text-destructive { color: var(--destructive-ink); }
+}
+.bg-primary, .tdb-admin-sidebar {
+  --accent-ink: var(--primary-foreground);
+  --success-ink: var(--primary-foreground);
+}
+html.high-contrast { --accent-ink: var(--foreground); --success-ink: var(--foreground); --destructive-ink: var(--foreground); }
+main { scroll-margin-top: 6rem; }
+[id] { scroll-margin-top: 6rem; }

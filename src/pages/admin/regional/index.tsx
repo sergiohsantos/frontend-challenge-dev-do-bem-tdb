@@ -103,7 +103,7 @@ export default function AdminRegionalPage() {
       <AdminSidebar />
       <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="overflow-x-hidden p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           <div className="mb-6 min-w-0">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Gestão Regional</h1>
             <p className="text-sm text-muted-foreground">
@@ -183,7 +183,7 @@ export default function AdminRegionalPage() {
 
                   <div className="grid w-full min-w-0 gap-2 sm:grid-cols-2 lg:w-auto lg:min-w-[420px]">
                     <Select value={selectedUf} onValueChange={setSelectedUf}>
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger aria-label="Filtrar por estado" className="w-full">
                         <SelectValue placeholder="Filtrar por estado" />
                       </SelectTrigger>
                       <SelectContent>
@@ -383,3 +383,4 @@ export default function AdminRegionalPage() {
     </div>
   )
 }
+

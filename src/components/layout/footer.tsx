@@ -86,10 +86,11 @@ export function Footer() {
       </div>
       <div className="border-t border-border/50 bg-background">
         <div className="container mx-auto flex items-center justify-center gap-2 px-4 py-3 sm:py-4">
-          <span className="text-[9px] text-muted-foreground/70 sm:text-[10px]">Desenvolvido por</span>
+          <span className="text-[9px] text-muted-foreground sm:text-[10px]">Desenvolvido por</span>
           <a href="https://devdobem.com.br" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring" aria-label="Dev do Bem - Tecnologia Conectando Sorrisos"><img src="/images/dev-do-bem-logo.png" alt="Dev do Bem" className="h-5 w-auto sm:h-6" /></a>
         </div>
       </div>
     </footer>
   )
 }
+

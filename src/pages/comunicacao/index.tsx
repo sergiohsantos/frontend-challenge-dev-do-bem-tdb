@@ -8,7 +8,7 @@ export default function ComunicacaoPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <section className="bg-primary py-12 lg:py-16">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-3xl font-bold text-primary-foreground sm:text-4xl lg:text-5xl">
@@ -81,3 +81,4 @@ export default function ComunicacaoPage() {
     </div>
   )
 }
+

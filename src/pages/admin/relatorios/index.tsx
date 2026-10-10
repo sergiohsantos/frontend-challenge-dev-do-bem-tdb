@@ -1,3 +1,4 @@
+import { LoadError } from "@/components/ui/load-error"
 import { useEffect, useState } from "react"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
@@ -36,23 +37,27 @@ interface ReportsResponse {
 }
 
 export default function AdminRelatoriosPage() {
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<ReportsResponse>({})
   const [downloading, setDownloading] = useState<string | null>(null)
 
   useEffect(() => {
+    setLoading(true)
+    setLoadError(null)
     ;(async () => {
       try {
         const token = getToken()
         const response = await apiFetch<ReportsResponse>("/api/admin/reports", {}, token)
         setData(response)
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Erro ao carregar relatórios")
+        setLoadError("Não foi possível carregar os relatórios.")
       } finally {
         setLoading(false)
       }
     })()
-  }, [])
+  }, [retryKey])
 
   async function handleDownload(reportId: string, format: string) {
     const normalizedFormat = format.toLowerCase()
@@ -71,7 +76,7 @@ export default function AdminRelatoriosPage() {
         if (localResult.extension === "xls") {
           toast.success("Relatório gerado localmente em planilha compatível com Excel")
         } else {
-          toast.success("Relatório gerado localmente porque a exportação do backend falhou")
+          toast.success("Relatório preparado com os dados disponíveis")
         }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Erro ao baixar relatório")
@@ -86,10 +91,10 @@ export default function AdminRelatoriosPage() {
       <AdminSidebar />
       <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="overflow-x-hidden p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           <div className="mb-6 min-w-0">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Relatórios</h1>
-            <p className="text-sm text-muted-foreground">Baixe relatórios do Admin. Quando a exportação do backend falhar, o frontend gera o arquivo localmente.</p>
+            <p className="text-sm text-muted-foreground">Consulte os relatórios disponíveis e escolha o formato para download.</p>
           </div>
 
           <Card className="min-w-0">
@@ -100,7 +105,7 @@ export default function AdminRelatoriosPage() {
             <CardContent>
               {loading ? (
                 <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-              ) : (data.reportTypes || []).length === 0 ? (
+              ) : loadError ? <LoadError message={loadError} onRetry={() => setRetryKey(key => key + 1)} /> : (data.reportTypes || []).length === 0 ? (
                 <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
                   Nenhum relatório disponível agora. Tente novamente mais tarde ou acompanhe os indicadores do dashboard.
                 </div>

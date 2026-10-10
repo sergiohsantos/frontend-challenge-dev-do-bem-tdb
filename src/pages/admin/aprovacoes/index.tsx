@@ -1,3 +1,4 @@
+import { LoadError } from "@/components/ui/load-error"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {
@@ -215,7 +216,7 @@ export default function AprovacaoPage() {
       <AdminSidebar />
       <div className="flex-1">
         <AdminHeader />
-        <main className="p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="p-4 sm:p-6">
           <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -229,7 +230,7 @@ export default function AprovacaoPage() {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" disabled={isLoading || !!error} onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -244,15 +245,10 @@ export default function AprovacaoPage() {
       )}
 
       {/* Error State */}
-      {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
+      {error && <LoadError message={error} onRetry={() => void loadApprovals(true)} />}
 
       {/* KPI Cards */}
-      {!isLoading && (
+      {!isLoading && !error && (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpiDefinitions.map((kpi) => (
           <Card key={kpi.key}>
@@ -272,7 +268,7 @@ export default function AprovacaoPage() {
       </div>
       )}
 
-      {!isLoading && (
+      {!isLoading && !error && (
         <Card className="border-primary/20">
           <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -303,19 +299,19 @@ export default function AprovacaoPage() {
       )}
 
       {/* Tabs */}
-      {!isLoading && (
+      {!isLoading && !error && (
       <Tabs defaultValue="pendentes" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="pendentes" className="gap-2">
+        <TabsList className="grid h-auto w-full grid-cols-3 gap-1">
+          <TabsTrigger value="pendentes" className="min-w-0 flex-wrap gap-1 px-1 text-xs sm:gap-2 sm:text-sm">
             <Clock className="h-4 w-4" />
             Pendentes
             <Badge variant="secondary" className="ml-1">{pendingRequests.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="aprovados" className="gap-2">
+          <TabsTrigger value="aprovados" className="min-w-0 gap-1 px-1 text-xs sm:gap-2 sm:text-sm">
             <CheckCircle2 className="h-4 w-4" />
             Aprovados
           </TabsTrigger>
-          <TabsTrigger value="rejeitados" className="gap-2">
+          <TabsTrigger value="rejeitados" className="min-w-0 gap-1 px-1 text-xs sm:gap-2 sm:text-sm">
             <XCircle className="h-4 w-4" />
             Rejeitados
           </TabsTrigger>
@@ -337,7 +333,7 @@ export default function AprovacaoPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger aria-label="Status" className="w-[150px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -347,7 +343,7 @@ export default function AprovacaoPage() {
                     </SelectContent>
                   </Select>
                   <Select value={programFilter} onValueChange={setProgramFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger aria-label="Programa" className="w-[180px]">
                       <SelectValue placeholder="Programa" />
                     </SelectTrigger>
                     <SelectContent>
@@ -358,7 +354,7 @@ export default function AprovacaoPage() {
                     </SelectContent>
                   </Select>
                   <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger aria-label="Tipo" className="w-[180px]">
                       <SelectValue placeholder="Tipo" />
                     </SelectTrigger>
                     <SelectContent>
@@ -660,3 +656,4 @@ export default function AprovacaoPage() {
     </div>
   )
 }
+

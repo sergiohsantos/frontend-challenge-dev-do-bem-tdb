@@ -1,3 +1,4 @@
+import { LoadError } from "@/components/ui/load-error"
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
@@ -109,7 +110,8 @@ const programDefinitions = [
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate()
-  const [period, setPeriod] = useState("30d")
+  const [retryKey, setRetryKey] = useState(0)
+  const [period, setPeriod] = useState("all")
   const [program, setProgram] = useState("all")
   const [region, setRegion] = useState("all")
   const [apiData, setApiData] = useState<AdminDashboard | null>(null)
@@ -142,6 +144,7 @@ export default function AdminDashboardPage() {
 
         const data = await apiFetch<AdminDashboard>("/api/admin/dashboard", {}, token)
         setApiData(data)
+        setError(null)
       } catch (err) {
         console.error("Error loading admin dashboard:", err)
         setError(err instanceof Error ? err.message : "Erro ao carregar dashboard")
@@ -150,8 +153,9 @@ export default function AdminDashboardPage() {
       }
     }
 
+    setIsLoading(true)
     loadDashboard()
-  }, [isAuthenticated])
+  }, [isAuthenticated, retryKey])
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -255,7 +259,7 @@ export default function AdminDashboardPage() {
       <AdminSidebar />
       <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="overflow-x-hidden p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           <div className="space-y-6">
             {/* Page Header with Filters */}
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -264,16 +268,17 @@ export default function AdminDashboardPage() {
                   Dashboard Executivo
                 </h1>
                 <p className="text-sm text-muted-foreground sm:text-base">
-                  Visão geral do impacto e desempenho da Turma do Bem
+                  Visão geral dos dados disponíveis, sem filtro de período, programa ou região.
                 </p>
               </div>
 
               <div className="grid w-full gap-2 sm:grid-cols-3 xl:w-auto xl:flex xl:items-center">
-                <Select value={period} onValueChange={setPeriod}>
-                  <SelectTrigger className="w-full xl:w-[140px]">
+                <Select disabled value={period} onValueChange={setPeriod}>
+                  <SelectTrigger aria-label="Período" className="w-full xl:w-[140px]">
                     <SelectValue placeholder="Período" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Todos os períodos</SelectItem>
                     <SelectItem value="7d">Últimos 7 dias</SelectItem>
                     <SelectItem value="30d">Últimos 30 dias</SelectItem>
                     <SelectItem value="90d">Últimos 90 dias</SelectItem>
@@ -282,8 +287,8 @@ export default function AdminDashboardPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={program} onValueChange={setProgram}>
-                  <SelectTrigger className="w-full xl:w-[180px]">
+                <Select disabled value={program} onValueChange={setProgram}>
+                  <SelectTrigger aria-label="Programa" className="w-full xl:w-[180px]">
                     <SelectValue placeholder="Programa" />
                   </SelectTrigger>
                   <SelectContent>
@@ -294,8 +299,8 @@ export default function AdminDashboardPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={region} onValueChange={setRegion}>
-                  <SelectTrigger className="w-full xl:w-[160px]">
+                <Select disabled value={region} onValueChange={setRegion}>
+                  <SelectTrigger aria-label="Região" className="w-full xl:w-[160px]">
                     <SelectValue placeholder="Região" />
                   </SelectTrigger>
                   <SelectContent>
@@ -310,14 +315,11 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Error State */}
-            {error && (
-              <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                <span className="min-w-0">{error}</span>
-              </div>
-            )}
+            <p className="text-sm text-muted-foreground">Os filtros estão indisponíveis nesta visão. Os indicadores apresentam o consolidado retornado pelo serviço.</p>
 
+            {/* Error State */}
+            {error && <LoadError message="Não foi possível carregar os indicadores. Os dados estão indisponíveis, não zerados." onRetry={() => setRetryKey(key => key + 1)} />}
+            {!error && <>
             {/* KPI Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               {kpiDefinitions.map((kpi) => {
@@ -485,15 +487,15 @@ export default function AdminDashboardPage() {
                     <div className="min-w-0">
                       <ChartContainer
                         config={{
-                          value: { label: "Atendimentos", color: "hsl(var(--chart-1))" },
+                          value: { label: "Atendimentos", color: "var(--chart-1)" },
                         }}
                         className="h-[220px] w-full sm:h-[260px] lg:h-[300px]"
                       >
                         <AreaChart data={trends} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                           <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                              <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -503,7 +505,7 @@ export default function AdminDashboardPage() {
                           <Area
                             type="monotone"
                             dataKey="value"
-                            stroke="hsl(var(--chart-1))"
+                            stroke="var(--chart-1)"
                             strokeWidth={2}
                             fill="url(#colorValue)"
                           />
@@ -537,7 +539,7 @@ export default function AdminDashboardPage() {
                     <div className="min-w-0">
                       <ChartContainer
                         config={{
-                          count: { label: "Atendimentos", color: "hsl(var(--chart-1))" },
+                          count: { label: "Atendimentos", color: "var(--chart-1)" },
                         }}
                         className="h-[240px] w-full sm:h-[280px] lg:h-[300px]"
                       >
@@ -555,7 +557,7 @@ export default function AdminDashboardPage() {
                             }
                           />
                           <ChartTooltip content={<ChartTooltipContent />} />
-                          <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
+                          <Bar dataKey="count" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
                         </BarChart>
                       </ChartContainer>
                     </div>
@@ -622,7 +624,7 @@ export default function AdminDashboardPage() {
                       <div className="min-w-0">
                         <ChartContainer
                           config={{
-                            score: { label: "Satisfação", color: "hsl(var(--chart-3))" },
+                            score: { label: "Satisfação", color: "var(--chart-3)" },
                           }}
                           className="h-[100px] w-full"
                         >
@@ -630,7 +632,7 @@ export default function AdminDashboardPage() {
                             <Line
                               type="monotone"
                               dataKey="score"
-                              stroke="hsl(var(--chart-3))"
+                              stroke="var(--chart-3)"
                               strokeWidth={2}
                               dot={{ r: 4 }}
                             />
@@ -810,9 +812,11 @@ export default function AdminDashboardPage() {
                 )}
               </CardContent>
             </Card>
+            </>}
           </div>
         </main>
       </div>
     </div>
   )
 }
+

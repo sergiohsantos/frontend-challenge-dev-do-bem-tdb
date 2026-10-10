@@ -243,7 +243,7 @@ export default function NovaConsultaPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
-        <main className="flex flex-1 items-center justify-center">
+        <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Carregando dados do agendamento...</p>
@@ -257,7 +257,7 @@ export default function NovaConsultaPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
-        <main className="flex flex-1 items-center justify-center px-4">
+        <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center px-4">
           <Card className="tdb-polished-card mx-auto max-w-md rounded-[2rem] text-center shadow-2xl shadow-primary/10">
             <CardContent className="py-12">
               <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
@@ -274,7 +274,7 @@ export default function NovaConsultaPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
 
-      <main className="flex-1 py-6 lg:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
           <VolunteerPageHero
             eyebrow="Agendar consulta"
@@ -332,7 +332,7 @@ export default function NovaConsultaPage() {
                       </div>
                     ) : (
                       <Select value={formData.patientId} onValueChange={(value) => setFormData(prev => ({ ...prev, patientId: value, approvalRequestId: "" }))}>
-                        <SelectTrigger className="h-11 rounded-2xl"><SelectValue placeholder="Selecione o paciente" /></SelectTrigger>
+                        <SelectTrigger aria-label="Selecione o paciente" className="h-11 rounded-2xl"><SelectValue placeholder="Selecione o paciente" /></SelectTrigger>
                         <SelectContent>{patients.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}</SelectContent>
                       </Select>
                     )}
@@ -346,7 +346,7 @@ export default function NovaConsultaPage() {
                       <div className="rounded-2xl border border-warning/50 bg-warning/10 p-3 text-sm text-warning">Não há procedimentos aprovados disponíveis para agendamento deste beneficiário.</div>
                     ) : (
                       <Select value={formData.approvalRequestId} onValueChange={(value) => { const selected = proceduresForSelectedPatient.find((item) => item.id === value); setFormData(prev => ({ ...prev, approvalRequestId: value, type: selected?.title || prev.type })) }}>
-                        <SelectTrigger className="h-11 rounded-2xl"><SelectValue placeholder="Selecione o procedimento aprovado" /></SelectTrigger>
+                        <SelectTrigger aria-label="Selecione o procedimento aprovado" className="h-11 rounded-2xl"><SelectValue placeholder="Selecione o procedimento aprovado" /></SelectTrigger>
                         <SelectContent>{proceduresForSelectedPatient.map((item) => <SelectItem key={item.id} value={item.id}>{item.id} • {item.title}</SelectItem>)}</SelectContent>
                       </Select>
                     )}

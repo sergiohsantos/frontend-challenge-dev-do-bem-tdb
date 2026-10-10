@@ -1,4 +1,4 @@
-"use client"
+import { LoadError } from "@/components/ui/load-error"
 
 import { useState, useEffect } from "react"
 import { AdminHeader } from "@/components/admin/admin-header"
@@ -137,6 +137,9 @@ function SettingRow({ title, description, children }: { title: string; descripti
 }
 
 export default function AdminConfiguracoesPage() {
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [settingsError, setSettingsError] = useState<string | null>(null)
+  const [profileWarning, setProfileWarning] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -152,37 +155,31 @@ export default function AdminConfiguracoesPage() {
 
   async function fetchSettings() {
     setLoading(true)
-    try {
-      const token = getToken()
-      const [rawSettings, rawProfile, rawWhatsAppStatus] = await Promise.all([
-        apiFetch<Record<string, unknown>>("/api/admin/settings", {}, token),
-        apiFetch<AdminProfile>("/api/admin/profile", {}, token),
-        apiFetch<WhatsAppStatus>("/api/admin/whatsapp/status", {}, token),
-      ])
-      setSettings(normalizeAdminSettings(rawSettings))
-      setWhatsAppStatus(rawWhatsAppStatus)
-      const stored = getStoredProfile("admin", user?.id)
-      const mergedProfile = mergeProfile({
-        nome: rawProfile.nome || user?.full_name || "",
-        email: rawProfile.email || user?.email || "",
-        role: rawProfile.role || user?.role || "admin",
-      }, stored)
-      setProfile(mergedProfile)
-    } catch (error) {
-      console.error("Erro ao carregar configuracoes:", error)
-      const stored = getStoredProfile("admin", user?.id)
-      setProfile({
-        nome: stored?.nome || user?.full_name || "Administrador",
-        email: stored?.email || user?.email || "admin@turmadobem.org.br",
-        role: stored?.role || user?.role || "admin",
-      })
-      toast.error("Erro ao carregar configuracoes")
-    } finally {
-      setLoading(false)
+    setSettingsLoaded(false)
+    setSettingsError(null)
+    setProfileWarning(null)
+    const token = getToken()
+    const [settingsResult, profileResult, whatsAppResult] = await Promise.allSettled([
+      apiFetch<Record<string, unknown>>("/api/admin/settings", {}, token),
+      apiFetch<AdminProfile>("/api/admin/profile", {}, token),
+      apiFetch<WhatsAppStatus>("/api/admin/whatsapp/status", {}, token),
+    ])
+    if (settingsResult.status === "fulfilled") {
+      setSettings(normalizeAdminSettings(settingsResult.value))
+      setSettingsLoaded(true)
+    } else {
+      setSettingsError("Não foi possível carregar as configurações. A edição está bloqueada para proteger os valores existentes.")
     }
+    const stored = getStoredProfile("admin", user?.id)
+    const rawProfile = profileResult.status === "fulfilled" ? profileResult.value : null
+    setProfile(mergeProfile({ nome: rawProfile?.nome || user?.full_name || "", email: rawProfile?.email || user?.email || "", role: rawProfile?.role || user?.role || "admin" }, stored))
+    if (!rawProfile) setProfileWarning("Os dados da conta não puderam ser atualizados. Exibindo as informações da sessão e deste navegador.")
+    setWhatsAppStatus(whatsAppResult.status === "fulfilled" ? whatsAppResult.value : null)
+    setLoading(false)
   }
 
   async function handleSaveSettings() {
+    if (!settingsLoaded) return
     setSaving(true)
     try {
       const token = getToken()
@@ -213,7 +210,7 @@ export default function AdminConfiguracoesPage() {
     try {
       setProfileSaving(true)
       saveStoredProfile("admin", profile, user?.id)
-      toast.success("Perfil do admin atualizado")
+      toast.success("Preferências do perfil salvas neste navegador")
     } catch (error) {
       console.error("Erro ao salvar perfil:", error)
       toast.error("Erro ao salvar perfil")
@@ -273,7 +270,7 @@ export default function AdminConfiguracoesPage() {
         <AdminSidebar />
         <div className="min-w-0 flex-1">
           <AdminHeader />
-          <main className="flex items-center justify-center p-6"><Loader2 className="h-8 w-8 animate-spin text-primary" /></main>
+          <main id="main-content" tabIndex={-1} className="flex items-center justify-center p-6"><Loader2 className="h-8 w-8 animate-spin text-primary" /></main>
         </div>
       </div>
     )
@@ -284,40 +281,42 @@ export default function AdminConfiguracoesPage() {
       <AdminSidebar />
       <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="overflow-x-hidden p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           <div className="mb-6 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">Configurações</h1>
               <p className="text-sm text-muted-foreground">Gerencie o perfil do admin e as configurações do sistema.</p>
             </div>
-            <Button onClick={handleSaveSettings} disabled={saving} className="h-11 gap-2 rounded-full font-black">
+            <Button onClick={handleSaveSettings} disabled={saving || !settingsLoaded} className="h-11 gap-2 rounded-full font-black">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Salvar alterações
             </Button>
           </div>
 
+          {settingsError && <LoadError message={settingsError} onRetry={() => void fetchSettings()} />}
+          {profileWarning && <p role="status" className="my-4 text-sm text-muted-foreground">{profileWarning}</p>}
           <Tabs defaultValue="perfil" className="space-y-4">
             <TabsList className="grid h-auto w-full grid-cols-4 rounded-2xl p-1">
-              <TabsTrigger value="perfil" className="gap-2 rounded-full"><User className="h-4 w-4" /><span className="hidden sm:inline">Perfil</span></TabsTrigger>
-              <TabsTrigger value="geral" className="gap-2 rounded-full"><Globe className="h-4 w-4" /><span className="hidden sm:inline">Geral</span></TabsTrigger>
-              <TabsTrigger value="notificacoes" className="gap-2 rounded-full"><Bell className="h-4 w-4" /><span className="hidden sm:inline">Notificações</span></TabsTrigger>
-              <TabsTrigger value="seguranca" className="gap-2 rounded-full"><Shield className="h-4 w-4" /><span className="hidden sm:inline">Segurança</span></TabsTrigger>
+              <TabsTrigger value="perfil" className="gap-2 rounded-full"><User className="h-4 w-4" /><span className="sr-only sm:not-sr-only">Perfil</span></TabsTrigger>
+              <TabsTrigger value="geral" className="gap-2 rounded-full"><Globe className="h-4 w-4" /><span className="sr-only sm:not-sr-only">Geral</span></TabsTrigger>
+              <TabsTrigger value="notificacoes" className="gap-2 rounded-full"><Bell className="h-4 w-4" /><span className="sr-only sm:not-sr-only">Notificações</span></TabsTrigger>
+              <TabsTrigger value="seguranca" className="gap-2 rounded-full"><Shield className="h-4 w-4" /><span className="sr-only sm:not-sr-only">Segurança</span></TabsTrigger>
             </TabsList>
 
             <TabsContent value="perfil">
               <Card className="min-w-0">
-                <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-primary" />Perfil do administrador</CardTitle><CardDescription>Atualize os dados do usuário logado. As alterações ficam persistidas no frontend atual.</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-primary" />Perfil do administrador</CardTitle><CardDescription>Estas preferências são locais a este navegador. Elas não alteram sua conta, seu e-mail de acesso ou suas permissões.</CardDescription></CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2"><Label htmlFor="admin-nome">Nome</Label><Input id="admin-nome" className="h-11" value={profile.nome || ""} onChange={(e) => updateProfile("nome", e.target.value)} /></div>
                   <div className="space-y-2"><Label htmlFor="admin-email">E-mail</Label><Input id="admin-email" className="h-11" type="email" value={profile.email || ""} onChange={(e) => updateProfile("email", e.target.value)} /></div>
-                  <div className="space-y-2"><Label htmlFor="admin-role">Perfil</Label><Input id="admin-role" className="h-11" value={profile.role || "admin"} onChange={(e) => updateProfile("role", e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="admin-role">Perfil</Label><Input id="admin-role" className="h-11" value={user?.role || "admin"} readOnly /></div>
                   <div className="space-y-2 sm:col-span-2"><Label htmlFor="admin-observacoes">Observações</Label><Textarea id="admin-observacoes" rows={4} value={profile.observacoes || ""} onChange={(e) => updateProfile("observacoes", e.target.value)} /></div>
-                  <div className="sm:col-span-2"><Button onClick={() => void handleSaveProfile()} disabled={profileSaving} className="h-11 gap-2 rounded-full font-black">{profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Salvar perfil</Button></div>
+                  <div className="sm:col-span-2"><Button onClick={() => void handleSaveProfile()} disabled={profileSaving} className="h-11 gap-2 rounded-full font-black">{profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Salvar neste navegador</Button></div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="geral">
+            <TabsContent value="geral"><fieldset disabled={!settingsLoaded || saving} className="min-w-0">
               <Card className="min-w-0">
                 <CardHeader><CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5 text-primary" />Configurações gerais</CardTitle><CardDescription>Informações básicas e preferências do sistema</CardDescription></CardHeader>
                 <CardContent className="space-y-4">
@@ -330,13 +329,13 @@ export default function AdminConfiguracoesPage() {
                     <div className="space-y-2"><Label htmlFor="language">Idioma padrão</Label><Input id="language" className="h-11" value={settings.system.language} onChange={(e) => updateSystem("language", e.target.value)} /></div>
                     <div className="space-y-2"><Label htmlFor="timezone">Timezone</Label><Input id="timezone" className="h-11" value={settings.system.timezone} onChange={(e) => updateSystem("timezone", e.target.value)} /></div>
                   </div>
-                  <SettingRow title="Modo de manutenção" description="Quando ativado, o sistema pode operar em modo restrito."><Switch checked={settings.system.maintenanceMode} onCheckedChange={(checked) => updateSystem("maintenanceMode", checked)} /></SettingRow>
-                  <SettingRow title="Modo debug" description="Use apenas para diagnóstico."><Switch checked={settings.system.debugMode} onCheckedChange={(checked) => updateSystem("debugMode", checked)} /></SettingRow>
+                  <SettingRow title="Modo de manutenção" description="Quando ativado, o sistema pode operar em modo restrito."><Switch aria-label="Modo de manutenção" checked={settings.system.maintenanceMode} onCheckedChange={(checked) => updateSystem("maintenanceMode", checked)} /></SettingRow>
+                  <SettingRow title="Modo debug" description="Use apenas para diagnóstico."><Switch aria-label="Modo debug" checked={settings.system.debugMode} onCheckedChange={(checked) => updateSystem("debugMode", checked)} /></SettingRow>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </fieldset></TabsContent>
 
-            <TabsContent value="notificacoes">
+            <TabsContent value="notificacoes"><fieldset disabled={!settingsLoaded || saving} className="min-w-0">
               <Card className="min-w-0">
                 <CardHeader><CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5 text-primary" />Configurações de notificações</CardTitle><CardDescription>Gerencie como os alertas administrativos são enviados</CardDescription></CardHeader>
                 <CardContent className="space-y-4">
@@ -346,12 +345,12 @@ export default function AdminConfiguracoesPage() {
                     ["systemAlerts", "Eventos do sistema", "Notificações sobre mudanças e incidentes"],
                     ["dailyDigest", "Resumo diário", "Consolida notificações importantes do dia"],
                     ["weeklyReport", "Relatório semanal", "Resumo semanal para acompanhamento gerencial"],
-                  ] as Array<[keyof AdminSettingsState["notifications"], string, string]>).map(([key, title, description]) => <SettingRow key={key} title={title} description={description}><Switch checked={settings.notifications[key]} onCheckedChange={(checked) => updateNotifications(key, checked)} /></SettingRow>)}
+                  ] as Array<[keyof AdminSettingsState["notifications"], string, string]>).map(([key, title, description]) => <SettingRow key={key} title={title} description={description}><Switch aria-label={title} checked={settings.notifications[key]} onCheckedChange={(checked) => updateNotifications(key, checked)} /></SettingRow>)}
 
                   <div className="rounded-2xl border p-4">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="space-y-2"><div className="flex items-center gap-2"><MessageCircle className="h-5 w-5 text-primary" /><p className="font-black text-foreground">Notificações WhatsApp</p></div><p className="max-w-2xl text-sm leading-6 text-muted-foreground">Ativa ou pausa os disparos automáticos de WhatsApp para aprovações, agendamentos, confirmações e reagendamentos.</p></div>
-                      <Switch checked={settings.notifications.whatsappEnabled} onCheckedChange={(checked) => updateNotifications("whatsappEnabled", checked)} />
+                      <Switch aria-label="Notificações WhatsApp" checked={settings.notifications.whatsappEnabled} onCheckedChange={(checked) => updateNotifications("whatsappEnabled", checked)} />
                     </div>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                       {([
@@ -360,28 +359,28 @@ export default function AdminConfiguracoesPage() {
                         ["Template configurado", whatsAppStatus?.templateDefaultPresent],
                         ["Webhook configurado", whatsAppStatus?.webhookConfigured],
                         ["Número forçado ativo", whatsAppStatus?.forceRecipientPresent],
-                      ] as Array<[string, boolean | undefined]>).map(([label, active]) => <div key={label} className="flex items-center justify-between rounded-2xl bg-muted/50 px-3 py-2 text-sm"><span className="text-muted-foreground">{label}</span><span className={active ? "font-black text-emerald-600" : "font-black text-muted-foreground"}>{active ? "Sim" : "Não"}</span></div>)}
+                      ] as Array<[string, boolean | undefined]>).map(([label, active]) => <div key={label} className="flex items-center justify-between rounded-2xl bg-muted/50 px-3 py-2 text-sm"><span className="text-muted-foreground">{label}</span><span className={active ? "font-black text-emerald-600" : "font-black text-muted-foreground"}>{active === undefined ? "Indisponível" : active ? "Sim" : "Não"}</span></div>)}
                       <div className="flex items-center justify-between rounded-2xl bg-muted/50 px-3 py-2 text-sm"><span className="text-muted-foreground">Modo atual</span><span className="font-black">{whatsAppStatus?.messageMode || "indefinido"}</span></div>
                     </div>
                     {whatsAppStatus?.templateDefault ? <p className="mt-3 text-sm text-muted-foreground">Template: {whatsAppStatus.templateDefault} ({whatsAppStatus.templateLanguage})</p> : null}
                     {whatsAppStatus?.warning ? <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{whatsAppStatus.warning}</div> : null}
-                    <Button type="button" variant="outline" onClick={() => void handleWhatsAppTest()} disabled={testingWhatsApp} className="mt-4 h-11 gap-2 rounded-full font-bold">{testingWhatsApp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Enviar teste</Button>
+                    <Button type="button" variant="outline" onClick={() => void handleWhatsAppTest()} disabled={testingWhatsApp || !whatsAppStatus} className="mt-4 h-11 gap-2 rounded-full font-bold">{testingWhatsApp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Enviar teste</Button>
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </fieldset></TabsContent>
 
-            <TabsContent value="seguranca">
+            <TabsContent value="seguranca"><fieldset disabled={!settingsLoaded || saving} className="min-w-0">
               <Card className="min-w-0">
                 <CardHeader><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-primary" />Segurança</CardTitle><CardDescription>Gerencie as configurações de segurança do sistema</CardDescription></CardHeader>
                 <CardContent className="space-y-4">
-                  <SettingRow title="Autenticação em dois fatores" description="Ativa proteção adicional para logins administrativos."><Switch checked={settings.security.twoFactorEnabled} onCheckedChange={(checked) => updateSecurity("twoFactorEnabled", checked)} /></SettingRow>
-                  <SettingRow title="Whitelist de IP" description="Limita o acesso administrativo a endereços aprovados."><Switch checked={settings.security.ipWhitelist} onCheckedChange={(checked) => updateSecurity("ipWhitelist", checked)} /></SettingRow>
+                  <SettingRow title="Autenticação em dois fatores" description="Preferência registrada. Sua efetivação depende de suporte e configuração pelo serviço de autenticação."><Switch aria-label="Autenticação em dois fatores" checked={settings.security.twoFactorEnabled} onCheckedChange={(checked) => updateSecurity("twoFactorEnabled", checked)} /></SettingRow>
+                  <SettingRow title="Whitelist de IP" description="Preferência registrada. A restrição efetiva de acesso deve ser configurada pela equipe responsável."><Switch aria-label="Whitelist de IP" checked={settings.security.ipWhitelist} onCheckedChange={(checked) => updateSecurity("ipWhitelist", checked)} /></SettingRow>
                   <div className="space-y-2"><Label htmlFor="session-timeout">Timeout de sessão (minutos)</Label><Input id="session-timeout" className="h-11" type="number" min={5} max={480} value={settings.security.sessionTimeout} onChange={(e) => updateSecurity("sessionTimeout", Number(e.target.value || 30))} /></div>
                   <div className="rounded-2xl border p-4 text-sm leading-6 text-muted-foreground">As configurações de e-mail e integrações avançadas continuam sendo gerenciadas pelo servidor quando disponíveis.</div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </fieldset></TabsContent>
           </Tabs>
         </main>
       </div>

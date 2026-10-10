@@ -286,7 +286,7 @@ export default function CadastroBeneficiarioPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1 bg-secondary py-6 sm:py-8 lg:py-12">
+      <main id="main-content" tabIndex={-1} className="flex-1 bg-secondary/10 py-6 sm:py-8 lg:py-12">
         <div className="container mx-auto px-4">
           {/* Back Link */}
           <Link 
@@ -1021,3 +1021,4 @@ export default function CadastroBeneficiarioPage() {
     </div>
   )
 }
+

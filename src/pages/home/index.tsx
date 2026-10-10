@@ -13,7 +13,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <HeroSection />
         <ImpactSection />
         <ProgramsPreview />
@@ -27,3 +27,4 @@ export default function HomePage() {
     </div>
   )
 }
+

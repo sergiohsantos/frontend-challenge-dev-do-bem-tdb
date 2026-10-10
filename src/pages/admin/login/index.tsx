@@ -1,5 +1,6 @@
+import { loginDestination } from "@/lib/login-destination"
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useLocation } from "react-router-dom"
 import { Eye, EyeOff, Lock, Mail, Shield, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ const roleTypes = [
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +59,7 @@ export default function AdminLoginPage() {
 
       const userWithNormalizedRole = { ...response.user, role: normalizedRole }
       saveAuth(response.access_token, userWithNormalizedRole)
-      navigate("/admin")
+      navigate(loginDestination(normalizedRole, location.state?.from), { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login. Tente novamente.")
     } finally {
@@ -66,7 +68,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <main id="main-content" tabIndex={-1} className="flex min-h-screen">
       {/* Left side - Form */}
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div className="w-full max-w-md">
@@ -245,7 +247,7 @@ export default function AdminLoginPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 

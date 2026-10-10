@@ -12,7 +12,7 @@ body {
   background:
     radial-gradient(circle at top left, var(--tdb-teal-soft), transparent 32rem),
     radial-gradient(circle at 85% 10%, var(--tdb-orange-soft), transparent 28rem),
-    linear-gradient(180deg, hsl(204 100% 99%) 0%, hsl(0 0% 100%) 42%, hsl(178 44% 98%) 100%);
+    linear-gradient(180deg, var(--background) 0%, var(--card) 42%, var(--background) 100%);
 }
 
 .tdb-premium-shell {
@@ -158,8 +158,8 @@ main > .container.max-w-7xl,
   align-items: center;
   justify-content: space-between;
   border-radius: 2.5rem;
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background: var(--primary);
+  color: var(--primary-foreground);
   padding: 1.5rem;
   box-shadow: 0 26px 70px rgba(16, 40, 66, 0.20);
 }
@@ -186,7 +186,7 @@ main > .container.max-w-7xl,
   top: -2rem;
   width: 14rem;
   height: 14rem;
-  background: hsl(var(--secondary));
+  background: var(--secondary);
 }
 
 .tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1)::after,
@@ -196,14 +196,14 @@ main > .container.max-w-7xl,
   bottom: -3rem;
   width: 16rem;
   height: 16rem;
-  background: hsl(var(--accent));
+  background: var(--accent);
 }
 
 .tdb-admin-sidebar + div > main > .space-y-6 > div:has(h1) h1,
 .tdb-admin-sidebar + div > main.space-y-6 > div:has(h1) h1,
 .tdb-admin-sidebar + div > main > .mb-6:has(h1) h1 {
   max-width: 52rem;
-  color: hsl(var(--primary-foreground));
+  color: var(--primary-foreground);
   font-size: clamp(2rem, 4vw, 3.25rem);
   line-height: 1.02;
   letter-spacing: -0.04em;
@@ -236,7 +236,7 @@ main > .container.max-w-7xl,
   border-radius: 9999px;
   border-color: rgba(255, 255, 255, 0.24);
   background: rgba(255, 255, 255, 0.10);
-  color: hsl(var(--primary-foreground));
+  color: var(--primary-foreground);
   font-weight: 800;
 }
 

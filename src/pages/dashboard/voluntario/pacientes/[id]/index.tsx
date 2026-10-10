@@ -213,7 +213,7 @@ export default function VoluntarioPacienteDetailPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={user?.full_name || "Voluntário"} userType="voluntario" notificationCount={0} />
-        <main className="flex flex-1 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></main>
+        <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></main>
       </div>
     )
   }
@@ -222,7 +222,7 @@ export default function VoluntarioPacienteDetailPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={user?.full_name || "Voluntário"} userType="voluntario" notificationCount={0} />
-        <main className="flex-1 py-6 lg:py-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
           <div className="container mx-auto px-4">
             <AlertBanner type="error" title="Erro" message={error || "Paciente não encontrado"} />
           </div>
@@ -235,7 +235,7 @@ export default function VoluntarioPacienteDetailPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={user?.full_name || "Voluntário"} userType="voluntario" notificationCount={0} />
-      <main className="flex-1 py-6 lg:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
           <VolunteerPageHero
             eyebrow="Paciente"

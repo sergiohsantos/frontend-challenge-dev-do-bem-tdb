@@ -373,7 +373,7 @@ export default function AdminIAPreditivaPage() {
       <div className="flex min-h-screen flex-1 flex-col">
         <AdminHeader />
 
-        <main className="flex-1 space-y-6 p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="flex-1 space-y-6 p-4 sm:p-6">
           <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl space-y-3">
@@ -440,7 +440,7 @@ export default function AdminIAPreditivaPage() {
                   <div className="space-y-2">
                     <Label>Periodo</Label>
                     <Select value={String(filters.days || 14)} onValueChange={(value) => updateFilter("days", Number(value))}>
-                      <SelectTrigger id="period-filter"><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label="Período" id="period-filter"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="7">7 dias</SelectItem>
                         <SelectItem value="14">14 dias</SelectItem>
@@ -452,7 +452,7 @@ export default function AdminIAPreditivaPage() {
                   <div className="space-y-2">
                     <Label>Classificacao</Label>
                     <Select value={filters.classification || "all"} onValueChange={(value) => updateFilter("classification", value)}>
-                      <SelectTrigger id="classification-filter"><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label="Classificação" id="classification-filter"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todas</SelectItem>
                         <SelectItem value="ALTO">Alto</SelectItem>
@@ -697,7 +697,7 @@ export default function AdminIAPreditivaPage() {
                       <div className="space-y-2">
                         <Label>Programa</Label>
                         <Select value={form.programa} onValueChange={(value) => updateTextField("programa", value)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger aria-label="Programa"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Dentista do Bem">Dentista do Bem</SelectItem>
                             <SelectItem value="Apolonias do Bem">Apolonias do Bem</SelectItem>
@@ -740,7 +740,7 @@ export default function AdminIAPreditivaPage() {
                       <div className="space-y-2">
                         <Label>Canal preferido</Label>
                         <Select value={form.canal_preferido} onValueChange={(value) => updateTextField("canal_preferido", value)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger aria-label="Canal preferido"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="WhatsApp">WhatsApp</SelectItem>
                             <SelectItem value="Telefone">Telefone</SelectItem>
@@ -756,7 +756,7 @@ export default function AdminIAPreditivaPage() {
                       <div className="space-y-2">
                         <Label>Documentos pendentes</Label>
                         <Select value={String(form.documentos_pendentes)} onValueChange={(value) => updateNumberField("documentos_pendentes", value)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger aria-label="Documentos pendentes"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="0">Nao</SelectItem>
                             <SelectItem value="1">Sim</SelectItem>
@@ -766,7 +766,7 @@ export default function AdminIAPreditivaPage() {
                       <div className="space-y-2">
                         <Label>Status aprovacao</Label>
                         <Select value={form.status_aprovacao} onValueChange={(value) => updateTextField("status_aprovacao", value)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger aria-label="Status da aprovação"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Aprovado">Aprovado</SelectItem>
                             <SelectItem value="Pendente">Pendente</SelectItem>
@@ -987,3 +987,4 @@ export default function AdminIAPreditivaPage() {
     </div>
   )
 }
+

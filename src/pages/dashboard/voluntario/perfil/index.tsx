@@ -189,7 +189,7 @@ export default function VoluntarioPerfilPage() {
           userType="voluntario"
           notificationCount={0}
         />
-        <main className="flex-1 py-6 lg:py-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
           <div className="container mx-auto px-4">
             <DashboardSkeleton />
           </div>
@@ -206,7 +206,7 @@ export default function VoluntarioPerfilPage() {
         notificationCount={0}
       />
 
-      <main className="flex-1 py-6 lg:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto max-w-5xl px-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <Button variant="ghost" size="sm" className="mb-0" asChild>
@@ -452,3 +452,4 @@ export default function VoluntarioPerfilPage() {
     </div>
   )
 }
+

@@ -68,7 +68,7 @@ export default function AdminSatisfacaoPage() {
       <AdminSidebar />
       <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="overflow-x-hidden p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           <div className="mb-6 min-w-0">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Satisfação</h1>
             <p className="text-sm text-muted-foreground">Indicadores agregados de satisfação e NPS na escala 0 a 10.</p>

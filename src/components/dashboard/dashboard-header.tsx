@@ -85,7 +85,7 @@ export function DashboardHeader({ userName, userType, notificationCount = 0 }: D
     <header className="sticky top-0 z-50 border-b border-border bg-card">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-4">
-          <Link to={dashboardBase} className="flex items-center gap-2">
+          <Link to={dashboardBase} aria-label="Página inicial do painel" className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
               <Heart className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
             </div>

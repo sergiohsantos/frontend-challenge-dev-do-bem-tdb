@@ -153,7 +153,7 @@ export default function NovaSolicitacaoPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
-        <main className="flex flex-1 items-center justify-center px-4">
+        <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center px-4">
           <Card className="tdb-polished-card max-w-md rounded-[2rem] text-center shadow-2xl shadow-primary/10">
             <CardContent className="flex flex-col items-center py-12">
               <div className="mb-4 rounded-full bg-success/10 p-4"><CheckCircle2 className="h-10 w-10 text-success" /></div>
@@ -171,7 +171,7 @@ export default function NovaSolicitacaoPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
 
-      <main className="flex-1 py-6 lg:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
           <VolunteerPageHero
             eyebrow="Nova solicitação"
@@ -226,7 +226,7 @@ export default function NovaSolicitacaoPage() {
                       <div className="flex items-center gap-2 rounded-2xl bg-muted/40 p-3"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm text-muted-foreground">Carregando seus casos...</span></div>
                     ) : cases.length > 0 ? (
                       <Select value={formData.beneficiario_id} onValueChange={(value) => handleChange("beneficiario_id", value)}>
-                        <SelectTrigger className="h-11 rounded-2xl"><SelectValue placeholder="Selecione o beneficiário" /></SelectTrigger>
+                        <SelectTrigger aria-label="Selecione o beneficiário" className="h-11 rounded-2xl"><SelectValue placeholder="Selecione o beneficiário" /></SelectTrigger>
                         <SelectContent>
                           {cases.map((c) => {
                             const beneficiaryId = c.beneficiario_id || c.beneficiaryId || c.case_id || c.caseId
@@ -245,14 +245,14 @@ export default function NovaSolicitacaoPage() {
                     <div className="space-y-2">
                       <Label htmlFor="tipo">Tipo de procedimento *</Label>
                       <Select value={formData.tipo} onValueChange={(value) => handleChange("tipo", value)} required>
-                        <SelectTrigger className="h-11 rounded-2xl"><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+                        <SelectTrigger aria-label="Selecione o tipo" className="h-11 rounded-2xl"><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
                         <SelectContent>{procedureTypes.map((type) => <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="prioridade">Prioridade *</Label>
                       <Select value={formData.prioridade} onValueChange={(value) => handleChange("prioridade", value)}>
-                        <SelectTrigger className="h-11 rounded-2xl"><SelectValue placeholder="Selecione a prioridade" /></SelectTrigger>
+                        <SelectTrigger aria-label="Selecione a prioridade" className="h-11 rounded-2xl"><SelectValue placeholder="Selecione a prioridade" /></SelectTrigger>
                         <SelectContent>{prioridades.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>

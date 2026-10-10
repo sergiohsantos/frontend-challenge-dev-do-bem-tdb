@@ -1,6 +1,4 @@
-import { useRef } from "react"
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel"
-import Autoplay from "embla-carousel-autoplay"
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel"
 
 const supporters = [
   { name: "Surya Dental", type: "mantenedor" },
@@ -18,7 +16,6 @@ const supporters = [
 ]
 
 export function SupportersCarousel() {
-  const autoplayPlugin = useRef(Autoplay({ delay: 2000, stopOnInteraction: false, stopOnMouseEnter: true }))
 
   return (
     <section className="bg-muted/30 py-10 sm:py-12 lg:py-16" aria-labelledby="supporters-heading">
@@ -27,7 +24,7 @@ export function SupportersCarousel() {
           <h2 id="supporters-heading" className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">Apoiadores e mantenedores</h2>
           <p className="mt-2 text-sm text-muted-foreground">Empresas que acreditam na transformação por meio do sorriso.</p>
         </div>
-        <Carousel opts={{ align: "start", loop: true, dragFree: true }} plugins={[autoplayPlugin.current]} className="w-full">
+        <Carousel opts={{ align: "start", loop: true, dragFree: true }} className="w-full">
           <CarouselContent className="-ml-2 md:-ml-4">
             {supporters.map((supporter) => (
               <CarouselItem key={supporter.name} className="basis-1/2 pl-2 sm:basis-1/3 md:basis-1/4 md:pl-4 lg:basis-1/6">
@@ -37,9 +34,14 @@ export function SupportersCarousel() {
               </CarouselItem>
             ))}
           </CarouselContent>
+          <div className="mt-4 flex justify-center gap-3">
+            <CarouselPrevious className="static translate-y-0" />
+            <CarouselNext className="static translate-y-0" />
+          </div>
         </Carousel>
         <p className="mt-6 text-center text-xs text-muted-foreground">Quer ser um apoiador? <a href="/contato" className="font-bold text-primary hover:underline">Entre em contato</a></p>
       </div>
     </section>
   )
 }
+
