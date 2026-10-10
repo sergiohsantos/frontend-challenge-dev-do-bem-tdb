@@ -28,7 +28,7 @@ A Sprint 4 reforça os seguintes pontos:
 - integração com backend Java/Quarkus nas telas administrativas de **triagem** e **onboarding**;
 - integração com backend de IA na tela `/admin/ia-preditiva`;
 - manutenção da integração com o backend Python/FastAPI para o core da solução;
-- publicação do frontend na **Vercel**;
+- publicação do frontend na **AWS (S3 privado + CloudFront)**;
 - uso de variáveis de ambiente para separar desenvolvimento, homologação e produção;
 - tratamento de erros, loading, estados vazios e respostas inesperadas;
 - responsividade com **Tailwind CSS**;
@@ -171,7 +171,7 @@ Funcionalidades cobertas:
 - **Node.js**
 - **npm**
 - **VLibras**
-- **Vercel**
+- **AWS S3 + CloudFront**
 - **APIs REST**
 - **Backend Python/FastAPI**
 - **Backend Java/Quarkus**
@@ -732,19 +732,19 @@ Senha: mesma_senha_da_banca
 URL pública da aplicação:
 
 ```text
-https://frontend-challenge-dev-do-bem-tdb.vercel.app
+https://devdobem.clinicarx.dev
 ```
 
 URL de login:
 
 ```text
-https://frontend-challenge-dev-do-bem-tdb.vercel.app/login
+https://devdobem.clinicarx.dev/login
 ```
 
 Área administrativa:
 
 ```text
-https://frontend-challenge-dev-do-bem-tdb.vercel.app/admin
+https://devdobem.clinicarx.dev/admin
 ```
 
 ### Variáveis necessárias na Vercel

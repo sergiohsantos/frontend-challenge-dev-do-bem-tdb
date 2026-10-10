@@ -39,19 +39,13 @@ AI_SERVICE_TOKEN ou AI_ADMIN_TOKEN. O navegador envia somente o JWT de login.
 Não use DNS privado *.tdb.internal: esses endereços são exclusivos da comunicação entre tasks.
 Use os outputs reais do Terraform; esta promoção não unifica distribuições nem altera rotas da infra.
 
-## Transição Vercel → CloudFront
+## Hospedagem oficial: AWS S3 + CloudFront
 
-A integração Vercel existente publica develop em desenvolvimento e main em produção.
-Mudar workflows GitHub não desabilita essa integração. Antes do merge desta promoção,
-desconecte ou pause os deploys Git do projeto na Vercel se não quiser que main seja publicada lá.
-Este PR preserva vercel.json; o arquivo não é necessário ao S3 e não altera CloudFront.
-
-Primeiro valide pela URL CloudFront: login, páginas dos três perfis, links profundos,
-atualização da página, IA, mensagens e downloads. Ajuste CORS das APIs para a origem usada.
-O fallback SPA deve ser configurado na distribuição; S3 não interpreta vercel.json.
-Para manter https://devdobem.clinicarx.dev, configure alias/certificado ACM em us-east-1
-na infraestrutura e só então aponte o DNS para a distribuição validada.
-Mantenha a versão Vercel disponível até concluir essa verificação. Este PR não modifica DNS.
+O frontend é publicado exclusivamente na AWS usando o bucket S3 privado, Origin Access Control e a distribuição CloudFront descritos no repositório de infraestrutura `tdb-infra`.
+A aplicação é uma SPA: o fallback de rotas deve ser tratado pelo CloudFront; não existe configuração de rewrite em outro provedor.
+O deploy permanece manual pela GitHub Action `Validate and deploy to AWS` na branch `main`, usando OIDC e sem chaves estáticas.
+Validar login, navegação direta em rotas profundas, dashboards de todos os perfis, IA, mensagens e downloads pela URL CloudFront.
+A origem `https://devdobem.clinicarx.dev` deve apontar para a distribuição CloudFront com certificado ACM adequado, e os CORS dos backends devem aceitar essa origem.
 
 ## Publicação e rollback
 

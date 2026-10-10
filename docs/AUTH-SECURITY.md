@@ -34,8 +34,8 @@ VITE_JAVA_API_URL=https://devdobem.clinicarx.dev/java e
 VITE_AI_API_URL=https://devdobem.clinicarx.dev/ai. Python deve ter ENV=prod,
 CORS_ORIGINS incluindo exatamente https://devdobem.clinicarx.dev e o mesmo segredo
 JWT forte usado por Java/IA. Não rotacionar apenas uma API. Nenhum secret foi lido
-ou alterado por esta PR. Vercel com API de outra origem não é suportado por este
-fluxo de cookie Strict; a produção alvo é o domínio único CloudFront combinado.
+ou alterado por esta PR. O fluxo de cookie Strict pressupõe o domínio único de produção no CloudFront;
+origens diferentes exigem reavaliação de autenticação, cookies e CORS.
 
 Para desenvolvimento usar localhost em frontend e Python, sem misturar com
 127.0.0.1. ENV=dev usa tdb_dev_session HttpOnly/Strict sem Secure, exclusivo local.
