@@ -1,11 +1,6 @@
 name: Fix frontend npm advisories (isolated branch)
 
 on:
-  push:
-    branches: [security/frontend-npm-audit-20261010]
-    paths:
-      - '.github/workflows/fix-npm-audit.yml'
-      - 'src/main.tsx'
   workflow_dispatch:
 
 permissions:
