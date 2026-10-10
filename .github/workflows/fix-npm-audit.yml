@@ -24,7 +24,9 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Apply non-breaking npm advisory fixes
+      - name: Upgrade React Router to patched major version
+        run: npm install 'react-router-dom@^7.18.0' --save --no-fund
+      - name: Apply compatible transitive dependency fixes
         run: npm audit fix --no-fund
       - name: Assert no npm advisories remain
         run: |
