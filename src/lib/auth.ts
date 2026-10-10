@@ -1,4 +1,4 @@
-// Auth Helper for localStorage + cookie token management
+// Bearer authentication. Legacy JavaScript cookies are removed, never reused.
 
 const TOKEN_KEY = "tdb_token"
 const USER_KEY = "tdb_user"
@@ -14,24 +14,6 @@ export interface AuthUser {
 }
 
 /**
- * Set a cookie with given name, value, and days to expire
- */
-function setCookie(name: string, value: string, days: number = 7): void {
-  if (typeof document === "undefined") return
-  const expires = new Date(Date.now() + days * 864e5).toUTCString()
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`
-}
-
-/**
- * Get cookie value by name
- */
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null
-  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`))
-  return match ? decodeURIComponent(match[2]) : null
-}
-
-/**
  * Delete a cookie by name
  */
 function deleteCookie(name: string): void {
@@ -39,8 +21,17 @@ function deleteCookie(name: string): void {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`
 }
 
+let legacyCookiesRemoved = false
+
+function removeLegacyCookies(): void {
+  if (legacyCookiesRemoved || typeof document === "undefined") return
+  deleteCookie(COOKIE_TOKEN)
+  deleteCookie(COOKIE_ROLE)
+  legacyCookiesRemoved = true
+}
+
 /**
- * Save authentication data to localStorage AND cookies
+ * Save authentication data for existing Bearer clients
  */
 export function saveAuth(token: string, user: AuthUser): void {
   const normalizedUser: AuthUser = {
@@ -55,18 +46,19 @@ export function saveAuth(token: string, user: AuthUser): void {
   localStorage.setItem(TOKEN_KEY, token)
   localStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
   
-  // Also store in cookies for SSR/middleware access
-  setCookie(COOKIE_TOKEN, token)
-  setCookie(COOKIE_ROLE, normalizedUser.role)
+  // This application is a static SPA, without an SSR cookie consumer.
+  deleteCookie(COOKIE_TOKEN)
+  deleteCookie(COOKIE_ROLE)
 }
 
 /**
- * Get token from localStorage (or cookie fallback)
+ * Get the existing Bearer token; never recover a token from a JavaScript cookie
  */
 export function getToken(): string | null {
   if (typeof window === "undefined") return null
   
-  return localStorage.getItem(TOKEN_KEY) || getCookie(COOKIE_TOKEN)
+  removeLegacyCookies()
+  return localStorage.getItem(TOKEN_KEY)
 }
 
 /**
@@ -86,14 +78,14 @@ export function getUser(): AuthUser | null {
 }
 
 /**
- * Get role from cookie (useful for quick checks)
+ * Compatibility helper; UI role is not a server authorization decision.
  */
 export function getRoleFromCookie(): string | null {
-  return getCookie(COOKIE_ROLE)
+  return getUser()?.role || null
 }
 
 /**
- * Clear authentication data from localStorage AND cookies
+ * Clear authentication data and any legacy cookies
  */
 export function clearAuth(): void {
   if (typeof window === "undefined") return
@@ -180,3 +172,4 @@ export function getRedirectPath(role: string): string {
       return "/dashboard/beneficiario"
   }
 }
+
