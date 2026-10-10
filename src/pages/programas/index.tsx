@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Link } from "react-router-dom"
 import { useState, useEffect } from "react"
-import { Smile, Brain, Heart, Users, CheckCircle2, Award, Sparkles, Loader2, ArrowRight } from "lucide-react"
+import { Smile, Brain, Heart, Users, CheckCircle2, Award, Sparkles, ArrowRight } from "lucide-react"
 import {
   Carousel,
   CarouselContent,
@@ -16,7 +16,6 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel"
 import { useLocation } from "react-router-dom"
-import { apiFetch, type Program } from "@/lib/api"
 
 const fallbackPrograms = [
   {
@@ -102,48 +101,10 @@ interface DisplayProgram {
   textColor: string
 }
 
-function normalizeProgramKey(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-}
-
-function mapApiProgramToDisplay(apiProgram: Program, index: number): DisplayProgram {
-  const icons = [Smile, Heart, Brain]
-  const colors = ["bg-primary", "bg-accent", "bg-success"]
-  const textColors = ["text-primary", "text-accent", "text-success"]
-  const programCodeFallbackIds: Record<string, string> = {
-    dentistas_do_bem: "dentista-do-bem",
-    apolonias_do_bem: "apolonias-do-bem",
-    psicologos_para_o_bem: "psicologo-do-bem",
-  }
-  const slug = (apiProgram.code && programCodeFallbackIds[apiProgram.code]) || apiProgram.slug || normalizeProgramKey(apiProgram.name)
-  const fallback = (fallbackPrograms as DisplayProgram[]).find((item) => item.id === slug || normalizeProgramKey(item.title) === slug)
-
-  return {
-    id: slug,
-    icon: fallback?.icon || icons[index % 3],
-    title: apiProgram.name,
-    subtitle: fallback?.subtitle || apiProgram.description || "Programa ativo da Turma do Bem",
-    description: fallback?.description || apiProgram.longDescription || apiProgram.description,
-    impact: fallback?.impact || (apiProgram.stats?.beneficiaries ? `+${apiProgram.stats.beneficiaries.toLocaleString("pt-BR")} atendidos` : undefined),
-    highlight: fallback?.highlight,
-    benefits: fallback?.benefits || apiProgram.features || ["Atendimento humanizado", "Acompanhamento especializado", "Fluxo organizado de comunicação"],
-    requirements: fallback?.requirements || apiProgram.requirements || ["Cadastro completo", "Análise da elegibilidade", "Acompanhamento conforme disponibilidade do programa"],
-    cta: fallback?.cta || { beneficiary: "/cadastro/beneficiario", volunteer: "/cadastro/voluntario" },
-    color: fallback?.color || colors[index % 3],
-    textColor: fallback?.textColor || textColors[index % 3],
-  }
-}
-
 export default function ProgramasPage() {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
   const [activeIndex, setActiveIndex] = useState(0)
-  const [programs, setPrograms] = useState<DisplayProgram[]>(fallbackPrograms as DisplayProgram[])
-  const [isLoading, setIsLoading] = useState(true)
+  const programs: DisplayProgram[] = fallbackPrograms
   
   const { hash } = useLocation()
   useEffect(() => {
@@ -156,24 +117,6 @@ export default function ProgramasPage() {
     const frame = requestAnimationFrame(() => scrollToAnchor(target))
     return () => cancelAnimationFrame(frame)
   }, [carouselApi, hash, programs])
-
-  useEffect(() => {
-    async function fetchPrograms() {
-      try {
-        const response = await apiFetch<Program[]>("/api/public/programs")
-        if (response && response.length > 0) {
-          setPrograms(response.map((p, i) => mapApiProgramToDisplay(p, i)))
-        } else {
-          setPrograms(fallbackPrograms as DisplayProgram[])
-        }
-      } catch {
-        setPrograms(fallbackPrograms as DisplayProgram[])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchPrograms()
-  }, [])
 
   useEffect(() => {
     if (!carouselApi) return
@@ -230,12 +173,6 @@ export default function ProgramasPage() {
               <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">Cada frente de cuidado tem critérios, contexto e orientação próprios, preservando a identidade dos programas da Turma do Bem.</p>
             </div>
 
-            {isLoading ? (
-              <div className="mt-10 flex items-center justify-center rounded-[2rem] border border-border bg-card p-8 text-muted-foreground">
-                <Loader2 className="mr-3 h-5 w-5 animate-spin" aria-hidden="true" />Carregando programas...
-              </div>
-            ) : (
-              <>
                 <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
                   {programs.map((program, index) => (
                     <button
@@ -359,8 +296,7 @@ export default function ProgramasPage() {
                     ))}
                   </div>
                 </div>
-              </>
-            )}
+
           </div>
         </section>
       </main>
