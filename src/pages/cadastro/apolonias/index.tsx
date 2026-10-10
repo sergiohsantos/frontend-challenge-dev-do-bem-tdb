@@ -297,7 +297,7 @@ export default function CadastroApoloniasPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1 py-8 lg:py-12">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-8 lg:py-12">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-2xl">
             {/* Back Link */}
@@ -504,7 +504,7 @@ export default function CadastroApoloniasPage() {
                               value={formData.identidadeGenero}
                               onValueChange={(value) => handleInputChange("identidadeGenero", value)}
                             >
-                              <SelectTrigger id="identidadeGenero" className="h-12 text-base">
+                              <SelectTrigger aria-label="Identidade de gênero" id="identidadeGenero" className="h-12 text-base">
                                 <SelectValue placeholder="Selecione" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1079,3 +1079,4 @@ export default function CadastroApoloniasPage() {
     </div>
   )
 }
+

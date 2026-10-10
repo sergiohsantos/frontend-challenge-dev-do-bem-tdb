@@ -125,7 +125,7 @@ export default function AdminBeneficiariosPage() {
         <AdminSidebar />
         <div className="min-w-0 flex-1">
           <AdminHeader />
-          <main className="overflow-x-hidden p-4 sm:p-6">
+          <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
             <DashboardSkeleton />
           </main>
         </div>
@@ -138,7 +138,7 @@ export default function AdminBeneficiariosPage() {
       <AdminSidebar />
       <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="overflow-x-hidden p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           {error && (
             <AlertBanner
               type="error"
@@ -187,7 +187,7 @@ export default function AdminBeneficiariosPage() {
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-11 w-full sm:w-[190px]">
+                  <SelectTrigger aria-label="Status" className="h-11 w-full sm:w-[190px]">
                     <Filter className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>

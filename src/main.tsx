@@ -19,7 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <ScrollToTop />
       <Providers>
         <SkipLink />
-        <div id="main-content">
+        <div>
           <App />
         </div>
         <WatsonAssistant />
@@ -27,3 +27,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </React.StrictMode>,
 )
+

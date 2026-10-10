@@ -1,6 +1,7 @@
+import { loginDestination } from "@/lib/login-destination"
 import { useState } from "react"
 import { useForm, Controller } from "react-hook-form"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +11,7 @@ import { AlertBanner } from "@/components/ui/alert-banner"
 import { AccessibilityPanel } from "@/components/accessibility/accessibility-panel"
 import { HelpButton } from "@/components/layout/help-button"
 import { apiFetch, normalizeDigits, normalizeEmail, type LoginPayload, type LoginResponse } from "@/lib/api"
-import { saveAuth, getRedirectPath, normalizeRole } from "@/lib/auth"
+import { saveAuth, normalizeRole } from "@/lib/auth"
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, Heart, Loader2, LockKeyhole, LogIn, Phone, ShieldCheck, User, Users } from "lucide-react"
 
 type LoginFormValues = {
@@ -61,6 +62,7 @@ function formatCpf(value: string) {
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
   const [userType, setUserType] = useState<"beneficiario" | "voluntario">("beneficiario")
   const [isLoading, setIsLoading] = useState(false)
@@ -92,7 +94,7 @@ export default function LoginPage() {
       const userWithNormalizedRole = { ...response.user, role: normalizedRole }
 
       saveAuth(response.access_token, userWithNormalizedRole)
-      navigate(getRedirectPath(response.user.role), { replace: true })
+      navigate(loginDestination(response.user.role, location.state?.from), { replace: true })
     } catch (error) {
       setError(error instanceof Error ? error.message : "Não foi possível entrar agora. Confira seus dados e tente novamente.")
     } finally {
@@ -113,13 +115,13 @@ export default function LoginPage() {
           <div className="flex items-center gap-2">
             <AccessibilityPanel />
             <Button variant="ghost" size="sm" asChild className="gap-2 rounded-full">
-              <Link to="/"><ArrowLeft className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">{t.common.back}</span></Link>
+              <Link to="/" aria-label="Voltar à página inicial"><ArrowLeft className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">{t.common.back}</span></Link>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <section className="tdb-premium-shell relative overflow-hidden bg-primary text-primary-foreground">
           <div className="tdb-orb left-[-5rem] top-14 h-72 w-72 bg-secondary" aria-hidden="true" />
           <div className="tdb-orb tdb-orb-delayed bottom-[-5rem] right-[-5rem] h-80 w-80 bg-accent" aria-hidden="true" />

@@ -299,7 +299,7 @@ export default function AdminBeneficiarioDetailPage() {
       <AdminSidebar />
       <div className="flex-1">
         <AdminHeader />
-        <main className="p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="p-4 sm:p-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : !detail ? (
@@ -569,3 +569,4 @@ export default function AdminBeneficiarioDetailPage() {
     </div>
   )
 }
+

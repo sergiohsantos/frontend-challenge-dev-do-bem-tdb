@@ -306,7 +306,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 
 function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
   return (
-    <main
+    <main id="main-content" tabIndex={-1}
       data-slot="sidebar-inset"
       className={cn(
         'bg-background relative flex w-full flex-1 flex-col',
@@ -480,7 +480,7 @@ const sidebarMenuButtonVariants = cva(
       variant: {
         default: 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
         outline:
-          'bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]',
+          'bg-background shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_var(--sidebar-accent)]',
       },
       size: {
         default: 'h-8 text-sm',
@@ -724,3 +724,4 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+

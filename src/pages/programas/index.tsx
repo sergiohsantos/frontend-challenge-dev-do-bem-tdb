@@ -1,10 +1,11 @@
+import { scrollToAnchor } from "@/lib/scroll-to-anchor"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { HelpButton } from "@/components/layout/help-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Link } from "react-router-dom"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Smile, Brain, Heart, Users, CheckCircle2, Award, Sparkles, Loader2, ArrowRight } from "lucide-react"
 import {
   Carousel,
@@ -14,7 +15,7 @@ import {
   CarouselNext,
   type CarouselApi,
 } from "@/components/ui/carousel"
-import Autoplay from "embla-carousel-autoplay"
+import { useLocation } from "react-router-dom"
 import { apiFetch, type Program } from "@/lib/api"
 
 const fallbackPrograms = [
@@ -144,9 +145,17 @@ export default function ProgramasPage() {
   const [programs, setPrograms] = useState<DisplayProgram[]>(fallbackPrograms as DisplayProgram[])
   const [isLoading, setIsLoading] = useState(true)
   
-  const autoplayPlugin = useRef(
-    Autoplay({ delay: 3000, stopOnInteraction: false, stopOnMouseEnter: true, playOnInit: true })
-  )
+  const { hash } = useLocation()
+  useEffect(() => {
+    if (!carouselApi || !hash) return
+    let target: string
+    try { target = decodeURIComponent(hash.slice(1)) } catch { return }
+    const index = programs.findIndex(program => program.id === target)
+    if (index < 0) return
+    carouselApi.scrollTo(index, true)
+    const frame = requestAnimationFrame(() => scrollToAnchor(target))
+    return () => cancelAnimationFrame(frame)
+  }, [carouselApi, hash, programs])
 
   useEffect(() => {
     async function fetchPrograms() {
@@ -176,13 +185,12 @@ export default function ProgramasPage() {
 
   const scrollTo = (index: number) => {
     carouselApi?.scrollTo(index)
-    autoplayPlugin.current.reset()
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <section className="tdb-premium-shell relative overflow-hidden bg-primary py-16 text-primary-foreground sm:py-20 lg:py-28">
           <div className="tdb-orb left-[-5rem] top-12 h-72 w-72 bg-secondary" aria-hidden="true" />
           <div className="tdb-orb tdb-orb-delayed bottom-[-5rem] right-[-5rem] h-80 w-80 bg-accent" aria-hidden="true" />
@@ -233,9 +241,10 @@ export default function ProgramasPage() {
                     <button
                       key={program.id}
                       onClick={() => scrollTo(index)}
+                      aria-pressed={activeIndex === index}
                       className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black transition-all ${
                         activeIndex === index
-                          ? `${program.color} text-white shadow-lg shadow-primary/10`
+                          ? `${program.color} ${program.color === "bg-primary" ? "text-primary-foreground" : program.color === "bg-accent" ? "text-accent-foreground" : "text-success-foreground"} shadow-lg shadow-primary/10`
                           : "bg-muted text-muted-foreground hover:bg-muted/80"
                       }`}
                     >
@@ -246,7 +255,7 @@ export default function ProgramasPage() {
                 </div>
 
                 <div className="relative mx-auto mt-8 max-w-6xl">
-                  <Carousel setApi={setCarouselApi} opts={{ align: "center", loop: true }} plugins={[autoplayPlugin.current]} className="w-full">
+                  <Carousel setApi={setCarouselApi} opts={{ align: "center", loop: true }} className="w-full">
                     <CarouselContent>
                       {programs.map((program) => (
                         <CarouselItem key={program.id} className="md:basis-full">
@@ -254,7 +263,7 @@ export default function ProgramasPage() {
                             <Card id={program.id} className="tdb-polished-card overflow-hidden rounded-[2.5rem] border border-border/70 shadow-2xl shadow-primary/5">
                               <div className={`relative ${program.color} p-8 lg:p-12`}>
                                 <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/20 blur-3xl" aria-hidden="true" />
-                                <div className="relative flex flex-col items-center text-center text-primary-foreground">
+                                <div className={`relative flex flex-col items-center text-center ${program.color === "bg-primary" ? "text-primary-foreground" : program.color === "bg-accent" ? "text-accent-foreground" : "text-success-foreground"}`}>
                                   <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/20 backdrop-blur">
                                     <program.icon className="h-10 w-10" aria-hidden="true" />
                                   </div>
@@ -341,6 +350,7 @@ export default function ProgramasPage() {
                       <button
                         key={`indicator-${program.id}`}
                         onClick={() => scrollTo(index)}
+                      aria-pressed={activeIndex === index}
                         className={`h-2 rounded-full transition-all ${
                           activeIndex === index ? `w-8 ${program.color}` : "w-2 bg-muted-foreground/30"
                         }`}
@@ -359,3 +369,4 @@ export default function ProgramasPage() {
     </div>
   )
 }
+

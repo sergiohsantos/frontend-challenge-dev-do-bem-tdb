@@ -65,7 +65,7 @@ export default function VoluntarioDashboardPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName="..." userType="voluntario" notificationCount={0} />
-        <main className="flex-1 py-6 lg:py-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
           <PageContainer>
             <DashboardSkeleton />
           </PageContainer>
@@ -160,7 +160,7 @@ export default function VoluntarioDashboardPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={volunteerData?.name || "Voluntário"} userType="voluntario" notificationCount={0} />
 
-      <main className="flex-1 py-6 lg:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
         <PageContainer>
           {error && (
             <AlertBanner
@@ -424,3 +424,4 @@ export default function VoluntarioDashboardPage() {
     </div>
   )
 }
+

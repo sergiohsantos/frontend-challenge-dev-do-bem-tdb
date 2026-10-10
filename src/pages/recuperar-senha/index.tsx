@@ -41,7 +41,7 @@ export default function RecuperarSenhaPage() {
         </div>
       </header>
 
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <section className="tdb-premium-shell relative overflow-hidden bg-primary py-16 text-primary-foreground sm:py-20 lg:py-24">
           <div className="tdb-orb left-[-5rem] top-12 h-72 w-72 bg-secondary" aria-hidden="true" />
           <div className="tdb-orb tdb-orb-delayed bottom-[-5rem] right-[-5rem] h-80 w-80 bg-accent" aria-hidden="true" />
@@ -103,3 +103,4 @@ export default function RecuperarSenhaPage() {
     </div>
   )
 }
+

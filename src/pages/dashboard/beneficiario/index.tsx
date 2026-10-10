@@ -198,7 +198,7 @@ export default function BeneficiarioDashboardPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName="..." userType="beneficiario" notificationCount={0} />
-        <main className="flex-1 py-6 lg:py-8"><div className="container mx-auto px-4"><DashboardSkeleton /></div></main>
+        <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8"><div className="container mx-auto px-4"><DashboardSkeleton /></div></main>
       </div>
     )
   }
@@ -218,7 +218,7 @@ export default function BeneficiarioDashboardPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={userData?.name || "Beneficiário"} userType="beneficiario" notificationCount={0} />
-      <main className="flex-1 py-6 lg:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
           {error && <AlertBanner type={error.includes("sucesso") ? "success" : "error"} title={error.includes("sucesso") ? "Sucesso" : "Atenção"} message={error} dismissible onDismiss={() => setError(null)} className="mb-6" />}
 
@@ -237,7 +237,7 @@ export default function BeneficiarioDashboardPage() {
           <DashboardNextStepCard icon={<NextStepIcon className="h-6 w-6 text-primary" />} title={nextStepAction.title} description={nextStepAction.description} href={nextStepAction.href} />
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2">
+            <div className="min-w-0 space-y-6 lg:col-span-2">
               <DashboardProgressCard steps={displayJourneySteps} currentStep={currentJourneyStep} currentLabel={userData?.currentStep} status={status} />
 
               {((userData?.appointmentsNeedingConfirmation?.length || 0) > 0 || (userData?.appointmentsWithRescheduleRequest?.length || 0) > 0 || userData?.nextAppointment || (userData?.confirmedUpcomingAppointments?.length || 0) > 0) && (

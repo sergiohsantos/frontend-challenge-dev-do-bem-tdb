@@ -771,7 +771,7 @@ export default function AgendaPage() {
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
 
-        <main className="flex flex-1 items-center justify-center">
+        <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Carregando agenda...</p>
@@ -785,7 +785,7 @@ export default function AgendaPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={userName} userType="voluntario" notificationCount={0} />
 
-      <main className="flex-1 py-6 lg:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
           <VolunteerPageHero
             eyebrow="Agenda"
@@ -818,19 +818,14 @@ export default function AgendaPage() {
 
           <Card className="tdb-polished-card mb-6 rounded-[2rem]">
             <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
-              <Tabs value={agendaView} onValueChange={(value) => setAgendaView(value as AgendaView)}>
-                <TabsList className="grid h-12 w-full grid-cols-2 rounded-full bg-muted sm:w-fit">
-                  <TabsTrigger value="calendar" className="gap-2 rounded-full">
-                    <CalendarDays className="h-4 w-4" />
-                    Calendário
-                  </TabsTrigger>
-
-                  <TabsTrigger value="clinical" className="gap-2 rounded-full">
-                    <Calendar className="h-4 w-4" />
-                    Visão clínica
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div role="group" aria-label="Visualização da agenda" className="grid grid-cols-2 gap-2 rounded-full bg-muted p-1">
+                <Button variant={agendaView === "calendar" ? "default" : "ghost"} aria-pressed={agendaView === "calendar"} onClick={() => setAgendaView("calendar")} className="gap-2 rounded-full">
+                  <CalendarDays className="h-4 w-4" aria-hidden="true" />Calendário
+                </Button>
+                <Button variant={agendaView === "clinical" ? "default" : "ghost"} aria-pressed={agendaView === "clinical"} onClick={() => setAgendaView("clinical")} className="gap-2 rounded-full">
+                  <Calendar className="h-4 w-4" aria-hidden="true" />Visão clínica
+                </Button>
+              </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Button variant="outline" size="sm" className="h-10 rounded-full px-4 font-bold" onClick={resetToToday}>

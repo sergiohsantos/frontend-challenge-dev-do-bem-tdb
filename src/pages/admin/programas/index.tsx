@@ -1,3 +1,4 @@
+import { LoadError } from "@/components/ui/load-error"
 import { useEffect, useMemo, useState } from "react"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
@@ -14,6 +15,7 @@ interface ProgramItem { id: string; name: string; description: string; stats?: P
 interface ProgramsResponse { programs?: ProgramItem[] }
 
 export default function AdminProgramasPage() {
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [programs, setPrograms] = useState<ProgramItem[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -22,12 +24,13 @@ export default function AdminProgramasPage() {
 
   async function fetchPrograms() {
     setLoading(true)
+    setLoadError(null)
     try {
       const token = getToken()
       const data = await apiFetch<ProgramsResponse>("/api/admin/programs", {}, token)
       setPrograms(data.programs || [])
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar programas")
+      setLoadError("Não foi possível carregar os programas.")
     } finally {
       setLoading(false)
     }
@@ -40,7 +43,7 @@ export default function AdminProgramasPage() {
       <AdminSidebar />
       <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="overflow-x-hidden p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           <div className="mb-6 min-w-0">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Programas</h1>
             <p className="text-sm text-muted-foreground">Visualização dos programas cadastrados e seus indicadores.</p>
@@ -51,7 +54,7 @@ export default function AdminProgramasPage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5 text-primary" />Programas</CardTitle>
-                  <CardDescription>O backend atual disponibiliza consulta dos programas, sem ações de cadastro/edição nesta tela.</CardDescription>
+                  <CardDescription>Consulte os programas e acompanhe seus indicadores.</CardDescription>
                 </div>
                 <div className="relative w-full sm:w-80">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -60,7 +63,7 @@ export default function AdminProgramasPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {loading ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : filtered.length === 0 ? <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum programa encontrado.</div> : (
+              {loading ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : loadError ? <LoadError message={loadError} onRetry={() => void fetchPrograms()} /> : filtered.length === 0 ? <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum programa encontrado.</div> : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {filtered.map((program) => (
                     <Card key={program.id} className="min-w-0 border-primary/10 transition-all hover:border-primary/30">

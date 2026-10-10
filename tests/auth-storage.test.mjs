@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
-let server, auth, api, java, ai, download
+let server, auth, api, java, ai, download, destination
 const stored = new Map([['tdb_token','legacy-token'],['tdb_user','{}']])
 const writes = [], calls = []
 let responseStatus = 200, holdRefresh = null
@@ -23,6 +23,7 @@ before(async () => {
   }
   server = await createServer({configFile:false,optimizeDeps:{noDiscovery:true},server:{middlewareMode:true,hmr:false},resolve:{alias:{'@':fileURLToPath(new URL('../src',import.meta.url))}}})
   auth = await server.ssrLoadModule('/src/lib/auth.ts')
+  destination = await server.ssrLoadModule('/src/lib/login-destination.ts')
   api = await server.ssrLoadModule('/src/lib/api.ts')
   java = await server.ssrLoadModule('/src/services/java-api/client.ts')
   ai = await server.ssrLoadModule('/src/services/aiApi.ts')
@@ -74,4 +75,13 @@ test('in-flight refresh cannot restore memory after logout',async()=>{
 })
 test('expired cookie leaves no authenticated state',async()=>{
   responseStatus=401;assert.equal(await auth.restoreSession(),false);assert.equal(auth.getToken(),null);responseStatus=200
+})
+
+test('post-login destination preserves role-local path and rejects unsafe destinations',()=>{
+  assert.equal(destination.loginDestination('ADMIN','/admin/programas?view=all#list'),'/admin/programas?view=all#list')
+  assert.equal(destination.loginDestination('VOLUNTARIO','/dashboard/voluntario/agenda'),'/dashboard/voluntario/agenda')
+  for(const path of ['https://evil.invalid','//evil.invalid','/admin/../login','/admin/%2e%2e/login','/admin\\evil','/administrator','/admin/login',undefined]) {
+    assert.equal(destination.loginDestination('ADMIN',path),'/admin')
+  }
+  assert.equal(destination.loginDestination('BENEFICIARIO','/admin'),'/dashboard/beneficiario')
 })

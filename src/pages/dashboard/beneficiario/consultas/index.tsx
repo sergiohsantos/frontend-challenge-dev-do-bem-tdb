@@ -168,7 +168,7 @@ export default function ConsultasPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={userName} userType="beneficiario" notificationCount={0} />
-        <main className="flex flex-1 items-center justify-center">
+        <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Carregando consultas...</p>
@@ -182,7 +182,7 @@ export default function ConsultasPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={userName} userType="beneficiario" notificationCount={0} />
 
-      <main className="flex-1 py-6 lg:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
           <BeneficiaryPageHero
             eyebrow="Consultas"

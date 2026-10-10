@@ -194,7 +194,7 @@ export default function AdminOnboardingPage() {
         <AdminSidebar collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
         <div className="flex min-h-screen flex-1 flex-col">
           <AdminHeader />
-          <main className="flex-1 p-4 sm:p-6">
+          <main id="main-content" tabIndex={-1} className="flex-1 p-4 sm:p-6">
             <PageLoader message="Carregando dados do onboarding..." />
           </main>
         </div>
@@ -209,7 +209,7 @@ export default function AdminOnboardingPage() {
       <div className="flex min-h-screen flex-1 flex-col">
         <AdminHeader />
 
-        <main className="flex-1 space-y-6 p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="flex-1 space-y-6 p-4 sm:p-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Onboarding</h1>
             <p className="text-muted-foreground">Validação documental e preparação para atendimento.</p>

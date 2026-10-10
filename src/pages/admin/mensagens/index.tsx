@@ -199,7 +199,7 @@ export default function AdminMensagensPage() {
       <AdminSidebar />
       <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="overflow-x-hidden p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           <div className="mb-6 min-w-0">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Mensagens</h1>
             <p className="text-sm text-muted-foreground">O chat interno reúne Admin + voluntário + histórico de aprovação por beneficiário, em uma única conversa.</p>

@@ -3,6 +3,7 @@ import { Suspense, lazy, useSyncExternalStore, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import { getToken, getUser, normalizeRole, isAuthReady, subscribeAuth, getAuthVersion } from '@/lib/auth'
 
+const NotFoundPage = lazy(() => import('./pages/not-found'))
 const HomePage = lazy(() => import('./pages/home/index'))
 const LoginPage = lazy(() => import('./pages/login/index'))
 const RecuperarSenhaPage = lazy(() => import('./pages/recuperar-senha/index'))
@@ -83,7 +84,7 @@ function RequireRole({ children, role, loginPath }: { children: ReactNode; role:
   const user = getUser()
 
   if (!isAuthReady()) return <PageLoader />
-  if (!token) return <Navigate to={loginPath} replace state={{ from: location.pathname }} />
+  if (!token) return <Navigate to={loginPath} replace state={{ from: location.pathname + location.search + location.hash }} />
 
   const normalized = normalizeRole(user?.role || '')
   if (normalized !== role) {
@@ -158,7 +159,7 @@ function App() {
         <Route path="/admin/triagem" element={<RequireRole role="admin" loginPath="/admin/login"><AdminTriagemPage /></RequireRole>} />
         <Route path="/admin/onboarding" element={<RequireRole role="admin" loginPath="/admin/login"><AdminOnboardingPage /></RequireRole>} />
         <Route path="/admin/ia-preditiva" element={<RequireRole role="admin" loginPath="/admin/login"><AdminIAPreditivaPage /></RequireRole>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
   )

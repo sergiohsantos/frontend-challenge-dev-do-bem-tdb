@@ -62,7 +62,7 @@ export default function AdminPartnerDetailPage() {
         <AdminSidebar />
         <div className="flex-1">
           <AdminHeader />
-          <main className="flex items-center justify-center p-6">
+          <main id="main-content" tabIndex={-1} className="flex items-center justify-center p-6">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </main>
         </div>
@@ -75,7 +75,7 @@ export default function AdminPartnerDetailPage() {
       <AdminSidebar />
       <div className="flex-1">
         <AdminHeader />
-        <main className="p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="p-4 sm:p-6">
           {error || !detail ? (
             <div className="space-y-4">
               <Button variant="outline" asChild><Link to="/admin/parceiros"><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Link></Button>
@@ -145,3 +145,4 @@ export default function AdminPartnerDetailPage() {
     </div>
   )
 }
+

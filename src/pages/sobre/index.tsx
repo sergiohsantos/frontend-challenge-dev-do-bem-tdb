@@ -18,7 +18,7 @@ export default function SobrePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <section className="tdb-premium-shell relative overflow-hidden bg-primary text-primary-foreground">
           <div className="tdb-orb left-[-5rem] top-10 h-72 w-72 bg-secondary" aria-hidden="true" />
           <div className="tdb-orb tdb-orb-delayed bottom-[-4rem] right-[-5rem] h-80 w-80 bg-accent" aria-hidden="true" />
@@ -60,7 +60,7 @@ export default function SobrePage() {
           <Card className="overflow-hidden rounded-[2.25rem] border-primary/20 bg-primary text-primary-foreground shadow-2xl shadow-primary/20">
             <CardContent className="grid gap-6 p-6 md:grid-cols-3 md:p-8">
               <div><p className="text-sm font-black uppercase tracking-[0.18em] text-accent">Experiência</p><p className="mt-3 text-sm leading-7 text-primary-foreground/82">Interface clara, responsiva e preparada para diferentes perfis de uso.</p></div>
-              <div><p className="text-sm font-black uppercase tracking-[0.18em] text-accent">Integração</p><p className="mt-3 text-sm leading-7 text-primary-foreground/82">Conexão com contratos reais do backend, preservando regras de negócio existentes.</p></div>
+              <div><p className="text-sm font-black uppercase tracking-[0.18em] text-accent">Integração</p><p className="mt-3 text-sm leading-7 text-primary-foreground/82">Informações conectadas para apoiar a equipe em cada etapa do atendimento.</p></div>
               <div><p className="text-sm font-black uppercase tracking-[0.18em] text-accent">Continuidade</p><p className="mt-3 text-sm leading-7 text-primary-foreground/82">Acompanhamento da jornada com mensagens, documentos, consultas e notificações.</p></div>
             </CardContent>
           </Card>
@@ -71,3 +71,4 @@ export default function SobrePage() {
     </div>
   )
 }
+

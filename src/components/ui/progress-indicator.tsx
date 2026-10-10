@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Loader2 } from "lucide-react"
+import { CheckCircle2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface SimpleStep {
@@ -25,123 +25,35 @@ export function ProgressIndicator({
 }: ProgressIndicatorProps) {
   const totalSteps = steps.length
   const completedSteps = steps.filter(s => s.completed).length
-  const percentage = Math.round((completedSteps / totalSteps) * 100)
-
-  if (variant === "compact") {
-    return (
-      <div className={cn("space-y-2", className)} role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100}>
-        {/* Compact step indicators */}
-        <div className="flex items-center justify-between gap-2">
-          {steps.map((step, index) => (
-            <div key={`step-${index}-${step.label}`} className="flex flex-1 items-center">
-              <div className="flex flex-col items-center flex-shrink-0">
-                <div
-                  className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium transition-all",
-                    step.completed && "border-primary bg-primary text-primary-foreground",
-                    step.current && !step.completed && "border-primary bg-primary/10 text-primary",
-                    !step.completed && !step.current && "border-muted bg-muted text-muted-foreground"
-                  )}
-                >
-                  {step.completed ? (
-                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <span>{index + 1}</span>
-                  )}
-                </div>
-                <span 
-                  className={cn(
-                    "mt-1.5 text-center text-xs font-medium max-w-[80px] truncate",
-                    step.completed && "text-primary",
-                    step.current && !step.completed && "text-foreground",
-                    !step.completed && !step.current && "text-muted-foreground"
-                  )}
-                >
-                  {step.label}
-                </span>
-              </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={cn(
-                    "mx-2 h-0.5 flex-1 min-w-[20px]",
-                    step.completed ? "bg-primary" : "bg-muted"
-                  )}
-                  aria-hidden="true"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  const percentage = totalSteps ? Math.round((completedSteps / totalSteps) * 100) : 0
+  const stepNumber = Math.min(Math.max(currentStep, 0), totalSteps)
 
   return (
-    <div className={cn("space-y-4", className)} role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100}>
-      {/* Visual Progress Bar */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-foreground">
-            Etapa {currentStep} de {totalSteps}
-          </span>
-          {showPercentage && (
-            <span className="font-semibold text-primary">
-              {percentage}% concluído
-            </span>
-          )}
+    <div className={cn("min-w-0 space-y-3", className)}>
+      <div role="progressbar" aria-label="Progresso das etapas" aria-valuenow={percentage}
+        aria-valuemin={0} aria-valuemax={100} aria-valuetext={`Etapa ${stepNumber} de ${totalSteps}; ${percentage}% concluído`}>
+        <div className="flex flex-wrap justify-between gap-2 text-sm">
+          <span>Etapa {stepNumber} de {totalSteps}</span>
+          {showPercentage && <span>{percentage}% concluído</span>}
         </div>
-        <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-          <div 
-            className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-          />
-        </div>
+        {variant !== "compact" && <div className="mt-2 h-3 overflow-hidden rounded-full bg-muted">
+          <div className="h-full bg-primary transition-all" style={{ width: `${percentage}%` }} />
+        </div>}
       </div>
-
-      {/* Step Indicators with Labels */}
-      <div className="flex items-center justify-between">
+      <ol className="grid min-w-0 grid-cols-2 gap-3 sm:flex sm:items-start">
         {steps.map((step, index) => (
-          <div key={`step-${index}-${step.label}`} className="flex flex-1 items-center">
-            <div className="flex flex-col items-center">
-              <div
-                className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all",
-                  step.completed && "border-primary bg-primary text-primary-foreground",
-                  step.current && !step.completed && "border-primary bg-primary/10 text-primary",
-                  !step.completed && !step.current && "border-muted bg-muted text-muted-foreground"
-                )}
-              >
-                {step.completed ? (
-                  <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-                ) : step.current ? (
-                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-                ) : (
-                  <Circle className="h-5 w-5" aria-hidden="true" />
-                )}
-              </div>
-              <span 
-                className={cn(
-                  "mt-2 text-center text-xs font-medium",
-                  step.completed && "text-primary",
-                  step.current && !step.completed && "text-foreground",
-                  !step.completed && !step.current && "text-muted-foreground"
-                )}
-              >
-                {step.label}
-              </span>
-            </div>
-            {index < steps.length - 1 && (
-              <div
-                className={cn(
-                  "mx-2 h-0.5 flex-1",
-                  step.completed ? "bg-primary" : "bg-muted"
-                )}
-                aria-hidden="true"
-              />
-            )}
-          </div>
+          <li key={`step-${index}-${step.label}`} aria-current={step.current ? "step" : undefined}
+            className="flex min-w-0 flex-1 items-start gap-2 sm:flex-col sm:items-center sm:text-center">
+            <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-medium",
+              step.completed ? "border-primary bg-primary text-primary-foreground" : step.current ? "border-primary bg-primary/10 text-primary" : "border-muted bg-muted text-muted-foreground")}>
+              {step.completed ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> : index + 1}
+            </span>
+            <span className={cn("min-w-0 break-words text-xs font-medium", step.current ? "text-foreground" : "text-muted-foreground")}>
+              {step.label}{step.completed && <span className="sr-only"> — concluída</span>}
+            </span>
+          </li>
         ))}
-      </div>
+      </ol>
     </div>
   )
 }
@@ -197,3 +109,4 @@ export function ActionFeedback({ type, message, description, className }: Action
     </div>
   )
 }
+

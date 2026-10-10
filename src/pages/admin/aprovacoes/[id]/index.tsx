@@ -270,7 +270,7 @@ export default function DetalheSolicitacaoPage() {
         <AdminSidebar />
         <div className="flex-1">
           <AdminHeader />
-          <main className="flex items-center justify-center py-24">
+          <main id="main-content" tabIndex={-1} className="flex items-center justify-center py-24">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </main>
         </div>
@@ -301,7 +301,7 @@ export default function DetalheSolicitacaoPage() {
       <AdminSidebar />
       <div className="flex-1">
         <AdminHeader />
-        <main className="p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="p-4 sm:p-6">
           <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -701,7 +701,7 @@ export default function DetalheSolicitacaoPage() {
                 <div className="space-y-2">
                   <Label>Especialidade para atendimento</Label>
                   <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Selecione a especialidade">
                       <SelectValue placeholder="Selecione a especialidade" />
                     </SelectTrigger>
                     <SelectContent>
@@ -790,3 +790,4 @@ export default function DetalheSolicitacaoPage() {
     </div>
   )
 }
+

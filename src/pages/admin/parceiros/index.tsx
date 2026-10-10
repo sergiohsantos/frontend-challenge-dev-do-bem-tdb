@@ -137,7 +137,7 @@ export default function AdminParceirosPage() {
         <AdminSidebar />
         <div className="min-w-0 flex-1">
           <AdminHeader />
-          <main className="overflow-x-hidden p-4 sm:p-6"><DashboardSkeleton /></main>
+          <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6"><DashboardSkeleton /></main>
         </div>
       </div>
     )
@@ -148,7 +148,7 @@ export default function AdminParceirosPage() {
       <AdminSidebar />
       <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="overflow-x-hidden p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           {error && <AlertBanner type="error" title="Erro" message={error} dismissible onDismiss={() => setError(null)} className="mb-6" />}
 
           <div className="mb-6 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -180,11 +180,11 @@ export default function AdminParceirosPage() {
                   <Input placeholder="Buscar por nome, cidade, contato ou email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-11 pl-10" />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-11 w-full lg:w-[150px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectTrigger aria-label="Status" className="h-11 w-full lg:w-[150px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="ativo">Ativos</SelectItem><SelectItem value="inativo">Inativos</SelectItem></SelectContent>
                 </Select>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="h-11 w-full lg:w-[180px]"><Building className="mr-2 h-4 w-4" /><SelectValue placeholder="Tipo" /></SelectTrigger>
+                  <SelectTrigger aria-label="Tipo" className="h-11 w-full lg:w-[180px]"><Building className="mr-2 h-4 w-4" /><SelectValue placeholder="Tipo" /></SelectTrigger>
                   <SelectContent><SelectItem value="all">Todos</SelectItem>{partnerTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
                 </Select>
               </div>

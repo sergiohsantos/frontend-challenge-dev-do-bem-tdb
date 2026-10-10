@@ -87,7 +87,7 @@ export default function IntegrantesPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <section className="relative overflow-hidden border-b bg-primary text-primary-foreground">
           <div className="absolute inset-0 opacity-10" aria-hidden="true">
             <div className="absolute -left-20 top-12 h-72 w-72 rounded-full bg-accent blur-3xl" />
@@ -197,3 +197,4 @@ export default function IntegrantesPage() {
     </div>
   )
 }
+

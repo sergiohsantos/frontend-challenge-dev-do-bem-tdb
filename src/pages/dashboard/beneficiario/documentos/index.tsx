@@ -92,7 +92,7 @@ export default function BeneficiarioDocumentosPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <DashboardHeader userName={user?.full_name || "Beneficiário"} userType="beneficiario" notificationCount={0} />
-        <main className="flex-1 py-6 lg:py-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
           <div className="container mx-auto px-4">
             <DashboardSkeleton />
           </div>
@@ -104,7 +104,7 @@ export default function BeneficiarioDocumentosPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <DashboardHeader userName={user?.full_name || "Beneficiário"} userType="beneficiario" notificationCount={0} />
-      <main className="flex-1 py-6 lg:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-6 lg:py-8">
         <div className="container mx-auto px-4">
           <BeneficiaryPageHero
             eyebrow="Documentos"
