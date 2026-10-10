@@ -1,0 +1,61 @@
+name: Frontend dependency security audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/security-audit.yml'
+  push:
+    branches:
+      - security/frontend-npm-audit-20261010
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: npm audit and regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact locked dependencies
+        run: npm ci
+      - name: Audit all dependencies (diagnostic only)
+        run: |
+          npm audit --json > npm-audit-all.json || true
+          node -e 'const r=require("./npm-audit-all.json"); console.log(JSON.stringify(r.metadata?.vulnerabilities || {}, null, 2)); for(const [name,v] of Object.entries(r.vulnerabilities||{})){console.log(name, v.severity, JSON.stringify(v.via), "fixAvailable:", JSON.stringify(v.fixAvailable));}'
+      - name: Audit production dependencies (diagnostic only)
+        run: |
+          npm audit --omit=dev --json > npm-audit-production.json || true
+          node -e 'const r=require("./npm-audit-production.json"); console.log(JSON.stringify(r.metadata?.vulnerabilities || {}, null, 2));'
+      - name: Run unit tests
+        run: |
+          npm run test:ai
+          node --test tests/auth-storage.test.mjs
+          python3 -m unittest discover -s tests -p 'test_deploy*.py' -v
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: https://example.invalid
+          VITE_JAVA_API_URL: https://example.invalid/java
+          VITE_AI_API_URL: https://example.invalid/ai
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: npm-security-audit
+          path: |
+            npm-audit-all.json
+            npm-audit-production.json
+          if-no-files-found: warn
+          retention-days: 7
