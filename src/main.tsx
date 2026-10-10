@@ -9,6 +9,7 @@ import { ScrollToTop } from './components/navigation/scroll-to-top'
 import { WatsonAssistant } from './components/watson-assistant'
 import './index.css'
 import './styles/premium-experience.css'
+import './styles/admin-premium-overrides.css'
 
 void initializeAuth()
 
@@ -26,4 +27,3 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </React.StrictMode>,
 )
-
