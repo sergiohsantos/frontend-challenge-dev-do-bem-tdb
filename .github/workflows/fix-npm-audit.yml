@@ -3,7 +3,9 @@ name: Fix frontend npm advisories (isolated branch)
 on:
   push:
     branches: [security/frontend-npm-audit-20261010]
-    paths: [.github/workflows/fix-npm-audit.yml]
+    paths:
+      - '.github/workflows/fix-npm-audit.yml'
+      - 'src/main.tsx'
   workflow_dispatch:
 
 permissions:
@@ -47,7 +49,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
+          git add package.json package-lock.json src/main.tsx
           if git diff --cached --quiet; then
             echo "No dependency modifications needed"
           else
