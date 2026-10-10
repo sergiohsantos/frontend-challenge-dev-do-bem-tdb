@@ -1,9 +1,4 @@
-// Auth Helper for localStorage + cookie token management
-
-const TOKEN_KEY = "tdb_token"
-const USER_KEY = "tdb_user"
-const COOKIE_TOKEN = "tdb_token"
-const COOKIE_ROLE = "tdb_role"
+import { getPythonApiBaseUrl } from "./api-base"
 
 export interface AuthUser {
   id: number
@@ -13,105 +8,132 @@ export interface AuthUser {
   email?: string
 }
 
-/**
- * Set a cookie with given name, value, and days to expire
- */
-function setCookie(name: string, value: string, days: number = 7): void {
-  if (typeof document === "undefined") return
-  const expires = new Date(Date.now() + days * 864e5).toUTCString()
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`
-}
+// Access credential and profile exist only in this page's memory.
+let accessToken: string | null = null
+let currentUser: AuthUser | null = null
+let expiresAt = 0
+let ready = false
+let generation = 0
+let version = 0
+let pendingRestore: Promise<boolean> | null = null
+let pendingLogout: Promise<void> | null = null
+const listeners = new Set<() => void>()
+function notify() { version++; listeners.forEach(listener => listener()) }
+export const subscribeAuth = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } }
+export const getAuthVersion = () => version
+export const isAuthReady = () => ready
 
-/**
- * Get cookie value by name
- */
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null
-  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`))
-  return match ? decodeURIComponent(match[2]) : null
-}
-
-/**
- * Delete a cookie by name
- */
-function deleteCookie(name: string): void {
-  if (typeof document === "undefined") return
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`
-}
-
-/**
- * Save authentication data to localStorage AND cookies
- */
-export function saveAuth(token: string, user: AuthUser): void {
-  const normalizedUser: AuthUser = {
-    ...user,
-    full_name: user.full_name || user.name || '',
-    name: user.name || user.full_name || '',
-    email: user.email || undefined,
-  }
+function removeLegacyStorage(): void {
   if (typeof window === "undefined") return
-  
-  // Store in localStorage
-  localStorage.setItem(TOKEN_KEY, token)
-  localStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
-  
-  // Also store in cookies for SSR/middleware access
-  setCookie(COOKIE_TOKEN, token)
-  setCookie(COOKIE_ROLE, normalizedUser.role)
+  for (const name of ["localStorage", "sessionStorage"] as const) {
+    try {
+      window[name]?.removeItem("tdb_token")
+      window[name]?.removeItem("tdb_user")
+    } catch { /* Storage restrictions must not disable cookie authentication. */ }
+  }
+  if (typeof document !== "undefined") {
+    for (const name of ["tdb_token", "tdb_role"]) {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`
+    }
+  }
 }
 
-/**
- * Get token from localStorage (or cookie fallback)
- */
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null
-  
-  return localStorage.getItem(TOKEN_KEY) || getCookie(COOKIE_TOKEN)
+function forgetSession(): void {
+  accessToken = null
+  currentUser = null
+  expiresAt = 0
+  removeLegacyStorage()
+  notify()
 }
 
-/**
- * Get user from localStorage
- */
-export function getUser(): AuthUser | null {
-  if (typeof window === "undefined") return null
-  
-  const userStr = localStorage.getItem(USER_KEY)
-  if (!userStr) return null
-  
+function setMemoryAuth(token: string, user: AuthUser): void {
+  let expiry: number
   try {
-    return JSON.parse(userStr) as AuthUser
-  } catch {
-    return null
+    const part = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")
+    expiry = Number(JSON.parse(atob(part)).exp) * 1000
+    if (!Number.isFinite(expiry) || expiry <= Date.now()) throw new Error("Expired token")
+  } catch { throw new Error("Resposta de autenticação inválida.") }
+  accessToken = token
+  expiresAt = expiry
+  currentUser = { ...user, role: normalizeRole(user.role),
+    full_name: user.full_name || user.name || "", name: user.name || user.full_name || "" }
+  removeLegacyStorage()
+  notify()
+}
+
+export function saveAuth(token: string, user: AuthUser): void {
+  generation++
+  setMemoryAuth(token, user)
+  ready = true
+  notify()
+}
+export function getToken(): string | null { return accessToken }
+export function getUser(): AuthUser | null { return currentUser }
+export function getRoleFromCookie(): string | null { return currentUser?.role || null }
+export function isAuthenticated(): boolean { return !!accessToken }
+
+function sessionUrl(path: string): string {
+  const base = getPythonApiBaseUrl().replace(/\/+$/, "")
+  const url = new URL(`${base}/api/auth/${path}`, window.location.origin)
+  if (import.meta.env.PROD && url.origin !== window.location.origin) {
+    throw new Error("Não foi possível iniciar uma sessão segura neste endereço.")
   }
+  return url.href
 }
 
-/**
- * Get role from cookie (useful for quick checks)
- */
-export function getRoleFromCookie(): string | null {
-  return getCookie(COOKIE_ROLE)
+export async function restoreSession(): Promise<boolean> {
+  if (pendingRestore) return pendingRestore
+  const startedAt = generation
+  pendingRestore = (async () => {
+    const response = await fetch(sessionUrl("session"), {
+      credentials: "include", cache: "no-store", redirect: "error",
+      headers: { "X-TDB-CSRF": "1" }, signal: AbortSignal.timeout(8000),
+    })
+    if (startedAt !== generation) return !!accessToken
+    if (response.status === 401) { forgetSession(); return false }
+    if (!response.ok) throw new Error("Não foi possível restaurar a sessão. Tente novamente.")
+    const data = await response.json()
+    if (startedAt !== generation) return !!accessToken
+    setMemoryAuth(data.access_token, data.user)
+    return true
+  })().finally(() => { pendingRestore = null })
+  return pendingRestore
 }
 
-/**
- * Clear authentication data from localStorage AND cookies
- */
-export function clearAuth(): void {
-  if (typeof window === "undefined") return
-  
-  // Clear localStorage
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(USER_KEY)
-  
-  // Clear cookies
-  deleteCookie(COOKIE_TOKEN)
-  deleteCookie(COOKIE_ROLE)
+export async function initializeAuth(): Promise<void> {
+  removeLegacyStorage()
+  try { await restoreSession() } catch { /* Public pages remain usable if the API is unavailable. */ }
+  finally { ready = true; notify() }
 }
 
-/**
- * Check if user is authenticated
- */
-export function isAuthenticated(): boolean {
-  return !!getToken()
+export async function getFreshToken(): Promise<string | null> {
+  if (pendingLogout) throw new Error("Saída da sessão em andamento.")
+  if (!accessToken) return null
+  if (expiresAt - Date.now() < 30000) {
+    if (!await restoreSession()) throw new Error("Sua sessão expirou. Entre novamente.")
+  }
+  return accessToken
+}
+
+const channel = typeof window !== "undefined" && "BroadcastChannel" in window
+  ? new BroadcastChannel("tdb-auth") : null
+if (channel) channel.onmessage = event => {
+  if (event.data === "logout") { generation++; forgetSession() }
+}
+
+export async function clearAuth(): Promise<void> {
+  if (pendingLogout) return pendingLogout
+  generation++ // An earlier refresh must not recreate memory state after logout.
+  pendingLogout = (async () => {
+    const response = await fetch(sessionUrl("logout"), {
+      method: "POST", credentials: "include", cache: "no-store", redirect: "error",
+      headers: { "X-TDB-CSRF": "1" }, signal: AbortSignal.timeout(8000),
+    })
+    if (!response.ok) throw new Error("Não foi possível encerrar a sessão. Tente novamente.")
+    forgetSession()
+    channel?.postMessage("logout")
+  })().finally(() => { pendingLogout = null })
+  return pendingLogout
 }
 
 /**
@@ -180,3 +202,4 @@ export function getRedirectPath(role: string): string {
       return "/dashboard/beneficiario"
   }
 }
+

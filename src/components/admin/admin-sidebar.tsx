@@ -64,8 +64,9 @@ export function AdminSidebar({ collapsed, onToggle, onNavigate, variant = "deskt
   const isCollapsed = collapsed ?? internalCollapsed
   const handleToggle = onToggle ?? (() => setInternalCollapsed((current) => !current))
 
-  const handleLogout = () => {
-    clearAuth()
+  const handleLogout = async () => {
+    try { await clearAuth() }
+    catch { window.alert("Não foi possível encerrar a sessão. Tente novamente."); return }
     onNavigate?.()
     navigate("/admin/login")
   }

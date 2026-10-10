@@ -84,8 +84,9 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     setTheme(resolvedTheme === "dark" ? "light" : "dark")
   }
 
-  const handleLogout = () => {
-    clearAuth()
+  const handleLogout = async () => {
+    try { await clearAuth() }
+    catch { window.alert("Não foi possível encerrar a sessão. Tente novamente."); return }
     navigate("/admin/login")
   }
 

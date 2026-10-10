@@ -1,3 +1,4 @@
+import { getFreshToken } from "@/lib/auth"
 import { API_BASE_URL } from "@/lib/api"
 
 function parseFileName(disposition: string | null, fallback: string) {
@@ -23,8 +24,13 @@ export async function downloadFromApi(path: string, token?: string | null, fallb
     throw new Error('Arquivo indisponível para download.')
   }
 
-  const response = await fetch(buildDownloadUrl(path), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  const target = new URL(buildDownloadUrl(path), window.location.origin)
+  const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin
+  // A download URL returned by the server must not leak Bearer to another origin.
+  const fresh = token && target.origin === apiOrigin ? await getFreshToken() : null
+  const response = await fetch(target.href, {
+    headers: fresh ? { Authorization: `Bearer ${fresh}` } : {},
+    credentials: "omit",
     cache: 'no-store',
   })
 
@@ -48,3 +54,4 @@ export async function downloadFromApi(path: string, token?: string | null, fallb
   anchor.remove()
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+

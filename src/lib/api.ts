@@ -1,13 +1,9 @@
 // API Helper for FastAPI Backend Integration
 
-function getApiBaseUrl(): string {
-  const configuredUrl = import.meta.env.VITE_API_URL
-  if (configuredUrl) return configuredUrl
-  if (import.meta.env.DEV) return "http://127.0.0.1:8000"
-  throw new Error("VITE_API_URL precisa ser configurada para o build de producao.")
-}
+import { getPythonApiBaseUrl } from "./api-base"
+import { getFreshToken } from "./auth"
 
-export const API_BASE_URL = getApiBaseUrl()
+export const API_BASE_URL = getPythonApiBaseUrl()
 
 export interface ApiError {
   message: string
@@ -39,11 +35,20 @@ export async function apiFetch<T>(
   }
   
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`
+    const fresh = await getFreshToken()
+    if (fresh) headers["Authorization"] = `Bearer ${fresh}`
   }
   
+  if (path === "/api/auth/browser/login") {
+    if (import.meta.env.PROD && new URL(url, window.location.origin).origin !== window.location.origin) {
+      throw new Error("Não foi possível iniciar uma sessão segura neste endereço.")
+    }
+    headers["X-TDB-CSRF"] = "1"
+  }
+
   const response = await fetch(url, {
     ...options,
+    credentials: path === "/api/auth/browser/login" ? "include" : "omit",
     headers,
   })
   
@@ -96,11 +101,13 @@ export async function apiUpload<T>(path: string, formData: FormData, token?: str
   const headers: HeadersInit = {}
 
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`
+    const fresh = await getFreshToken()
+    if (fresh) headers["Authorization"] = `Bearer ${fresh}`
   }
 
   const response = await fetch(url, {
     method: "POST",
+    credentials: "omit",
     body: formData,
     headers,
   })
@@ -559,10 +566,11 @@ export async function apiDownload(
   
   const headers: HeadersInit = {}
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`
+    const fresh = await getFreshToken()
+    if (fresh) headers["Authorization"] = `Bearer ${fresh}`
   }
   
-  const response = await fetch(url, { headers })
+  const response = await fetch(url, { headers, credentials: "omit" })
   
   if (!response.ok) {
     let errorMessage = `Erro no download: ${response.status}`
@@ -758,3 +766,4 @@ export interface SatisfactionData {
     createdAt: string
   }>
 }
+

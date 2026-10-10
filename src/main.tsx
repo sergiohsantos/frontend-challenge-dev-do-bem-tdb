@@ -1,3 +1,4 @@
+import { initializeAuth } from "./lib/auth"
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
@@ -9,6 +10,8 @@ import { WatsonAssistant } from './components/watson-assistant'
 import './index.css'
 import './styles/premium-experience.css'
 import './styles/admin-premium-overrides.css'
+
+void initializeAuth()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
