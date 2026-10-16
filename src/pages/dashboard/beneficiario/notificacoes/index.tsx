@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/dates"
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -200,7 +201,7 @@ export default function BeneficiarioNotificacoesPage() {
                               <p className={`font-black ${notification.read ? "text-muted-foreground" : "text-foreground"}`}>{notification.title}</p>
                               {!notification.read ? <Badge variant="secondary" className="rounded-full">Nova</Badge> : null}
                             </div>
-                            <span className="shrink-0 text-xs text-muted-foreground">{notification.date ? new Date(notification.date).toLocaleString("pt-BR") : ""}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">{notification.date ? formatDateTime(notification.date) : ""}</span>
                           </div>
                           <p className="mt-1 text-sm leading-6 text-muted-foreground">{notification.message}</p>
                           <div className="mt-3 text-xs font-black text-primary">{openingId === notification.id ? "Abrindo..." : "Clique para abrir"}</div>

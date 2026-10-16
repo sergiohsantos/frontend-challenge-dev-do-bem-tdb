@@ -1,3 +1,4 @@
+import { formatDateTime, utcTimestamp } from "@/lib/dates"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -48,7 +49,7 @@ interface ConversationsResponse {
 const tabForThread = (type: ThreadType | "case_internal") => (type === "case_public" ? "public" : "internal")
 
 function getTimestamp(value?: string | null) {
-  const parsed = value ? new Date(value).getTime() : 0
+  const parsed = utcTimestamp(value) ?? 0
   return Number.isFinite(parsed) ? parsed : 0
 }
 
@@ -273,7 +274,7 @@ export default function VoluntarioMensagensPage() {
                               {thread.threadType === "case_internal" && thread.approvalIds.length > 0 ? <Badge variant="secondary" className="rounded-full">Aprovação vinculada</Badge> : null}
                             </div>
                             <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{thread.lastMessage || thread.subtitle || "Sem mensagens ainda"}</p>
-                            {thread.lastMessageAt && <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" />{new Date(thread.lastMessageAt).toLocaleString("pt-BR")}</p>}
+                            {thread.lastMessageAt && <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" />{formatDateTime(thread.lastMessageAt)}</p>}
                           </div>
                           {!!thread.unreadCount && <Badge className="rounded-full bg-primary text-primary-foreground">{thread.unreadCount}</Badge>}
                         </div>
@@ -309,7 +310,7 @@ export default function VoluntarioMensagensPage() {
                                   <p className="text-sm leading-6">{msg.content}</p>
                                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs opacity-70">
                                     <span>{msg.senderName || msg.sender}</span>
-                                    {msg.createdAt ? <span>{new Date(msg.createdAt).toLocaleString("pt-BR")}</span> : null}
+                                    {msg.createdAt ? <span>{formatDateTime(msg.createdAt)}</span> : null}
                                   </div>
                                 </div>
                               </div>

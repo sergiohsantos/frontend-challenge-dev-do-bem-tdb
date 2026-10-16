@@ -21,7 +21,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:ai
-      - run: node --test tests/auth-storage.test.mjs
+      - run: node --test --test-concurrency=1 tests/auth-storage.test.mjs tests/dates.test.mjs
       - run: python3 -m unittest discover -s tests -p 'test_deploy*.py' -v
       - run: bash -n scripts/check-deploy-config.sh scripts/deploy-frontend.sh
       - run: npm run build

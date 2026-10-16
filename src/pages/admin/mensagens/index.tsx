@@ -1,3 +1,4 @@
+import { formatDateTime, utcTimestamp } from "@/lib/dates"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { AdminHeader } from "@/components/admin/admin-header"
@@ -42,7 +43,7 @@ interface AdminMessagesResponse { threads?: ThreadItem[] }
 const tabForThread = (type: ThreadType | "case_internal") => (type === "case_public" ? "public" : "internal")
 
 function getTimestamp(value?: string | null) {
-  const parsed = value ? new Date(value).getTime() : 0
+  const parsed = utcTimestamp(value) ?? 0
   return Number.isFinite(parsed) ? parsed : 0
 }
 
@@ -225,7 +226,7 @@ export default function AdminMensagensPage() {
 
                     <div className="lg:col-span-2">
                       {!activeThread ? <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Selecione uma conversa para ver o histórico e responder com segurança.</div> : <div className="space-y-4"><div className="rounded-2xl border bg-card p-4"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-foreground">{activeThread.title || activeThread.beneficiaryName}</p>{getThreadBadges(activeThread)}{activeThread.statusLabel ? <Badge variant="secondary" className="rounded-full">{activeThread.statusLabel}</Badge> : null}</div>{activeThread.subtitle ? <p className="mt-1 text-sm text-muted-foreground">{activeThread.subtitle}</p> : null}</div>
-                        <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-2xl border bg-muted/30 p-4">{isLoadingMessages ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : messages.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhuma mensagem nesta conversa. Envie uma orientação curta quando houver uma ação pendente.</div> : messages.map((message, index) => { const mine = message.senderRole === "admin" || message.senderRole === "ADMIN"; return <div key={message.id || index} className={`flex ${mine ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl p-3 shadow-sm ${mine ? "bg-primary text-primary-foreground" : "border bg-background"}`}><p className="text-sm leading-6">{message.content}</p><div className="mt-1 flex flex-wrap items-center gap-2 text-xs opacity-70"><span>{message.senderName}</span>{message.createdAt ? <span>{new Date(message.createdAt).toLocaleString("pt-BR")}</span> : null}</div></div></div> })}<div ref={bottomRef} /></div>
+                        <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-2xl border bg-muted/30 p-4">{isLoadingMessages ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : messages.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhuma mensagem nesta conversa. Envie uma orientação curta quando houver uma ação pendente.</div> : messages.map((message, index) => { const mine = message.senderRole === "admin" || message.senderRole === "ADMIN"; return <div key={message.id || index} className={`flex ${mine ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl p-3 shadow-sm ${mine ? "bg-primary text-primary-foreground" : "border bg-background"}`}><p className="text-sm leading-6">{message.content}</p><div className="mt-1 flex flex-wrap items-center gap-2 text-xs opacity-70"><span>{message.senderName}</span>{message.createdAt ? <span>{formatDateTime(message.createdAt)}</span> : null}</div></div></div> })}<div ref={bottomRef} /></div>
                         <div className="rounded-2xl border bg-card p-4"><div className="flex flex-col gap-3 sm:flex-row"><Textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={activeThread.threadType === "case_public" ? "Digite uma mensagem para o chat do caso..." : "Digite uma mensagem interna para o voluntário responsável por este beneficiário..."} className="min-h-[96px] rounded-2xl" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSendMessage() } }} /><Button onClick={() => void handleSendMessage()} disabled={!newMessage.trim() || sending} className="h-12 gap-2 rounded-full font-black sm:h-auto sm:min-h-[96px] sm:rounded-2xl">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Enviar</Button></div></div></div>}
                     </div>
                   </div>

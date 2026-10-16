@@ -1,3 +1,4 @@
+import { formatDateTime, utcTimestamp } from "@/lib/dates"
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -30,7 +31,7 @@ interface MessagesResponse {
 }
 
 function timestamp(value?: string | null) {
-  const parsed = value ? new Date(value).getTime() : 0
+  const parsed = utcTimestamp(value) ?? 0
   return Number.isFinite(parsed) ? parsed : 0
 }
 
@@ -189,7 +190,7 @@ export default function BeneficiarioMensagensPage() {
                       <div className="min-w-0">
                         <p className="truncate font-black text-foreground">{thread.volunteerName || "Equipe de atendimento"}</p>
                         <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{thread.lastMessage || thread.subtitle || "Conversa ativa"}</p>
-                        {thread.lastMessageAt ? <p className="mt-2 text-xs text-muted-foreground/70">{new Date(thread.lastMessageAt).toLocaleString("pt-BR")}</p> : null}
+                        {thread.lastMessageAt ? <p className="mt-2 text-xs text-muted-foreground/70">{formatDateTime(thread.lastMessageAt)}</p> : null}
                       </div>
                       {!!thread.unreadCount && <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">{thread.unreadCount}</span>}
                     </div>
@@ -215,7 +216,7 @@ export default function BeneficiarioMensagensPage() {
                         <div key={msg.id || index} className={`flex ${isMine(msg) ? "justify-end" : "justify-start"}`}>
                           <div className={`max-w-[82%] rounded-2xl p-3 shadow-sm ${isMine(msg) ? "bg-primary text-primary-foreground" : "border border-border bg-background text-foreground"}`}>
                             <p className="text-sm leading-6">{msg.content}</p>
-                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs opacity-70"><span>{msg.senderName || msg.sender}</span>{msg.createdAt ? <><span>-</span><span>{new Date(msg.createdAt).toLocaleString("pt-BR")}</span></> : null}</div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs opacity-70"><span>{msg.senderName || msg.sender}</span>{msg.createdAt ? <><span>-</span><span>{formatDateTime(msg.createdAt)}</span></> : null}</div>
                           </div>
                         </div>
                       )) : (

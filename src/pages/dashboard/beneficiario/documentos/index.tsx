@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/dates"
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -168,7 +169,7 @@ export default function BeneficiarioDocumentosPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="text-sm text-muted-foreground">
-                      {item.date ? `Atualizado em ${new Date(item.date).toLocaleString("pt-BR")}` : "Sem data de atualização"}
+                      {item.date ? `Atualizado em ${formatDateTime(item.date)}` : "Sem data de atualização"}
                     </div>
                     <Button className="h-11 w-full rounded-full font-black" onClick={() => void downloadDocument(item)} disabled={downloadingId === item.id}>
                       {downloadingId === item.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}

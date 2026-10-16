@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "@/lib/dates"
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -116,7 +117,7 @@ export default function VoluntarioDashboardPage() {
     {
       title: nextAppointment ? "Próxima consulta" : "Agenda",
       description: nextAppointment
-        ? `${nextAppointment.patientName || "Paciente"} • ${nextAppointment.date || "data a confirmar"} às ${nextAppointment.time || "horário a confirmar"}`
+        ? `${nextAppointment.patientName || "Paciente"} • ${formatDate(nextAppointment.date)} às ${nextAppointment.time || "horário a confirmar"}`
         : "Nenhuma consulta próxima no momento.",
       href: "/dashboard/voluntario/agenda",
       icon: Calendar,
@@ -292,7 +293,7 @@ export default function VoluntarioDashboardPage() {
                                 <p className="text-sm text-muted-foreground">{apt.type || "Consulta"}</p>
                                 <div className="mt-2 flex items-center gap-2 text-sm">
                                   <Badge variant="secondary" className="gap-1 rounded-full">
-                                    <Clock className="h-3 w-3" aria-hidden="true" /> {apt.date} • {apt.time}
+                                    <Clock className="h-3 w-3" aria-hidden="true" /> {formatDate(apt.date)} • {apt.time}
                                   </Badge>
                                 </div>
                               </div>
@@ -374,7 +375,7 @@ export default function VoluntarioDashboardPage() {
                         <div key={msg.id ?? `msg-${index}`} className="rounded-2xl border border-border bg-card p-3 transition-colors hover:bg-muted/50">
                           <div className="flex items-center justify-between gap-2">
                             <p className="truncate text-sm font-black text-foreground">{msg.from || msg.sender}</p>
-                            <span className="flex-shrink-0 text-xs text-muted-foreground">{msg.date}</span>
+                            <span className="flex-shrink-0 text-xs text-muted-foreground">{formatDateTime(msg.date)}</span>
                           </div>
                           <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{msg.message || msg.content}</p>
                         </div>

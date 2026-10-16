@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "@/lib/dates"
 import { useEffect, useMemo, useState } from "react"
 import { Link, useParams, useSearchParams } from "react-router-dom"
 import { AdminHeader } from "@/components/admin/admin-header"
@@ -346,7 +347,7 @@ export default function AdminBeneficiarioDetailPage() {
                         </div>
                         <div className="rounded-lg border p-3">
                           <p className="text-xs text-muted-foreground">Consulta</p>
-                          <p className="font-semibold">{riskItem.appointmentDate || "Sem data"} {riskItem.appointmentTime || ""}</p>
+                          <p className="font-semibold">{formatDate(riskItem.appointmentDate)} {riskItem.appointmentTime || ""}</p>
                         </div>
                         <div className="rounded-lg border p-3">
                           <p className="text-xs text-muted-foreground">Telefone</p>
@@ -477,7 +478,7 @@ export default function AdminBeneficiarioDetailPage() {
                         <div key={appointment.id} className="rounded-xl border p-4">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <div>
-                              <p className="font-medium">{appointment.dateLabel || appointment.date || 'Sem data'}</p>
+                              <p className="font-medium">{appointment.dateLabel || formatDate(appointment.date?.slice(0, 10))}</p>
                               <p className="text-sm text-muted-foreground">{appointment.location || '-'}</p>
                             </div>
                             <Badge variant="outline">{appointment.status || 'sem status'}</Badge>
@@ -511,7 +512,7 @@ export default function AdminBeneficiarioDetailPage() {
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className="font-medium">{document.title}</p>
-                                <p className="text-xs text-muted-foreground">{document.category || 'documento'} • {document.uploadedAt || 'Sem data'}</p>
+                                <p className="text-xs text-muted-foreground">{document.category || 'documento'} • {formatDateTime(document.uploadedAt)}</p>
                                 {document.notes ? <p className="mt-2 text-sm text-muted-foreground">{document.notes}</p> : null}
                               </div>
                               <Button variant="outline" onClick={() => void downloadDocument(document)} disabled={downloadingId === document.id}>
@@ -545,7 +546,7 @@ export default function AdminBeneficiarioDetailPage() {
                 </div>
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Consulta</p>
-                  <p className="font-medium">{riskItem.appointmentDate || "Sem data"} {riskItem.appointmentTime || ""}</p>
+                  <p className="font-medium">{formatDate(riskItem.appointmentDate)} {riskItem.appointmentTime || ""}</p>
                 </div>
               </div>
               <div className="rounded-lg border border-accent/20 bg-accent/10 p-3 text-sm text-accent-foreground">

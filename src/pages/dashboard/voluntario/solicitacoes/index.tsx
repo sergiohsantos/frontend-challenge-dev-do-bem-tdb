@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/dates"
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -244,7 +245,7 @@ function RequestCard({ request }: { request: ProcedureRequest }) {
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2"><User className="h-4 w-4" /><span>{request.beneficiario}</span></div>
-              <div className="flex items-center gap-2"><Clock className="h-4 w-4" /><span>{request.dataSolicitacao ? new Date(request.dataSolicitacao).toLocaleDateString("pt-BR") : "-"}</span></div>
+              <div className="flex items-center gap-2"><Clock className="h-4 w-4" /><span>{request.dataSolicitacao ? formatDate(request.dataSolicitacao) : "-"}</span></div>
             </div>
 
             {request.adminComments && request.adminComments.length > 0 && (

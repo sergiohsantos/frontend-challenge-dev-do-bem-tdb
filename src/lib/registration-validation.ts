@@ -1,3 +1,4 @@
+import { calendarDate } from "./dates"
 import { normalizeDigits } from "@/lib/api"
 
 export function maskCpf(value: string): string {
@@ -158,8 +159,11 @@ export function isValidEmail(value: string): boolean {
 
 export function isValidDate(value: string): boolean {
   if (!value) return false
-  const date = new Date(`${value}T00:00:00`)
-  return !Number.isNaN(date.getTime()) && date <= new Date()
+  const iso = calendarDate(value)
+  if (!iso) return false
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+  return iso <= today
 }
 
 export function friendlyRegistrationError(error: unknown): string {

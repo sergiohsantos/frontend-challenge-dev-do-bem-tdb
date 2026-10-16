@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/dates"
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { Header } from "@/components/layout/header"
@@ -274,7 +275,7 @@ export default function CadastroVoluntarioPage() {
     ].filter(Boolean).join(", ")
 
     const parts = [
-      formData.dataNascimento ? `Data de nascimento: ${formData.dataNascimento}` : "",
+      formData.dataNascimento ? `Data de nascimento: ${formatDate(formData.dataNascimento)}` : "",
       formData.cep ? `CEP: ${normalizeDigits(formData.cep)}` : "",
       formData.bairro ? `Bairro: ${formData.bairro.trim()}` : "",
       formData.endereco ? `Endereço residencial: ${formData.endereco.trim()}, ${formData.numero.trim()}` : "",

@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "@/lib/dates"
 import { useEffect, useMemo, useState } from "react"
 import {
   Activity,
@@ -80,27 +81,12 @@ function formatPercent(value?: number | null): string {
   return `${Math.round(value * 100)}%`
 }
 
-function formatDate(value?: string | null): string {
-  if (!value) return "-"
-  const parts = value.split("-")
-  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
-  return value
-}
 
 function formatTime(value?: string | null): string {
   if (!value) return "-"
   return value.slice(0, 5)
 }
 
-function formatDateTime(value?: string): string {
-  if (!value) return "-"
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date)
-}
 
 function sourceLabel(value?: string | null): string {
   if (!value) return "Nao informado"

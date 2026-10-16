@@ -1,3 +1,4 @@
+import { calendarDate, appointmentTimestamp } from "@/lib/dates"
 import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -72,9 +73,9 @@ function firstNumber(...values: unknown[]) {
 }
 
 function parseDateKey(date?: string) {
-  if (!date) return null
+  if (!calendarDate(date)) return null
 
-  const [year, month, day] = date.split("-").map(Number)
+  const [year, month, day] = date!.split("-").map(Number)
   if (!year || !month || !day) return null
 
   const parsed = new Date(year, month - 1, day)
@@ -84,15 +85,9 @@ function parseDateKey(date?: string) {
 }
 
 function parseAppointmentDateTime(appointment: Pick<Appointment, "date" | "time">) {
-  const parsed = parseDateKey(appointment.date)
-  if (!parsed) return null
-
-  const [hours, minutes] = (appointment.time || "").split(":").map(Number)
-  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null
-
-  parsed.setHours(hours, minutes, 0, 0)
-
-  return parsed
+  if (!appointment.time) return null
+  const timestamp = appointmentTimestamp(appointment.date, appointment.time)
+  return timestamp === null ? null : new Date(timestamp)
 }
 
 function toDateKey(date: Date) {
