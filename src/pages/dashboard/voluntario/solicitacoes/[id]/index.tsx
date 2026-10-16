@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "@/lib/dates"
 import { useState, useEffect } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -296,7 +297,7 @@ export default function SolicitacaoDetailPage() {
                             )}
                             <p className="text-sm leading-6">{msg.content}</p>
                             <p className={`mt-2 text-xs ${msg.senderRole === "volunteer" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                              {msg.createdAt ? new Date(msg.createdAt).toLocaleString("pt-BR") : ""}
+                              {msg.createdAt ? formatDateTime(msg.createdAt) : ""}
                             </p>
                           </div>
                         </div>
@@ -349,7 +350,7 @@ export default function SolicitacaoDetailPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">Data da Solicitação</p>
                       <p className="text-sm font-medium">
-                        {request.dataSolicitacao ? new Date(request.dataSolicitacao).toLocaleDateString("pt-BR") : "-"}
+                        {request.dataSolicitacao ? formatDate(request.dataSolicitacao) : "-"}
                       </p>
                     </div>
                   </div>
@@ -360,7 +361,7 @@ export default function SolicitacaoDetailPage() {
                       <div>
                         <p className="text-xs text-muted-foreground">Última Atualização</p>
                         <p className="text-sm font-medium">
-                          {new Date(request.dataAtualizacao).toLocaleDateString("pt-BR")}
+                          {formatDate(request.dataAtualizacao)}
                         </p>
                       </div>
                     </div>

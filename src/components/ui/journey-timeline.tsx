@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 import { CheckCircle2, Circle, Clock } from "lucide-react"
 
@@ -93,7 +94,7 @@ export function JourneyTimeline({ steps, className }: JourneyTimelineProps) {
               <div className="flex flex-wrap items-center gap-2">
                 <h4 className={cn("text-base", config.titleClass)}>{step.title}</h4>
                 {step.date && (
-                  <span className="text-xs text-muted-foreground">{step.date}</span>
+                  <span className="text-xs text-muted-foreground">{formatDate(step.date)}</span>
                 )}
               </div>
               {step.description && (

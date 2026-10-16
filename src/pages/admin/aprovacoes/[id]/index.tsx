@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/dates"
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Link } from "react-router-dom"
@@ -573,7 +574,7 @@ export default function DetalheSolicitacaoPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>No programa desde {solicitacao.beneficiario.dataIngresso ? new Date(solicitacao.beneficiario.dataIngresso).toLocaleDateString("pt-BR") : "-"}</span>
+                  <span>No programa desde {solicitacao.beneficiario.dataIngresso ? formatDate(solicitacao.beneficiario.dataIngresso) : "-"}</span>
                 </div>
               </div>
               
@@ -654,7 +655,7 @@ export default function DetalheSolicitacaoPage() {
                       <div>
                         <p className="text-sm font-medium">{atendimento.procedimento}</p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(atendimento.data).toLocaleDateString("pt-BR")} - {atendimento.voluntario}
+                          {formatDate(atendimento.data)} - {atendimento.voluntario}
                         </p>
                       </div>
                       <Badge variant="outline" className="bg-success/10 text-success">

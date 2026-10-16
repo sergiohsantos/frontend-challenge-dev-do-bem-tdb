@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/dates"
 import { LoadError } from "@/components/ui/load-error"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
@@ -425,7 +426,7 @@ export default function AprovacaoPage() {
                           <div>
                             <p className="text-xs text-muted-foreground">Data da Solicitacao</p>
                             <p className="text-sm font-medium">
-                              {new Date(request.dataSolicitacao).toLocaleDateString("pt-BR")}
+                              {formatDate(request.dataSolicitacao)}
                             </p>
                           </div>
                         </div>
@@ -508,7 +509,7 @@ export default function AprovacaoPage() {
                       </TableCell>
                       <TableCell>{request.procedimento}</TableCell>
                       <TableCell>{request.voluntario}</TableCell>
-                      <TableCell>{request.dataSolicitacao ? new Date(request.dataSolicitacao).toLocaleDateString("pt-BR") : "-"}</TableCell>
+                      <TableCell>{request.dataSolicitacao ? formatDate(request.dataSolicitacao) : "-"}</TableCell>
                       <TableCell>-</TableCell>
                     </TableRow>
                   ))
@@ -554,7 +555,7 @@ export default function AprovacaoPage() {
                         </TableCell>
                         <TableCell>{request.procedimento}</TableCell>
                         <TableCell>{request.voluntario}</TableCell>
-                        <TableCell>{request.dataSolicitacao ? new Date(request.dataSolicitacao).toLocaleDateString("pt-BR") : "-"}</TableCell>
+                        <TableCell>{request.dataSolicitacao ? formatDate(request.dataSolicitacao) : "-"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

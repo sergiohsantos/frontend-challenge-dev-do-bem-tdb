@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/dates"
 import { Children, type ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -98,7 +99,7 @@ export function DashboardAppointmentPanel({ appointment, onConfirm, onReschedule
             <div><p className="font-black text-foreground">{appointment.doctor}</p><p className="text-sm text-muted-foreground">{appointment.specialty}</p></div>
           </div>
           {(appointment.procedureTitle || appointment.approvalRequestId) && <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm"><p className="font-medium text-foreground">{appointment.procedureTitle || "Procedimento em análise"}</p>{appointment.approvalRequestId && <p className="text-xs text-muted-foreground">Solicitação {appointment.approvalRequestId}</p>}</div>}
-          <div className="flex items-center gap-2 text-sm text-foreground"><Clock className="h-4 w-4 text-muted-foreground" /><span className="font-medium">{appointment.date}</span><span>às</span><span className="font-medium">{appointment.time}</span></div>
+          <div className="flex items-center gap-2 text-sm text-foreground"><Clock className="h-4 w-4 text-muted-foreground" /><span className="font-medium">{formatDate(appointment.date)}</span><span>às</span><span className="font-medium">{appointment.time}</span></div>
           {appointment.address && <div className="flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" /><span>{appointment.address}</span></div>}
           {appointment.phone && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4" /><a href={`tel:${appointment.phone}`} className="hover:text-foreground">{appointment.phone}</a></div>}
         </div>

@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/dates"
 import type { ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -51,7 +52,7 @@ export function BeneficiaryAppointmentCard({ appointment, statusBadge, confirmin
             </div>
             <div className="flex items-center gap-2 text-sm text-foreground">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{appointment.date}</span>
+              <span className="font-medium">{formatDate(appointment.date)}</span>
               <span>às</span>
               <span className="font-medium">{appointment.time}</span>
             </div>
@@ -102,7 +103,7 @@ export function BeneficiaryPastAppointmentCard({ appointment, statusBadge }: Pic
                 {(appointment.procedureTitle || appointment.approvalRequestId) && <p className="text-sm text-foreground/80">{appointment.procedureTitle || "Procedimento"}{appointment.approvalRequestId ? ` • ${appointment.approvalRequestId}` : ""}</p>}
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground"><Clock className="h-4 w-4" /><span>{appointment.date} às {appointment.time}</span></div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground"><Clock className="h-4 w-4" /><span>{formatDate(appointment.date)} às {appointment.time}</span></div>
           </div>
           {statusBadge}
         </div>

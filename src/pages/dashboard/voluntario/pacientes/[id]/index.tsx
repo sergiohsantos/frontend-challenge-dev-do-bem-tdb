@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/dates"
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -285,7 +286,7 @@ export default function VoluntarioPacienteDetailPage() {
                     <div className="flex items-start gap-3"><FileText className="mt-0.5 h-5 w-5 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">CPF</p><p className="font-medium">{patient.cpf || "-"}</p></div></div>
                     <div className="flex items-start gap-3"><FileText className="mt-0.5 h-5 w-5 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">RG</p><p className="font-medium">{patient.rg || "-"}</p></div></div>
                     <div className="flex items-start gap-3"><HeartPulse className="mt-0.5 h-5 w-5 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Gênero</p><p className="font-medium">{patient.genero || "-"}</p></div></div>
-                    <div className="flex items-start gap-3"><Calendar className="mt-0.5 h-5 w-5 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Nascimento</p><p className="font-medium">{patient.dataNascimento || "-"}</p></div></div>
+                    <div className="flex items-start gap-3"><Calendar className="mt-0.5 h-5 w-5 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Nascimento</p><p className="font-medium">{formatDate(patient.dataNascimento)}</p></div></div>
                     <div className="flex items-start gap-3"><Phone className="mt-0.5 h-5 w-5 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Telefone</p><p className="font-medium">{patient.telefone || patient.phone || "-"}</p></div></div>
                     <div className="flex items-start gap-3"><Mail className="mt-0.5 h-5 w-5 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">E-mail</p><p className="font-medium">{patient.email || "-"}</p></div></div>
                     <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Cidade / UF</p><p className="font-medium">{[patient.cidade, patient.uf].filter(Boolean).join(" - ") || "-"}</p></div></div>
