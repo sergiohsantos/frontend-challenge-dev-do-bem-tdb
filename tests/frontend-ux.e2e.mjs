@@ -9,11 +9,12 @@ const origin = 'http://127.0.0.1:5187'
 process.env.VITE_API_URL = origin
 process.env.VITE_JAVA_API_URL = origin + '/java'
 process.env.VITE_AI_API_URL = origin + '/ai'
-const server = await createServer({server:{host:'127.0.0.1',port:5187,strictPort:true}})
+const server = await createServer({server:{host:'127.0.0.1',port:5187,strictPort:true,open:false}})
 await server.listen()
-const browser = await chromium.launch({headless:true})
+const browser = await chromium.launch({headless:true,...(process.env.TDB_CHROMIUM_EXECUTABLE?{executablePath:process.env.TDB_CHROMIUM_EXECUTABLE}:{})})
 const fixtures = {
  '/api/admin/dashboard':{kpis:{totalBeneficiaries:23,totalVolunteers:12,totalAppointments:30},trends:[{month:"Set",value:10},{month:"Out",value:23}],pipeline:[],regional:[{region:"Sudeste",count:23}],programs:[],alerts:[],insights:[],satisfaction:[]},
+ '/api/admin/operations':{generatedAt:'2026-10-16T12:00:00Z',total:0,counts:{},items:[],agenda:[],programs:[]},
  '/api/admin/approvals':{kpis:{pending:0,approvedToday:0,rejected:0,urgent:0},requests:[],approved:[],rejected:[]},
  '/api/beneficiaries/me/dashboard':{name:'Pessoa de Teste',caseId:999999,status:'in-progress',currentStep:'Consulta',journeySteps:[],nextAppointment:null,appointmentsNeedingConfirmation:[],recentMessages:[],reminders:[],satisfaction:{canSubmit:false}},
  '/api/admin/settings':{}, '/api/admin/profile':{nome:'Pessoa de Teste',email:'test@example.invalid',role:'ADMIN'}, '/api/admin/whatsapp/status':{enabled:false},
@@ -95,11 +96,11 @@ try {
   assert.equal(await p.getByText(empty,{exact:false}).count(),0)
   failed.delete(endpoint);await retry.click();await retry.waitFor({state:'hidden'})
  },{failures:[endpoint]})
- await scenario('unsupported dashboard filters explicit','/admin',async p=>{
-  await p.getByText('Todos os períodos',{exact:true}).waitFor()
-  assert.equal(await p.getByRole('combobox').count(),3)
-  for(const combo of await p.getByRole('combobox').all()) assert.ok(await combo.isDisabled())
-  assert.ok(await p.getByText('Todos os períodos',{exact:true}).isVisible())
+ await scenario('operational filters enabled with explicit scope','/admin',async p=>{
+  await p.getByLabel('Origem da pendência').waitFor()
+  assert.equal(await p.getByRole('combobox').count(),4)
+  for(const combo of await p.getByRole('combobox').all()) assert.equal(await combo.isDisabled(),false)
+  assert.ok(await p.getByText('Nenhuma pendência encontrada neste recorte.',{exact:true}).isVisible())
  })
  await scenario('settings failure blocks writes','/admin/configuracoes',async(p,failed,requests)=>{
   await p.getByRole('button',{name:'Tentar novamente',exact:true}).waitFor()

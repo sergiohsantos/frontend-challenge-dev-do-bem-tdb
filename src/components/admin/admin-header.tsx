@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { Bell, Search, User, LogOut, Settings, Menu, Moon, Sun, Loader2 } from "lucide-react"
+import { Bell, User, LogOut, Settings, Menu, Moon, Sun, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { apiFetch } from "@/lib/api"
 import { clearAuth, getToken, getUser } from "@/lib/auth"
 import { useTheme } from "@/components/theme-provider"
@@ -17,6 +16,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { AdminSearch } from "./admin-search"
 import { AdminSidebar } from "./admin-sidebar"
 
 interface AdminHeaderProps {
@@ -38,8 +38,10 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const pathname = location.pathname
   const { resolvedTheme, setTheme } = useTheme()
   const [adminName, setAdminName] = useState("Administrador")
-  const [adminEmail, setAdminEmail] = useState("admin@turmadobem.org.br")
+  const [adminEmail, setAdminEmail] = useState("E-mail não informado")
   const [notifications, setNotifications] = useState<HeaderNotification[]>([])
+  const [unreadTotal, setUnreadTotal] = useState(0)
+  const [notificationsError, setNotificationsError] = useState(false)
   const [isMarking, setIsMarking] = useState(false)
   const [openingId, setOpeningId] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -50,6 +52,8 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       if (!token) return
       const data = await apiFetch<{ notifications?: Array<Record<string, unknown>>; items?: Array<Record<string, unknown>> }>("/api/admin/notifications", { cache: "no-store" }, token)
       const items = data.notifications || data.items || []
+      setUnreadTotal(items.filter(item => !item.read).length)
+      setNotificationsError(false)
       setNotifications(items.slice(0, 5).map((item, index) => ({
         id: String(item.id ?? `notification-${index}`),
         title: String(item.title ?? "Notificação"),
@@ -60,6 +64,8 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       })))
     } catch {
       setNotifications([])
+      setUnreadTotal(0)
+      setNotificationsError(true)
     }
   }, [])
 
@@ -71,9 +77,9 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
   useEffect(() => {
     loadNotifications()
-    const onFocus = () => loadNotifications()
+    const onFocus = () => { if (document.visibilityState === "visible") void loadNotifications() }
     window.addEventListener("focus", onFocus)
-    const interval = window.setInterval(loadNotifications, 15000)
+    const interval = window.setInterval(onFocus, 60000)
     return () => {
       window.removeEventListener("focus", onFocus)
       window.clearInterval(interval)
@@ -97,6 +103,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       if (!token) return
       await apiFetch("/api/admin/notifications/mark-all-read", { method: "POST" }, token)
       setNotifications((prev) => prev.map((item) => ({ ...item, read: true })))
+      setUnreadTotal(0)
     } finally {
       setIsMarking(false)
     }
@@ -109,6 +116,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       if (token && !notification.read) {
         await apiFetch(`/api/admin/notifications/${encodeURIComponent(notification.id)}/read`, { method: "POST" }, token)
         setNotifications((prev) => prev.map((item) => item.id === notification.id ? { ...item, read: true } : item))
+        setUnreadTotal(value => Math.max(0, value - 1))
       }
       if (notification.targetUrl) {
         navigate(notification.targetUrl)
@@ -127,7 +135,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     .map((part) => part.charAt(0).toUpperCase())
     .join("") || "AD"
 
-  const unreadCount = notifications.filter((item) => !item.read).length
+  const unreadCount = unreadTotal
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border/60 bg-background/85 px-4 shadow-sm shadow-primary/5 backdrop-blur-xl lg:px-6">
@@ -146,12 +154,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           </SheetContent>
         </Sheet>
 
-        <div className="hidden w-72 sm:block lg:w-96">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input type="search" placeholder="Buscar beneficiários, voluntários, parceiros..." className="h-10 rounded-full border-border/70 bg-background/80 pl-10 pr-4 shadow-sm" />
-          </div>
-        </div>
+        <div className="w-44 sm:w-72 lg:w-96"><AdminSearch /></div>
       </div>
 
       <div className="flex items-center gap-2">
@@ -176,7 +179,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
               </Button>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {notifications.length > 0 ? notifications.map((notification) => (
+            {notificationsError ? <DropdownMenuItem className="rounded-xl text-muted-foreground">Notificações indisponíveis. Tente novamente em instantes.</DropdownMenuItem> : notifications.length > 0 ? notifications.map((notification) => (
               <DropdownMenuItem key={notification.id} className="flex cursor-pointer flex-col items-start gap-1 rounded-xl p-3" onSelect={(e) => { e.preventDefault(); void handleOpenNotification(notification) }}>
                 <div className="flex w-full items-start gap-2">
                   <div className={`mt-1 h-2 w-2 rounded-full ${notification.read ? "bg-muted-foreground/40" : "bg-primary"}`} />

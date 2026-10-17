@@ -31,6 +31,8 @@ import { toast } from "sonner"
 
 type BeneficiaryDetail = {
   id: number
+  caseId?: number | null
+  cases?: Array<{ id: number; status: string; program: string }>
   nome: string
   idade?: number
   cpf?: string | null
@@ -135,7 +137,8 @@ function riskWhatsAppUnavailableMessage(status?: AdminWhatsAppStatus | null) {
 
 export default function AdminBeneficiarioDetailPage() {
   const params = useParams<{ id: string }>()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedCase = searchParams.get("case")
   const mode = searchParams.get("mode")
   const section = searchParams.get("section")
   const [isLoading, setIsLoading] = useState(true)
@@ -156,12 +159,15 @@ export default function AdminBeneficiarioDetailPage() {
   const [isSendingRiskWhatsApp, setIsSendingRiskWhatsApp] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+    setIsLoading(true)
+    setDetail(null)
     const loadDetail = async () => {
       try {
         const token = getToken()
         if (!token) return
         const [detailResult, docsResult, volunteersResult, riskResult, whatsAppResult] = await Promise.allSettled([
-          apiFetch<BeneficiaryDetail>(`/api/admin/beneficiaries/${params.id}`, {}, token),
+          apiFetch<BeneficiaryDetail>(`/api/admin/beneficiaries/${params.id}${selectedCase ? `/cases/${encodeURIComponent(selectedCase)}` : ""}`, {}, token),
           apiFetch<unknown>(`/api/admin/beneficiaries/${params.id}/documents`, {}, token),
           listAdminVolunteerOptions(),
           getAIRiskDashboard({ days: 30, limit: 100, classification: "all" }),
@@ -171,6 +177,8 @@ export default function AdminBeneficiarioDetailPage() {
           throw detailResult.reason
         }
         const data = detailResult.value
+        if (cancelled) return
+        if (selectedCase && data.caseId !== Number(selectedCase)) throw new Error("Não foi possível confirmar o caso selecionado. Atualize o backend antes de operar este caso.")
         const docs = docsResult.status === "fulfilled" ? docsResult.value : []
         const volunteerOptions = volunteersResult.status === "fulfilled" ? volunteersResult.value : []
         const source = Array.isArray(docs) ? docs : (docs && typeof docs === 'object' && ('documents' in docs || 'items' in docs)) ? ((docs as { documents?: unknown[]; items?: unknown[] }).documents || (docs as { items?: unknown[] }).items || []) : []
@@ -185,14 +193,15 @@ export default function AdminBeneficiarioDetailPage() {
           setWhatsAppStatus(whatsAppResult.value)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao carregar beneficiário")
+        if (!cancelled) setError(err instanceof Error ? err.message : "Erro ao carregar beneficiário")
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
 
     void loadDetail()
-  }, [params.id])
+    return () => { cancelled = true }
+  }, [params.id, selectedCase])
 
   const pageDescription = useMemo(() => {
     if (mode === "edit") return "Visualização detalhada para revisão cadastral"
@@ -213,7 +222,7 @@ export default function AdminBeneficiarioDetailPage() {
       formData.append("category", uploadState.category)
       formData.append("notes", uploadState.notes)
       formData.append("visible_to_beneficiary", String(uploadState.visibleToBeneficiary))
-      const created = await apiUpload<unknown>(`/api/admin/beneficiaries/${params.id}/documents`, formData, token)
+      const created = await apiUpload<unknown>(`/api/admin/beneficiaries/${params.id}${detail?.caseId ? `/cases/${detail.caseId}` : ""}/documents`, formData, token)
       setDocuments((prev) => [normalizeDocument(created as Record<string, unknown>), ...prev])
       setUploadState(initialUploadState)
     } catch (err) {
@@ -248,7 +257,7 @@ export default function AdminBeneficiarioDetailPage() {
         `/api/admin/beneficiaries/${params.id}/volunteer`,
         {
           method: "PUT",
-          body: JSON.stringify({ volunteerId: Number(selectedVolunteerId) }),
+          body: JSON.stringify({ volunteerId: Number(selectedVolunteerId), ...(detail?.caseId ? { caseId: detail.caseId } : {}) }),
         },
         token,
       )
@@ -308,6 +317,11 @@ export default function AdminBeneficiarioDetailPage() {
           ) : (
             <div className="space-y-6">
               {error && <AlertBanner type="error" title="Erro" message={error} dismissible onDismiss={() => setError(null)} />}
+              {detail.cases && detail.cases.length > 0 && <label className="grid max-w-xl gap-2 text-sm font-semibold">Caso em acompanhamento
+                <select className="h-11 rounded-xl border bg-background px-3" value={detail.caseId || ""} onChange={event => { const next = new URLSearchParams(searchParams); next.set("case", event.target.value); setSearchParams(next) }}>
+                  {detail.cases.map(item => <option key={item.id} value={item.id}>Caso {item.id} · {item.program} · {item.status}</option>)}
+                </select>
+              </label>}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -498,7 +512,7 @@ export default function AdminBeneficiarioDetailPage() {
                       onSubmit={handleUploadDocument}
                       submitting={isUploading}
                       submitLabel="Enviar documento"
-                      helperText="Anexe arquivos ao prontuário do beneficiário e defina se também ficarão visíveis para ele."
+                      helperText={detail.caseId ? `O envio será vinculado ao caso ${detail.caseId}. A lista reúne documentos do beneficiário; escolha se o novo arquivo ficará visível para ele.` : "Anexe arquivos ao prontuário do beneficiário e defina se também ficarão visíveis para ele."}
                       error={error}
                     />
                     <Card>

@@ -8,15 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Map, Loader2, Search, MapPin, Users, Heart, Building2, AlertTriangle } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { getToken } from "@/lib/auth"
-import { toast } from "sonner"
+import { LoadError } from "@/components/ui/load-error"
 
 interface RegionSummaryItem {
   regiao: string
-  beneficiarios: number
   voluntarios: number
   atendimentos: number
   cobertura: number
-  satisfacao: number
+  satisfacao: number | null
+  beneficiarios?: number
+  linkedBeneficiaries?: number
+  satisfactionResponses?: number
   estados?: string[]
 }
 
@@ -25,7 +27,10 @@ interface StateDataItem {
   nome: string
   atendimentos: number
   cobertura: number
-  satisfacao: number
+  satisfacao: number | null
+  beneficiarios?: number
+  linkedBeneficiaries?: number
+  satisfactionResponses?: number
 }
 
 interface AlertRegionItem {
@@ -47,6 +52,7 @@ const formatNumber = (value: number | undefined) => Number(value || 0).toLocaleS
 
 export default function AdminRegionalPage() {
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [data, setData] = useState<RegionalResponse>({})
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedUf, setSelectedUf] = useState("all")
@@ -57,12 +63,13 @@ export default function AdminRegionalPage() {
 
   async function fetchRegionalData() {
     setLoading(true)
+    setError(false)
     try {
       const token = getToken()
       const response = await apiFetch<RegionalResponse>("/api/admin/regional", {}, token)
       setData(response)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar dados regionais")
+    } catch {
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -95,8 +102,13 @@ export default function AdminRegionalPage() {
     { states: 0, atendimentos: 0, coberturaMedia: 0, satisfacaoMedia: 0 },
   )
 
-  const avgCobertura = totals.states > 0 ? Math.round(totals.coberturaMedia / totals.states) : 0
-  const avgSatisfacao = totals.states > 0 ? Math.round(totals.satisfacaoMedia / totals.states) : 0
+  const people = filteredStates.reduce((sum, row) => sum + (row.beneficiarios || 0), 0)
+  const linked = filteredStates.reduce((sum, row) => sum + (row.linkedBeneficiaries || 0), 0)
+  const responses = filteredStates.reduce((sum, row) => sum + (row.satisfactionResponses || 0), 0)
+  const avgCobertura = people ? `${Math.round(linked / people * 100)}%` : "Sem dados"
+  const avgSatisfacao = responses ? (filteredStates.reduce((sum, row) => sum + (row.satisfacao || 0) * (row.satisfactionResponses || 0), 0) / responses).toFixed(1) : "Sem respostas"
+
+  if (error) return <div className="flex min-h-screen overflow-x-hidden"><AdminSidebar /><div className="min-w-0 flex-1"><AdminHeader /><main id="main-content" tabIndex={-1} className="p-4 sm:p-6"><h1 className="mb-6 text-2xl font-bold">Gestão Regional</h1><LoadError message="Não foi possível carregar os dados regionais. Os dados estão indisponíveis, não zerados." onRetry={() => void fetchRegionalData()} /></main></div></div>
 
   return (
     <div className="flex min-h-screen overflow-x-hidden">
@@ -107,7 +119,7 @@ export default function AdminRegionalPage() {
           <div className="mb-6 min-w-0">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Gestão Regional</h1>
             <p className="text-sm text-muted-foreground">
-              Cobertura, atendimento e alertas por região e estado.
+              Cobertura representa beneficiários com caso ativo vinculado. Satisfação usa respostas da própria região, na escala de 0 a 10.
             </p>
           </div>
 
@@ -133,7 +145,7 @@ export default function AdminRegionalPage() {
                     <Heart className="h-5 w-5 text-accent" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm text-muted-foreground">Atendimentos</p>
+                    <p className="text-sm text-muted-foreground">Casos</p>
                     <p className="truncate text-2xl font-bold">{formatNumber(totals.atendimentos)}</p>
                   </div>
                 </div>
@@ -147,8 +159,8 @@ export default function AdminRegionalPage() {
                     <Users className="h-5 w-5 text-green-500" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm text-muted-foreground">Cobertura média</p>
-                    <p className="truncate text-2xl font-bold">{avgCobertura}%</p>
+                    <p className="text-sm text-muted-foreground">Beneficiários vinculados</p>
+                    <p className="truncate text-2xl font-bold">{avgCobertura}</p>
                   </div>
                 </div>
               </CardContent>
@@ -178,7 +190,7 @@ export default function AdminRegionalPage() {
                       <Map className="h-5 w-5 shrink-0 text-primary" />
                       <span className="min-w-0 truncate">Dados por estado</span>
                     </CardTitle>
-                    <CardDescription>Baseada no payload real de /api/admin/regional.</CardDescription>
+                    <CardDescription>Indicadores dos beneficiários por estado.</CardDescription>
                   </div>
 
                   <div className="grid w-full min-w-0 gap-2 sm:grid-cols-2 lg:w-auto lg:min-w-[420px]">
@@ -198,7 +210,7 @@ export default function AdminRegionalPage() {
                     <div className="relative min-w-0">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
-                        placeholder="Buscar por UF ou cidade..."
+                        placeholder="Buscar por UF..."
                         className="w-full pl-10"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -235,7 +247,7 @@ export default function AdminRegionalPage() {
                               <p className="text-lg font-bold text-primary">
                                 {formatNumber(item.atendimentos)}
                               </p>
-                              <p className="text-xs text-muted-foreground">atendimentos</p>
+                              <p className="text-xs text-muted-foreground">casos</p>
                             </div>
                           </div>
 
@@ -246,7 +258,7 @@ export default function AdminRegionalPage() {
                             </div>
                             <div className="rounded-lg bg-muted/50 p-2">
                               <p className="text-xs text-muted-foreground">Satisfação</p>
-                              <p className="font-semibold">{item.satisfacao}</p>
+                              <p className="font-semibold">{item.satisfacao ?? "Sem respostas"}</p>
                             </div>
                           </div>
                         </div>
@@ -260,7 +272,7 @@ export default function AdminRegionalPage() {
                           <tr className="border-b text-left text-sm text-muted-foreground">
                             <th className="pb-3 font-medium">UF</th>
                             <th className="pb-3 font-medium">Referência</th>
-                            <th className="pb-3 text-center font-medium">Atendimentos</th>
+                            <th className="pb-3 text-center font-medium">Casos</th>
                             <th className="pb-3 text-center font-medium">Cobertura</th>
                             <th className="pb-3 text-center font-medium">Satisfação</th>
                           </tr>
@@ -277,7 +289,7 @@ export default function AdminRegionalPage() {
                                 <Badge>{item.cobertura}%</Badge>
                               </td>
                               <td className="py-4 text-center">
-                                <Badge variant="secondary">{item.satisfacao}</Badge>
+                                <Badge variant="secondary">{item.satisfacao ?? "Sem respostas"}</Badge>
                               </td>
                             </tr>
                           ))}
@@ -334,7 +346,7 @@ export default function AdminRegionalPage() {
                             <strong className="text-foreground">{formatNumber(region.atendimentos)}</strong>
                           </span>
                           <span>
-                            Satisfação: <strong className="text-foreground">{region.satisfacao}</strong>
+                            Satisfação: <strong className="text-foreground">{region.satisfacao ?? "Sem respostas"}</strong>
                           </span>
                         </div>
                       </div>

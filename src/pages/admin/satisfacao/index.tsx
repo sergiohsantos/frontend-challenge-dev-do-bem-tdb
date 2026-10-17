@@ -1,3 +1,4 @@
+import { LoadError } from "@/components/ui/load-error"
 import { useEffect, useState } from "react"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
@@ -6,12 +7,12 @@ import { Badge } from "@/components/ui/badge"
 import { Star, Loader2, TrendingUp, Users, MessageSquare } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { getToken } from "@/lib/auth"
-import { toast } from "sonner"
 
 interface SatisfactionResponse {
   overallScore?: number
   averageScore?: number
   previousScore?: number
+  previousScoreAvailable?: boolean
   npsScore?: number
   promoters?: number
   neutrals?: number
@@ -43,21 +44,24 @@ function MetricCard({ icon, label, value, hint }: { icon: React.ReactNode; label
 
 export default function AdminSatisfacaoPage() {
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [revision, setRevision] = useState(0)
   const [data, setData] = useState<SatisfactionResponse>({})
 
   useEffect(() => {
     ;(async () => {
+      setLoading(true); setError(false)
       try {
         const token = getToken()
         const response = await apiFetch<SatisfactionResponse>("/api/admin/satisfaction", {}, token)
         setData(response)
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Erro ao carregar satisfação")
+      } catch {
+        setError(true)
       } finally {
         setLoading(false)
       }
     })()
-  }, [])
+  }, [revision])
 
   const hasResponses = (data.totalResponses || 0) > 0 || (data.recentFeedback || []).length > 0
   const averageScore = data.overallScore ?? data.averageScore ?? 0
@@ -71,10 +75,10 @@ export default function AdminSatisfacaoPage() {
         <main id="main-content" tabIndex={-1} className="overflow-x-hidden p-4 sm:p-6">
           <div className="mb-6 min-w-0">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Satisfação</h1>
-            <p className="text-sm text-muted-foreground">Indicadores agregados de satisfação e NPS na escala 0 a 10.</p>
+            <p className="text-sm text-muted-foreground">Nota média de 0 a 10; NPS de -100 a 100. Cada indicador usa as respostas disponíveis.</p>
           </div>
 
-          {loading ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : (
+          {loading ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : error ? <LoadError message="Não foi possível carregar a satisfação. Os dados estão indisponíveis, não zerados." onRetry={() => setRevision(value => value + 1)} /> : (
             <>
               {data.legacyScaleDetected && (
                 <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
@@ -84,7 +88,7 @@ export default function AdminSatisfacaoPage() {
 
               <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard icon={<Star className="h-5 w-5 text-yellow-500" />} label="Nota geral" value={hasResponses ? `${averageScore}/10` : "Sem dados"} />
-                <MetricCard icon={<TrendingUp className="h-5 w-5 text-primary" />} label="NPS atual" value={hasResponses ? data.npsScore ?? 0 : "Sem dados"} hint={`Anterior: ${hasResponses ? data.previousScore ?? 0 : "-"}`} />
+                <MetricCard icon={<TrendingUp className="h-5 w-5 text-primary" />} label="NPS atual" value={hasResponses ? data.npsScore ?? 0 : "Sem dados"} hint={data.previousScoreAvailable ? `Anterior: ${data.previousScore}` : "Comparação histórica indisponível"} />
                 <MetricCard icon={<Users className="h-5 w-5 text-green-500" />} label="Promotores" value={`${hasResponses ? data.promoters || 0 : 0}%`} />
                 <MetricCard icon={<MessageSquare className="h-5 w-5 text-accent" />} label="Detratores" value={`${hasResponses ? data.detractors || 0 : 0}%`} />
               </div>
