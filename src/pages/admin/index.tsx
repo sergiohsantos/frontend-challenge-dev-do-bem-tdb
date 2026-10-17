@@ -18,10 +18,10 @@ import {
   Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdminOperations } from "@/components/admin/admin-operations"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ChartContainer,
   ChartTooltip,
@@ -47,7 +47,7 @@ import {
 const kpiDefinitions = [
   {
     key: "totalAppointments",
-    title: "Total de Consultas",
+    title: "Consultas Cadastradas",
     icon: Calendar,
     color: "text-primary",
     bgColor: "bg-primary/10",
@@ -75,31 +75,19 @@ const kpiDefinitions = [
   },
   {
     key: "inProgressAppointments",
-    title: "Atendimentos em Andamento",
+    title: "Casos Ativos",
     icon: Clock,
     color: "text-warning",
     bgColor: "bg-warning/10",
   },
   {
     key: "completedAppointments",
-    title: "Atendimentos Concluídos",
+    title: "Casos Concluídos",
     icon: CheckCircle2,
     color: "text-success",
     bgColor: "bg-success/10",
   },
 ]
-
-const operationalRoutes = [
-  { label: "Aprovacoes e laudos", href: "/admin/aprovacoes", hint: "Decidir solicitacoes pendentes antes que a fila cresca." },
-  { label: "Triagem", href: "/admin/triagem", hint: "Revisar leads e definir o tipo de atendimento antes do encaminhamento." },
-  { label: "Onboarding", href: "/admin/onboarding", hint: "Conferir documentos e habilitar cadastros quando o checklist estiver completo." },
-  { label: "Mensagens", href: "/admin/mensagens", hint: "Responder conversas que travam o andamento dos casos." },
-  { label: "Indicadores", href: "/admin/relatorios", hint: "Acompanhar relatorios, regioes e satisfacao para decidir proximas acoes." },
-]
-
-function normalizeText(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-}
 
 // Program definitions for display
 const programDefinitions = [
@@ -111,9 +99,6 @@ const programDefinitions = [
 export default function AdminDashboardPage() {
   const navigate = useNavigate()
   const [retryKey, setRetryKey] = useState(0)
-  const [period, setPeriod] = useState("all")
-  const [program, setProgram] = useState("all")
-  const [region, setRegion] = useState("all")
   const [apiData, setApiData] = useState<AdminDashboard | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -132,8 +117,6 @@ export default function AdminDashboardPage() {
   }, [navigate])
 
   // Load dashboard data only if authenticated.
-  // Os filtros abaixo ficam prontos para evolução da API. Por segurança, o endpoint atual é mantido sem query params
-  // para não quebrar o contrato existente caso o backend ainda não implemente period/program/region.
   useEffect(() => {
     if (!isAuthenticated) return
 
@@ -209,27 +192,6 @@ export default function AdminDashboardPage() {
     ...item,
     score: Number(item.score ?? 0),
   }))
-  const routeStatus = operationalRoutes.map((item) => {
-    const label = normalizeText(item.label)
-    const relatedAlerts = alerts.filter((alert) => {
-      const message = normalizeText(alert.message)
-      if (label.includes("aprovacoes")) return message.includes("aprov") || message.includes("laudo")
-      if (label.includes("triagem")) return message.includes("triagem") || message.includes("lead")
-      if (label.includes("onboarding")) return message.includes("onboarding") || message.includes("document")
-      if (label.includes("mensagens")) return message.includes("mensagem") || message.includes("conversa")
-      return message.includes("indicador") || message.includes("relatorio") || message.includes("satisfacao")
-    })
-    return {
-      ...item,
-      countLabel: relatedAlerts.length > 0 ? `${relatedAlerts.length} alerta(s)` : "Abrir",
-      hasAlert: relatedAlerts.length > 0,
-    }
-  })
-  const nextAction =
-    routeStatus.find((item) => item.hasAlert) ||
-    (pipeline.length > 0 ? routeStatus[1] : null) ||
-    (insights.length > 0 ? routeStatus[4] : routeStatus[0])
-
   // Don't render anything until auth check completes
   if (!isAuthenticated) {
     return (
@@ -237,18 +199,6 @@ export default function AdminDashboardPage() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Verificando autenticação...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Carregando dashboard...</p>
         </div>
       </div>
     )
@@ -265,61 +215,21 @@ export default function AdminDashboardPage() {
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-                  Dashboard Executivo
+                  Central de Operações
                 </h1>
                 <p className="text-sm text-muted-foreground sm:text-base">
-                  Visão geral dos dados disponíveis, sem filtro de período, programa ou região.
+                  Resolva pendências, acompanhe consultas e confira os resultados da operação.
                 </p>
               </div>
 
-              <div className="grid w-full gap-2 sm:grid-cols-3 xl:w-auto xl:flex xl:items-center">
-                <Select disabled value={period} onValueChange={setPeriod}>
-                  <SelectTrigger aria-label="Período" className="w-full xl:w-[140px]">
-                    <SelectValue placeholder="Período" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os períodos</SelectItem>
-                    <SelectItem value="7d">Últimos 7 dias</SelectItem>
-                    <SelectItem value="30d">Últimos 30 dias</SelectItem>
-                    <SelectItem value="90d">Últimos 90 dias</SelectItem>
-                    <SelectItem value="12m">Últimos 12 meses</SelectItem>
-                    <SelectItem value="ytd">Ano atual</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select disabled value={program} onValueChange={setProgram}>
-                  <SelectTrigger aria-label="Programa" className="w-full xl:w-[180px]">
-                    <SelectValue placeholder="Programa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os programas</SelectItem>
-                    <SelectItem value="dentistas">Dentistas do Bem</SelectItem>
-                    <SelectItem value="apolonias">Apolônias do Bem</SelectItem>
-                    <SelectItem value="psicologos">Psicólogos Para o Bem</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select disabled value={region} onValueChange={setRegion}>
-                  <SelectTrigger aria-label="Região" className="w-full xl:w-[160px]">
-                    <SelectValue placeholder="Região" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as regiões</SelectItem>
-                    <SelectItem value="sudeste">Sudeste</SelectItem>
-                    <SelectItem value="sul">Sul</SelectItem>
-                    <SelectItem value="nordeste">Nordeste</SelectItem>
-                    <SelectItem value="centro-oeste">Centro-Oeste</SelectItem>
-                    <SelectItem value="norte">Norte</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
-            <p className="text-sm text-muted-foreground">Os filtros estão indisponíveis nesta visão. Os indicadores apresentam o consolidado retornado pelo serviço.</p>
+            <AdminOperations />
 
             {/* Error State */}
             {error && <LoadError message="Não foi possível carregar os indicadores. Os dados estão indisponíveis, não zerados." onRetry={() => setRetryKey(key => key + 1)} />}
-            {!error && <>
+            {isLoading && <p role="status">Carregando indicadores gerais...</p>}
+            {!isLoading && !error && <>
             {/* KPI Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               {kpiDefinitions.map((kpi) => {
@@ -344,70 +254,10 @@ export default function AdminDashboardPage() {
               })}
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-              <Card className="min-w-0">
-                <CardHeader>
-                  <CardTitle>Central de Operacao</CardTitle>
-                  <CardDescription>Fila de trabalho do Admin com atalhos para decidir, orientar e acompanhar casos.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3 md:grid-cols-2">
-                  {routeStatus.map((item) => (
-                    <div key={item.href} className="rounded-lg border p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-medium text-foreground">{item.label}</p>
-                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.hint}</p>
-                        </div>
-                        <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${item.hasAlert ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"}`}>
-                          {item.countLabel}
-                        </span>
-                      </div>
-                      <Button variant="outline" size="sm" className="mt-4 w-full justify-between" asChild>
-                        <Link to={item.href}>
-                          Abrir area
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card className="min-w-0 border-primary/20">
-                <CardHeader>
-                  <CardTitle>Proxima acao recomendada</CardTitle>
-                  <CardDescription>Prioridade simples: aprovacoes, triagem, onboarding, mensagens e indicadores.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="rounded-lg bg-primary/5 p-4">
-                    <p className="text-sm text-muted-foreground">Foque agora em</p>
-                    <p className="mt-1 text-lg font-semibold">{nextAction.label}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">{nextAction.hint}</p>
-                  </div>
-                  {alerts.length > 0 ? (
-                    <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
-                      <p className="font-medium">Status do sistema</p>
-                      <p className="mt-1 text-muted-foreground">{alerts[0]?.message}</p>
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border p-3 text-sm text-muted-foreground">
-                      Nenhum alerta critico no momento. Continue acompanhando a esteira operacional.
-                    </div>
-                  )}
-                  <Button className="w-full justify-between" asChild>
-                    <Link to={nextAction.href}>
-                      Ir para proxima acao
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
             <Card className="min-w-0">
               <CardHeader>
                 <CardTitle>Esteira Operacional TDB</CardTitle>
-                <CardDescription>Visao simples das etapas retornadas pelo dashboard. Use como leitura de status, sem alterar etapas por aqui.</CardDescription>
+                <CardDescription>Distribuição atual dos casos. Este painel não altera etapas e não representa conversão entre elas.</CardDescription>
               </CardHeader>
               <CardContent>
                 {pipeline.length > 0 ? (
@@ -479,8 +329,8 @@ export default function AdminDashboardPage() {
               {/* Trend Chart */}
               <Card className="min-w-0">
                 <CardHeader className="space-y-1 p-4 sm:p-6">
-                  <CardTitle>Tendência de Crescimento</CardTitle>
-                  <CardDescription>Evolução de atendimentos nos últimos meses</CardDescription>
+                  <CardTitle>Consultas por mês agendado</CardTitle>
+                  <CardDescription>Quantidade de consultas pela data agendada, incluindo consultas futuras e canceladas</CardDescription>
                 </CardHeader>
                 <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0">
                   {trends.length > 0 ? (
@@ -525,7 +375,7 @@ export default function AdminDashboardPage() {
                 <CardHeader className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                   <div className="min-w-0">
                     <CardTitle>Desempenho Regional</CardTitle>
-                    <CardDescription>Atendimentos por região</CardDescription>
+                    <CardDescription>Casos por região</CardDescription>
                   </div>
                   <Button variant="outline" size="sm" className="w-full shrink-0 sm:w-auto" asChild>
                     <Link to="/admin/regional">
@@ -575,7 +425,7 @@ export default function AdminDashboardPage() {
               {/* Pipeline Status */}
               <Card className="min-w-0">
                 <CardHeader>
-                  <CardTitle>Status dos Atendimentos</CardTitle>
+                  <CardTitle>Status dos Casos</CardTitle>
                   <CardDescription>Distribuição atual do pipeline</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -606,7 +456,7 @@ export default function AdminDashboardPage() {
               <Card className="min-w-0">
                 <CardHeader>
                   <CardTitle>Satisfação Geral</CardTitle>
-                  <CardDescription>NPS e tendência</CardDescription>
+                  <CardDescription>Nota média e evolução mensal, na escala 0 a 10</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {satisfaction.length > 0 ? (
@@ -615,9 +465,9 @@ export default function AdminDashboardPage() {
                         <div className="relative flex h-28 w-28 items-center justify-center rounded-full border-8 border-success sm:h-32 sm:w-32">
                           <div className="text-center">
                             <span className="text-2xl font-bold text-success sm:text-3xl">
-                              {satisfaction[satisfaction.length - 1]?.score || "-"}
+                              {kpis.averageSatisfaction ?? "-"}
                             </span>
-                            <span className="block text-xs text-muted-foreground">NPS Score</span>
+                            <span className="block text-xs text-muted-foreground">Nota média / 10</span>
                           </div>
                         </div>
                       </div>
@@ -714,7 +564,7 @@ export default function AdminDashboardPage() {
                             </div>
                             <div className="text-center">
                               <p className="text-lg font-semibold">{(prog.count ?? 0).toLocaleString("pt-BR")}</p>
-                              <p className="text-xs text-muted-foreground">Atendimentos</p>
+                              <p className="text-xs text-muted-foreground">Casos</p>
                             </div>
                           </div>
                         )
