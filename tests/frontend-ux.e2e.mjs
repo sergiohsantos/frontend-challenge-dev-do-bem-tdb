@@ -197,5 +197,67 @@ try {
    return true
   }})
  }
+ for (const [role, endpoint] of [
+  ['admin','/api/admin/notifications'],
+  ['beneficiario','/api/beneficiaries/me/notifications'],
+  ['voluntario','/api/volunteers/me/notifications'],
+ ]) {
+  const route = role === 'admin' ? '/admin/notificacoes' : `/dashboard/${role}/notificacoes`
+  const notification = {id:'message:17',title:'Aviso de teste',message:'Mensagem sintética',type:'message',read:false,createdAt:'2026-10-18T15:00:00Z',targetUrl:route+'?opened=1'}
+  let available = false
+  await scenario(`notifications load retry ${role}`,route,async p=>{
+   const retry=p.getByRole('button',{name:'Tentar novamente',exact:true});await retry.waitFor()
+   assert.equal(await p.getByText(/Nenhuma notifica/).count(),0,'failed load is not an empty inbox')
+   available=true;await retry.click()
+   await p.getByText(notification.title,{exact:true}).waitFor()
+   await noOverflow(p)
+  },{responder:async(r,u)=>{
+   if(u.pathname!==endpoint) return false
+   await r.fulfill({status:available?200:503,json:available?{notifications:[notification]}:{detail:'Synthetic failure'}});return true
+  }})
+  await scenario(`notifications open despite read failure ${role}`,route,async(p,_,requests)=>{
+   await p.getByText(notification.title,{exact:true}).click()
+   await p.waitForURL('**?opened=1')
+   await p.getByText('Não foi possível registrar a leitura. A notificação continuará como não lida.',{exact:true}).waitFor()
+   assert.equal(requests.filter(r=>r.method==='POST' && r.path.includes('/read')).length,1)
+   assert.ok(await p.getByText('Nova',{exact:true}).isVisible(),'failed read must not be shown as saved')
+  },{responder:async(r,u)=>{
+   if(u.pathname===endpoint) {await r.fulfill({json:{notifications:[notification]}});return true}
+   if(u.pathname.startsWith(endpoint+'/')) {await r.fulfill({status:503,json:{detail:'Synthetic failure'}});return true}
+   return false
+  }})
+  let save=false
+  await scenario(`notifications bulk write and duplicate guard ${role}`,route,async(p,_,requests)=>{
+   const bulk=p.getByRole('button',{name:/Marcar.*lidas/});await bulk.waitFor();await bulk.click()
+   await p.getByText('Não foi possível marcar as notificações como lidas agora.',{exact:true}).waitFor()
+   assert.ok(await p.getByText('Nova',{exact:true}).isVisible())
+   save=true
+   await bulk.evaluate(el=>{el.click();el.click()})
+   await p.getByText('Nova',{exact:true}).waitFor({state:'hidden'})
+   assert.equal(requests.filter(r=>r.method==='POST' && r.path.endsWith('/mark-all-read')).length,2,'one failed and one successful write, no duplicate')
+  },{responder:async(r,u)=>{
+   if(u.pathname===endpoint) {await r.fulfill({json:{notifications:[notification]}});return true}
+   if(u.pathname===endpoint+'/mark-all-read') {await new Promise(resolve=>setTimeout(resolve,200));await r.fulfill({status:save?200:503,json:{}});return true}
+   return false
+  }})
+  await scenario(`notifications expired session ${role}`,route,async p=>{
+   await p.getByText(notification.title,{exact:true}).click()
+   await p.waitForURL('**/login')
+   assert.ok(!p.url().includes('opened='))
+  },{responder:async(r,u)=>{
+   if(u.pathname===endpoint) {await r.fulfill({json:{notifications:[notification]}});return true}
+   if(u.pathname.startsWith(endpoint+'/')) {await r.fulfill({status:401,json:{}});return true}
+   return false
+  }})
+  await scenario(`notifications forbidden read blocks navigation ${role}`,route,async p=>{
+   await p.getByText(notification.title,{exact:true}).click()
+   await p.getByText('Você não tem permissão para abrir esta notificação.',{exact:true}).waitFor()
+   assert.ok(!p.url().includes('opened='))
+  },{responder:async(r,u)=>{
+   if(u.pathname===endpoint) {await r.fulfill({json:{notifications:[notification]}});return true}
+   if(u.pathname.startsWith(endpoint+'/')) {await r.fulfill({status:403,json:{}});return true}
+   return false
+  }})
+ }
  console.log(`${passed} UI regression scenarios passed`)
 } finally { await browser.close(); await server.close() }

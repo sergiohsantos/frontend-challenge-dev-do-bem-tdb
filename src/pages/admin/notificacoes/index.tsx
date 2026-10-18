@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useMemo, useState } from "react"
+import { useNotifications } from "@/hooks/use-notifications"
+import { formatDateTime } from "@/lib/dates"
+import { AlertBanner } from "@/components/ui/alert-banner"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -7,9 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Bell, Loader2, Search, CheckCircle, AlertCircle, Info, XCircle } from "lucide-react"
-import { apiFetch } from "@/lib/api"
-import { getToken } from "@/lib/auth"
-import { toast } from "sonner"
 
 type NotificationType = "info" | "success" | "warning" | "error"
 
@@ -24,9 +23,16 @@ interface NotificationItem {
   targetUrl?: string
 }
 
-interface NotificationsResponse {
-  notifications?: NotificationItem[]
-  items?: NotificationItem[]
+function normalizeNotification(raw: Record<string, unknown>): NotificationItem {
+  return {
+    id: String(raw.id ?? ""),
+    title: String(raw.title ?? "Notificação"),
+    message: String(raw.message ?? raw.description ?? ""),
+    type: String(raw.type ?? "info") as NotificationType,
+    createdAt: raw.createdAt ? String(raw.createdAt) : undefined,
+    read: Boolean(raw.read),
+    targetUrl: raw.targetUrl ? String(raw.targetUrl) : undefined,
+  }
 }
 
 const typeConfig: Record<NotificationType, { icon: typeof Info; color: string; bgColor: string }> = {
@@ -37,55 +43,10 @@ const typeConfig: Record<NotificationType, { icon: typeof Info; color: string; b
 }
 
 export default function AdminNotificacoesPage() {
-  const navigate = useNavigate()
-  const [loading, setLoading] = useState(true)
-  const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [openingId, setOpeningId] = useState<string | null>(null)
-
-  useEffect(() => {
-    void fetchNotifications()
-  }, [])
-
-  async function fetchNotifications() {
-    setLoading(true)
-    try {
-      const token = getToken()
-      const data = await apiFetch<NotificationsResponse>("/api/admin/notifications", { cache: "no-store" }, token)
-      setNotifications(data.notifications || data.items || [])
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar notificações")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleMarkAllRead() {
-    try {
-      const token = getToken()
-      await apiFetch("/api/admin/notifications/mark-all-read", { method: "POST" }, token)
-      setNotifications((prev) => prev.map((item) => ({ ...item, read: true })))
-      toast.success("Todas as notificações foram marcadas como lidas")
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao marcar notificações")
-    }
-  }
-
-  async function handleOpenNotification(notification: NotificationItem) {
-    try {
-      setOpeningId(notification.id)
-      const token = getToken()
-      if (!notification.read) {
-        await apiFetch(`/api/admin/notifications/${encodeURIComponent(notification.id)}/read`, { method: "POST" }, token)
-        setNotifications((prev) => prev.map((item) => item.id === notification.id ? { ...item, read: true } : item))
-      }
-      navigate(notification.targetUrl || "/admin/notificacoes")
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao abrir notificação")
-    } finally {
-      setOpeningId(null)
-    }
-  }
+  const { notifications, isLoading: loading, loadError, error, setError, isMarkingAll, openingId, markAllAsRead: handleMarkAllRead, openNotification: handleOpenNotification, retry } = useNotifications(
+    "/api/admin/notifications", "/admin/notificacoes", normalizeNotification,
+  )
 
   const filteredNotifications = useMemo(() => notifications.filter((n) =>
     n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -105,9 +66,10 @@ export default function AdminNotificacoesPage() {
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">Notificações</h1>
               <p className="text-sm text-muted-foreground">Clique em uma notificação para abrir a tela relacionada.</p>
             </div>
-            {unreadCount > 0 && <Button variant="outline" onClick={handleMarkAllRead} className="h-11 rounded-full font-bold">Marcar todas como lidas</Button>}
+            {unreadCount > 0 && <Button variant="outline" onClick={handleMarkAllRead} disabled={isMarkingAll || openingId !== null} className="h-11 rounded-full font-bold">Marcar todas como lidas</Button>}
           </div>
 
+          {error && <AlertBanner type="error" title="Atenção" message={error} dismissible onDismiss={() => setError(null)} className="mb-6" />}
           <Card className="min-w-0">
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -128,6 +90,11 @@ export default function AdminNotificacoesPage() {
             <CardContent>
               {loading ? (
                 <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : loadError ? (
+                <div className="space-y-4 py-8" role="alert">
+                  <p>{loadError}</p>
+                  <Button onClick={retry}>Tentar novamente</Button>
+                </div>
               ) : filteredNotifications.length === 0 ? (
                 <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhuma notificação encontrada.</div>
               ) : (
@@ -136,7 +103,7 @@ export default function AdminNotificacoesPage() {
                     const type = item.type in typeConfig ? item.type : "info"
                     const Icon = typeConfig[type].icon
                     return (
-                      <button key={item.id} type="button" className="block w-full text-left" onClick={() => void handleOpenNotification(item)}>
+                      <button key={item.id} type="button" className="block w-full text-left disabled:opacity-60" disabled={isMarkingAll || openingId !== null} onClick={() => void handleOpenNotification(item)}>
                         <div className={`rounded-2xl border p-4 transition-all hover:border-primary/40 hover:shadow-md ${item.read ? "bg-card" : "bg-primary/5"}`}>
                           <div className="flex items-start gap-3">
                             <div className={`mt-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl ${typeConfig[type].bgColor}`}>
@@ -148,7 +115,7 @@ export default function AdminNotificacoesPage() {
                                 {!item.read && <Badge variant="secondary" className="rounded-full">Nova</Badge>}
                               </div>
                               <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.message}</p>
-                              <p className="mt-2 text-xs text-muted-foreground">{item.createdAt || "Sem data"}</p>
+                              <p className="mt-2 text-xs text-muted-foreground">{item.createdAt ? formatDateTime(item.createdAt) : "Sem data"}</p>
                               <p className="mt-2 text-xs font-black text-primary">{openingId === item.id ? "Abrindo..." : "Clique para abrir"}</p>
                             </div>
                           </div>
