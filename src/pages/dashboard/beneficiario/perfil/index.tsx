@@ -123,7 +123,7 @@ export default function BeneficiarioPerfilPage() {
         setIsLoading(false)
       }
     })()
-  }, [navigate, user?.email, user?.full_name, user?.id])
+  }, [navigate, user])
 
   const updateProfile = <K extends keyof ManagedProfileData>(key: K, value: ManagedProfileData[K]) => {
     setProfile((prev) => ({ ...prev, [key]: value }))

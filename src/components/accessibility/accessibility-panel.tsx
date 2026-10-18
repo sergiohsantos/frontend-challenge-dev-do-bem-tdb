@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { useAccessibility, type FontSize } from "@/lib/accessibility"
+import { useAccessibility, type FontSize } from "@/lib/accessibility/context"
 import { Accessibility, Contrast, RotateCcw, Type, Zap } from "lucide-react"
 
 interface AccessibilityPanelProps {

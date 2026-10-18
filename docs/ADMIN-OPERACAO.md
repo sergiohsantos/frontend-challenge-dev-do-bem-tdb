@@ -1,6 +1,6 @@
 # Central administrativa: implantação e reversão
 
-Esta entrega corrige indicadores e adiciona fila, agenda, busca e navegação por caso. Não altera Oracle, autenticação, WhatsApp, push, IA ou regras de agendamento. Os testes usam Admin fictício e SQLite descartável, sem criar usuários em produção.
+A central mantém fila, agenda, busca e navegação por caso. A evolução adiciona acompanhamento de pendências, capacidade declarada e histórico de entrega, além de perfil administrativo remoto e recuperação opcional. Não altera regras de agendamento, envio WhatsApp, push ou contratos JWT. Os testes usam contas fictícias e SQLite descartável, sem criar usuários em produção.
 
 ## Definições da operação
 
@@ -13,20 +13,23 @@ Esta entrega corrige indicadores e adiciona fila, agenda, busca e navegação po
 
 ## Implantação após aprovação das PRs
 
-1. Implantar primeiro a PR Python. Os endpoints e schemas anteriores continuam presentes; as novas rotas exigem ADMIN. Nenhuma variável nova ou migração de banco é necessária.
-2. Validar login e os fluxos atuais. As novas rotas são GET `/api/admin/operations`, GET `/api/admin/search?q=...` e GET `/api/admin/beneficiaries/{id}/cases/{case_id}`.
-3. Implantar a PR frontend. Abrir a central, filtrar pendências, abrir uma solicitação, pesquisar uma referência e trocar o caso no beneficiário.
-4. Conferir que a vinculação de profissional e o upload mantêm o caso exibido. O upload com contexto usa POST `/api/admin/beneficiaries/{id}/cases/{case_id}/documents`; o endpoint anterior continua disponível.
+Oracle de produção preparado em 18/10/2026, com backup e restauração isolada validados.
+As duas tabelas novas e seus índices já existem; não repetir o SQL nesse ambiente.
+Após o deploy Python, os recursos serão reconhecidos automaticamente.
 
-Se o backend ainda não estiver atualizado, fila/busca apresentam indisponibilidade e os menus anteriores continuam acessíveis. O frontend recusa operar um caso selecionado cuja identidade não tenha sido confirmada pela API.
+1. Implantar primeiro a API Python desta evolução com recuperação por e-mail desligada (padrão). Conferir os fluxos existentes e depois implantar o frontend.
+2. Responsáveis/prazos e histórico de entrega dependem de duas tabelas adicionais e são ativados automaticamente quando o schema estiver completo, sem variáveis de ambiente. Não executar migração automaticamente. Seguir `docs/OPERACAO-EXTENSOES.md` e os scripts revisáveis na PR Python antes de preparar uma tabela por vez. A API percebe o schema em até 30 segundos; atualizar a página para conferir.
+3. Capacidade usa as preferências existentes do voluntário. É informativa, não representa horários livres ou bloqueio automático de encaminhamento.
+4. Perfil salva nome/e-mail no servidor com confirmação da senha atual. Observações continuam locais. Recuperação por e-mail só aparece quando a API confirmar configuração SMTP/HTTPS completa; sem isso, permanece o contato manual.
+5. Conferir troca rápida entre conversas públicas/internas, falha e tentativa de salvar disponibilidade, além do erro de carregamento que bloqueia sobrescrita. As telas não anunciam salvamento quando o servidor falha.
 
 ## Rollback
 
-Reimplantar primeiro o frontend anterior e depois a imagem Python anterior. Não há DDL, backfill ou conversão de registros nesta entrega; a reversão não exige restauração do Oracle. Operações de negócio feitas por usuários continuam registradas e não devem ser apagadas pelo rollback. O deploy não é executado pela abertura das PRs.
+Seguir a reversão da PR Python, reimplantando a versão anterior e mantendo as tabelas e seu histórico. Somente a recuperação de e-mail conserva uma flag de ambiente. Reimplantar o frontend e a imagem Python anteriores se necessário. Mudanças legítimas de perfil, senha e preferências não são apagadas. Não há merge, deploy ou DDL automático nesta entrega. A publicação do frontend continua exclusivamente manual no workflow de produção.
 
 ## Validação e evolução posterior
 
 Python: `python -m unittest discover -s tests -p 'test_*.py' -v`.
 Frontend: build, lint, testes Node e `tests/frontend-ux.e2e.mjs`. Integração real local: `tests/admin-operations.e2e.mjs`, com `TDB_PYTHON_REPO`, `TDB_PYTHON_EXECUTABLE`, Playwright e, se necessário, `TDB_PYTHON_SITE_PACKAGES` e `TDB_CHROMIUM_EXECUTABLE`.
 
-Responsáveis administrativos, prazos persistidos, vagas dos profissionais e histórico de entrega WhatsApp precisam de contratos/modelagem próprios; não são inferidos de texto ou criados nesta entrega. Triagem e onboarding Java continuam nos fluxos atuais, sem presumir equivalência entre IDs de leads e casos. A fila atual consolida os registros em memória antes de paginar; volumes muito superiores aos atuais exigem agregação/paginação no banco antes de expandir a operação.
+A fila agora filtra e pagina no SQL; a comparação de leitura no Oracle preservou os resultados atuais. As atualizações periódicas de aprovações/solicitações são sequenciais, a cada 30 segundos e somente com a página visível. Ações do próprio usuário continuam atualizando imediatamente. Triagem e onboarding Java permanecem nos fluxos atuais. 2FA e restrição por IP continuam indisponíveis; não são ativadas por preferências visuais. O histórico começa na ativação, e a recuperação de senha ainda requer validação real do provedor de e-mail antes de uso produtivo.

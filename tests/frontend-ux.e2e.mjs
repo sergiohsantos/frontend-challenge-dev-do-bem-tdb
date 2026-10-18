@@ -9,7 +9,7 @@ const origin = 'http://127.0.0.1:5187'
 process.env.VITE_API_URL = origin
 process.env.VITE_JAVA_API_URL = origin + '/java'
 process.env.VITE_AI_API_URL = origin + '/ai'
-const server = await createServer({server:{host:'127.0.0.1',port:5187,strictPort:true,open:false}})
+const server = await createServer({server:{host:'127.0.0.1',port:5187,strictPort:true,open:false,hmr:false}})
 await server.listen()
 const browser = await chromium.launch({headless:true,...(process.env.TDB_CHROMIUM_EXECUTABLE?{executablePath:process.env.TDB_CHROMIUM_EXECUTABLE}:{})})
 const fixtures = {
@@ -21,7 +21,7 @@ const fixtures = {
  '/api/admin/programs':{programs:[]}, '/api/admin/reports':{reportTypes:[],recentReports:[]},
 }
 let passed = 0
-async function scenario(name, route, check, {width=390, failures=[], anonymous=false, dark=false}={}) {
+async function scenario(name, route, check, {width=390, failures=[], anonymous=false, dark=false, responder=null}={}) {
  if (process.env.TDB_UX_FILTER && !name.includes(process.env.TDB_UX_FILTER)) return
  const ctx = await browser.newContext({viewport:{width,height:900},colorScheme:dark?'dark':'light',reducedMotion:'reduce'})
  const page = await ctx.newPage(), errors=[], requests=[]
@@ -40,6 +40,7 @@ async function scenario(name, route, check, {width=390, failures=[], anonymous=f
    const token='x.'+Buffer.from(JSON.stringify({sub:'999999',role,exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.synthetic'
    return r.fulfill({json:{access_token:token,user:{id:999999,role,full_name:'Pessoa de Teste',email:'test@example.invalid'}}})
   }
+  if (responder && await responder(r,u)) return
   if (!failed.has(u.pathname) && Object.hasOwn(fixtures,u.pathname)) return r.fulfill({json:fixtures[u.pathname]})
   return r.fulfill({status:503,json:{detail:'Indisponibilidade sintética'}})
  })
@@ -143,5 +144,58 @@ try {
   await p.getByRole('option',{name:'Administrador',exact:false}).click()
   await p.locator('button[type=submit]').click();await p.waitForURL('**/admin/programas?view=all')
  },{anonymous:true})
+ await scenario('enabled admin recovery requests instructions without claiming delivery','/admin/recuperar-senha',async(p,_,requests)=>{
+  await p.getByLabel('E-mail da conta').fill('synthetic@example.org')
+  await p.getByRole('button',{name:'Solicitar recuperação',exact:true}).click()
+  await p.getByText('Se houver uma conta administrativa ativa, enviaremos instruções.',{exact:true}).waitFor()
+  assert.equal(requests.filter(value=>value.path==='/api/auth/admin-recovery/request' && value.method==='POST').length,1)
+ },{responder:async(r,u)=>{
+  if(u.pathname==='/api/auth/admin-recovery/status'){await r.fulfill({json:{available:true}});return true}
+  if(u.pathname==='/api/auth/admin-recovery/request'){await r.fulfill({status:202,json:{detail:'Se houver uma conta administrativa ativa, enviaremos instruções.'}});return true}
+  return false
+ }})
+ await scenario('admin reset removes URL token and handles expired link','/admin/recuperar-senha#token=synthetic-reset-token',async(p)=>{
+  await p.getByLabel('Nova senha',{exact:true}).fill('synthetic-new-password-123')
+  await p.getByLabel('Confirmar nova senha',{exact:true}).fill('synthetic-new-password-123')
+  assert.equal(new URL(p.url()).hash,'')
+  assert.equal(await p.evaluate(()=>[...Object.values(localStorage),...Object.values(sessionStorage)].some(value=>value.includes('synthetic-reset-token'))),false)
+  await p.getByRole('button',{name:'Atualizar senha',exact:true}).click()
+  await p.getByRole('alert').filter({hasText:'Link inválido, expirado ou já utilizado.'}).waitFor()
+ },{responder:async(r,u)=>{
+  if(u.pathname==='/api/auth/admin-recovery/status'){await r.fulfill({json:{available:true}});return true}
+  if(u.pathname==='/api/auth/admin-recovery/reset'){await r.fulfill({status:400,json:{detail:'Link inválido, expirado ou já utilizado.'}});return true}
+  return false
+ }})
+ for (const role of ['beneficiario','voluntario','admin']) {
+  const incoming = { id: 1, content: 'PUBLIC ONE', senderRole: 'ADMIN', createdAt: '2026-10-18T12:00:00Z', isInternal: false }
+  const internal = { id: 9, content: 'INTERNAL ONLY', senderRole: 'ADMIN', createdAt: '2026-10-18T12:01:00Z', isInternal: true }
+  const threads = [1,2].map(id => ({ threadId: `case-public-${id}`, threadType:'case_public',caseId:id,title:id===1?'Equipe um':'Equipe dois',volunteerName:id===1?'Equipe um':'Equipe dois',beneficiaryName:id===1?'Equipe um':'Equipe dois',lastMessageAt:id===1?'2026-10-18T12:00:00Z':'2026-10-17T12:00:00Z' }))
+  if (role!=='beneficiario') threads.push({threadId:'case-internal-3',threadType:'case_internal',caseId:3,beneficiaryName:'Conversa interna',lastMessageAt:'2026-10-18T11:00:00Z'})
+  await scenario(`${role}: delayed conversation cannot replace selected public history`, role==='admin'?'/admin/mensagens':`/dashboard/${role}/mensagens`, async(p,_,requests)=>{
+   await p.getByText('PUBLIC ONE',{exact:true}).waitFor()
+   assert.equal(await p.getByText('INTERNAL ONLY',{exact:true}).count(),0)
+   await p.getByRole('button',{name:/Equipe dois/}).click()
+   await p.getByRole('button',{name:/Equipe um/}).click()
+   await p.getByText('PUBLIC ONE',{exact:true}).waitFor()
+   await p.waitForTimeout(650)
+   assert.equal(await p.getByText('PUBLIC TWO',{exact:true}).count(),0)
+   if (role!=='beneficiario') {
+    await p.getByRole('tab',{name:/Interno/}).click()
+    await p.getByRole('tab',{name:role==='voluntario'?'Casos':'Público',exact:true}).click()
+    await p.getByText('PUBLIC ONE',{exact:true}).waitFor()
+    await p.waitForTimeout(650)
+    assert.equal(await p.getByText('INTERNAL ONLY',{exact:true}).count(),0)
+   }
+   assert.ok(requests.filter(value=>(value.path.endsWith('/me/messages') || value.path==='/api/admin/messages')).length<=2,'selection does not refetch the conversation list')
+   await noOverflow(p)
+  }, {responder:async(r,u)=>{
+   if (u.pathname.endsWith('/me/messages') || u.pathname==='/api/admin/messages') { await r.fulfill({json:{threads}});return true }
+   const match=u.pathname.match(/^\/api\/communication\/cases\/(\d+)\/messages$/)
+   if (!match) return false
+   const id=Number(match[1]);if(id!==1) await new Promise(resolve=>setTimeout(resolve,450))
+   try { await r.fulfill({json:id===1?[incoming,internal]:id===2?[{...incoming,id:2,content:'PUBLIC TWO'}]:[internal]}) } catch { /* canceled request */ }
+   return true
+  }})
+ }
  console.log(`${passed} UI regression scenarios passed`)
 } finally { await browser.close(); await server.close() }

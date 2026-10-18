@@ -114,7 +114,7 @@ export default function VoluntarioPerfilPage() {
         setIsLoading(false)
       }
     })()
-  }, [navigate, user?.email, user?.full_name, user?.id])
+  }, [navigate, user])
 
   const updateField = <K extends keyof ManagedProfileData>(
     key: K,

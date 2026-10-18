@@ -12,16 +12,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run test:ai
-      - run: node --test --test-concurrency=1 tests/auth-storage.test.mjs tests/dates.test.mjs
+      - run: npm run lint -- --max-warnings=0
+      - run: node --test --test-concurrency=1 tests/*.test.mjs
       - run: python3 -m unittest discover -s tests -p 'test_deploy*.py' -v
       - run: bash -n scripts/check-deploy-config.sh scripts/deploy-frontend.sh
       - run: npm run build
@@ -52,10 +52,10 @@ jobs:
       VITE_JAVA_API_URL: ${{ vars.VITE_JAVA_API_URL }}
       VITE_AI_API_URL: ${{ vars.VITE_AI_API_URL }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           cache: npm

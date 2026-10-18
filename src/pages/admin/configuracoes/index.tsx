@@ -1,6 +1,7 @@
+import { WhatsAppDeliveryHistory } from "@/components/admin/whatsapp-delivery-history"
 import { LoadError } from "@/components/ui/load-error"
 
-import { useState, useEffect } from "react"
+import { useCallback, useState, useEffect } from "react"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -12,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Settings, Loader2, Save, Bell, Shield, Globe, User, MessageCircle, Send } from "lucide-react"
 import { apiFetch } from "@/lib/api"
-import { getToken, getUser } from "@/lib/auth"
+import { getToken, getUser, updateAuthProfile } from "@/lib/auth"
 import { getStoredProfile, mergeProfile, saveStoredProfile, type ManagedProfileData } from "@/lib/profile-storage"
 import { toast } from "sonner"
 
@@ -142,6 +143,8 @@ export default function AdminConfiguracoesPage() {
   const [profileWarning, setProfileWarning] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [profileLoaded, setProfileLoaded] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
   const [testingWhatsApp, setTestingWhatsApp] = useState(false)
   const [settings, setSettings] = useState<AdminSettingsState>(defaultSettings)
@@ -149,11 +152,7 @@ export default function AdminConfiguracoesPage() {
   const [profile, setProfile] = useState<ManagedProfileData>({})
   const user = getUser()
 
-  useEffect(() => {
-    void fetchSettings()
-  }, [])
-
-  async function fetchSettings() {
+  const fetchSettings = useCallback(async () => {
     setLoading(true)
     setSettingsLoaded(false)
     setSettingsError(null)
@@ -172,11 +171,18 @@ export default function AdminConfiguracoesPage() {
     }
     const stored = getStoredProfile("admin", user?.id)
     const rawProfile = profileResult.status === "fulfilled" ? profileResult.value : null
-    setProfile(mergeProfile({ nome: rawProfile?.nome || user?.full_name || "", email: rawProfile?.email || user?.email || "", role: rawProfile?.role || user?.role || "admin" }, stored))
+    setProfile({ ...mergeProfile({}, stored), nome: rawProfile?.nome || user?.full_name || "", email: rawProfile?.email || user?.email || "", role: rawProfile?.role || user?.role || "admin" })
+    setProfileLoaded(Boolean(rawProfile))
     if (!rawProfile) setProfileWarning("Os dados da conta não puderam ser atualizados. Exibindo as informações da sessão e deste navegador.")
     setWhatsAppStatus(whatsAppResult.status === "fulfilled" ? whatsAppResult.value : null)
     setLoading(false)
-  }
+  }, [user])
+
+  useEffect(() => {
+    void fetchSettings()
+  }, [fetchSettings])
+
+
 
   async function handleSaveSettings() {
     if (!settingsLoaded) return
@@ -209,12 +215,17 @@ export default function AdminConfiguracoesPage() {
   async function handleSaveProfile() {
     try {
       setProfileSaving(true)
-      saveStoredProfile("admin", profile, user?.id)
-      toast.success("Preferências do perfil salvas neste navegador")
+      if (!profileLoaded || !currentPassword) return
+      const updated = await apiFetch<AdminProfile>("/api/admin/profile", { method: "PUT", body: JSON.stringify({ nome: profile.nome, email: profile.email, currentPassword }) }, getToken())
+      setProfile(value => ({ ...value, nome: updated.nome, email: updated.email }))
+      updateAuthProfile({ full_name: updated.nome || "", email: updated.email })
+      saveStoredProfile("admin", { observacoes: profile.observacoes }, user?.id)
+      toast.success("Dados da conta atualizados no servidor")
     } catch (error) {
       console.error("Erro ao salvar perfil:", error)
       toast.error("Erro ao salvar perfil")
     } finally {
+      setCurrentPassword("")
       setProfileSaving(false)
     }
   }
@@ -305,13 +316,14 @@ export default function AdminConfiguracoesPage() {
 
             <TabsContent value="perfil">
               <Card className="min-w-0">
-                <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-primary" />Perfil do administrador</CardTitle><CardDescription>Estas preferências são locais a este navegador. Elas não alteram sua conta, seu e-mail de acesso ou suas permissões.</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-primary" />Perfil do administrador</CardTitle><CardDescription>Nome e e-mail são atualizados na conta após confirmar sua senha. Observações permanecem somente neste navegador.</CardDescription></CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2"><Label htmlFor="admin-nome">Nome</Label><Input id="admin-nome" className="h-11" value={profile.nome || ""} onChange={(e) => updateProfile("nome", e.target.value)} /></div>
                   <div className="space-y-2"><Label htmlFor="admin-email">E-mail</Label><Input id="admin-email" className="h-11" type="email" value={profile.email || ""} onChange={(e) => updateProfile("email", e.target.value)} /></div>
                   <div className="space-y-2"><Label htmlFor="admin-role">Perfil</Label><Input id="admin-role" className="h-11" value={user?.role || "admin"} readOnly /></div>
                   <div className="space-y-2 sm:col-span-2"><Label htmlFor="admin-observacoes">Observações</Label><Textarea id="admin-observacoes" rows={4} value={profile.observacoes || ""} onChange={(e) => updateProfile("observacoes", e.target.value)} /></div>
-                  <div className="sm:col-span-2"><Button onClick={() => void handleSaveProfile()} disabled={profileSaving} className="h-11 gap-2 rounded-full font-black">{profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Salvar neste navegador</Button></div>
+                  <div className="space-y-2 sm:col-span-2"><Label htmlFor="admin-current-password">Senha atual</Label><Input id="admin-current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} /></div>
+                  <div className="sm:col-span-2"><Button onClick={() => void handleSaveProfile()} disabled={profileSaving || !profileLoaded || !currentPassword} className="h-11 gap-2 rounded-full font-black">{profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Salvar dados da conta</Button></div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -368,6 +380,7 @@ export default function AdminConfiguracoesPage() {
                   </div>
                 </CardContent>
               </Card>
+              <WhatsAppDeliveryHistory />
             </fieldset></TabsContent>
 
             <TabsContent value="seguranca"><fieldset disabled={!settingsLoaded || saving} className="min-w-0">

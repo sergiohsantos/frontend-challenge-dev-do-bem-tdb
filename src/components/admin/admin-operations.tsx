@@ -1,3 +1,5 @@
+import { useTrackingOptions } from "@/hooks/use-tracking-options"
+import { OperationTracking, type Tracking } from "./operation-tracking"
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { ArrowRight, CalendarDays, Clock3, RefreshCw } from "lucide-react"
@@ -12,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 const categories = { approval: "Aprovações", assignment: "Sem profissional", scheduling: "Sem agendamento", reschedule: "Reagendamentos", confirmation: "Confirmações próximas", message: "Conversas para acompanhar" }
 type Category = keyof typeof categories
 interface Operation {
-  id: string; kind: Category; reference: string; beneficiary: string; programName: string
+  tracking?: Tracking; id: string; kind: Category; reference: string; beneficiary: string; programName: string
   reason: string; priority: string; ageDays: number | null; ageBasis: string; targetUrl: string
 }
 interface Operations {
@@ -29,6 +31,7 @@ function appointmentLabel(value: string) {
 }
 
 export function AdminOperations() {
+  const trackingOptions = useTrackingOptions()
   const [data, setData] = useState<Operations | null>(null)
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -72,7 +75,7 @@ export function AdminOperations() {
           <div className="flex flex-wrap justify-between gap-2 text-sm"><p role="status">{data.total} pendência(s) neste recorte</p><p className="text-muted-foreground">Atualizado em {formatDateTime(data.generatedAt)}</p></div>
           {data.items.length === 0 ? <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">Nenhuma pendência encontrada neste recorte.</p> : <ol className="space-y-3">{data.items.map(item => <li key={item.id} className="flex flex-col gap-4 rounded-xl border p-4 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0 space-y-2"><div className="flex flex-wrap items-center gap-2"><Badge variant={item.priority === "urgente" ? "destructive" : "secondary"}>{categories[item.kind]}</Badge>{item.priority !== "normal" && <span className="text-xs font-semibold">Prioridade {item.priority}</span>}<span className="text-xs text-muted-foreground">{item.reference}</span></div><p className="break-words font-semibold">{item.beneficiary}</p><p className="text-sm">{item.reason}</p><p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground"><Clock3 className="h-3 w-3" aria-hidden="true" />{item.ageDays === null ? "Idade não disponível" : `${item.ageDays} dia(s) · ${item.ageBasis}`} · {item.programName}</p></div>
-            <Button variant="outline" asChild className="shrink-0"><Link to={item.targetUrl} aria-label={`Ver pendência ${item.reference} de ${item.beneficiary}`}>Ver pendência<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+            <div className="space-y-3">{trackingOptions.available && <OperationTracking operation={item.id} tracking={item.tracking} owners={trackingOptions.owners} onSaved={() => setRevision(value => value + 1)} />}<Button variant="outline" asChild className="shrink-0"><Link to={item.targetUrl} aria-label={`Ver pendência ${item.reference} de ${item.beneficiary}`}>Ver pendência<ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div>
           </li>)}</ol>}
           <div className="flex items-center justify-end gap-3"><Button variant="outline" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Anterior</Button><span className="text-sm">Página {page}</span><Button variant="outline" disabled={page * 20 >= data.total} onClick={() => setPage(value => value + 1)}>Próxima</Button></div>
           <p className="text-xs text-muted-foreground">A idade indica a origem exibida, não um prazo de serviço. Conversas são sinais de acompanhamento e podem ter sido respondidas por outro canal.</p>

@@ -1,26 +1,6 @@
+import type { AccessibilityContextType } from "./context"
+import { AccessibilityContext, type FontSize } from "@/lib/accessibility/context"
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
-
-type FontSize = "normal" | "large" | "extra-large"
-type ContrastMode = "normal" | "high"
-
-interface AccessibilityContextType {
-  // Font size
-  fontSize: FontSize
-  setFontSize: (size: FontSize) => void
-  
-  // High contrast
-  highContrast: boolean
-  setHighContrast: (enabled: boolean) => void
-  
-  // Reduced motion
-  reducedMotion: boolean
-  setReducedMotion: (enabled: boolean) => void
-  
-  // Reset all preferences
-  resetPreferences: () => void
-}
-
-const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined)
 
 const STORAGE_KEY = "tdb-accessibility"
 
@@ -68,12 +48,12 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     setMounted(true)
-    
+
     // Load stored preferences
     let loadedFontSize: FontSize = "normal"
     let loadedHighContrast = false
     let loadedReducedMotion = false
-    
+
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
@@ -91,12 +71,12 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     if (motionQuery.matches && !localStorage.getItem(STORAGE_KEY)) {
       loadedReducedMotion = true
     }
-    
+
     // Apply all preferences
     setFontSizeState(loadedFontSize)
     setHighContrastState(loadedHighContrast)
     setReducedMotionState(loadedReducedMotion)
-    
+
     applyFontSize(loadedFontSize)
     applyHighContrast(loadedHighContrast)
     applyReducedMotion(loadedReducedMotion)
@@ -164,13 +144,3 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     </AccessibilityContext.Provider>
   )
 }
-
-export function useAccessibility() {
-  const context = useContext(AccessibilityContext)
-  if (!context) {
-    throw new Error("useAccessibility must be used within an AccessibilityProvider")
-  }
-  return context
-}
-
-export { type FontSize, type ContrastMode }

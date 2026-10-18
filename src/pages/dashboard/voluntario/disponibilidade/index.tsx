@@ -1,6 +1,7 @@
 "use client"
+import { VolunteerCapacity } from "@/components/dashboard/volunteer-capacity"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
 import { HelpButton } from "@/components/layout/help-button"
@@ -45,11 +46,6 @@ const timeOptions = [
   "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00",
 ]
 
-const STORAGE_KEY = "tdb_volunteer_availability"
-
-function defaultAvailability(): DayAvailability[] {
-  return daysOfWeek.map((d) => ({ day: d.day, dayName: d.name, enabled: false, slots: [] }))
-}
 
 function normalizeArrayPayload(data: unknown): DayAvailability[] | null {
   if (!Array.isArray(data)) return null
@@ -91,23 +87,6 @@ function normalizeObjectPayload(data: unknown): DayAvailability[] | null {
   })
 }
 
-function loadAvailabilityFromStorage(): DayAvailability[] | null {
-  if (typeof window === "undefined") return null
-  const raw = window.localStorage.getItem(STORAGE_KEY)
-  if (!raw) return null
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    return normalizeArrayPayload(parsed)
-  } catch {
-    return null
-  }
-}
-
-function persistAvailability(value: DayAvailability[]) {
-  if (typeof window === "undefined") return
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
-}
-
 function toApiPayload(value: DayAvailability[]): AvailabilityApiPayload {
   return value.reduce<AvailabilityApiPayload>((acc, item) => {
     acc[item.day] = {
@@ -122,40 +101,43 @@ export default function VoluntarioDisponibilidadePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [availability, setAvailability] = useState<DayAvailability[]>([])
+  const [loadError, setLoadError] = useState(false)
+  const [revision, setRevision] = useState(0)
   const user = getUser()
 
-  useEffect(() => {
-    void fetchAvailability()
+  const fetchAvailability = useCallback(async () => {
+    setLoading(true)
+    setLoadError(false)
+    try {
+      const data = await apiFetch<unknown>("/api/volunteers/availability", {}, getToken())
+      const normalized = normalizeArrayPayload(data) || normalizeObjectPayload(data)
+      if (!normalized) throw new Error("Invalid availability")
+      setAvailability(normalized)
+    } catch {
+      setLoadError(true)
+      setAvailability([])
+    } finally { setLoading(false) }
   }, [])
 
-  async function fetchAvailability() {
-    setLoading(true)
-    try {
-      const token = getToken()
-      const data = await apiFetch<unknown>("/api/volunteers/availability", {}, token)
-      const normalized = normalizeArrayPayload(data) || normalizeObjectPayload(data) || loadAvailabilityFromStorage() || defaultAvailability()
-      setAvailability(normalized)
-      persistAvailability(normalized)
-    } catch {
-      const fallback = loadAvailabilityFromStorage() || defaultAvailability()
-      setAvailability(fallback)
-      toast.info("Usando a disponibilidade salva neste navegador.")
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => { void fetchAvailability() }, [fetchAvailability, revision])
 
   async function handleSave() {
+    if (saving || loadError) return
+    for (const day of availability.filter(item => item.enabled)) {
+      const slots = [...day.slots].sort((a, b) => a.start.localeCompare(b.start))
+      if (!slots.length || slots.some((slot, index) => slot.start >= slot.end || (index > 0 && slots[index - 1].end > slot.start))) {
+        toast.error(`Revise os horários de ${day.dayName}: informe faixas válidas, sem sobreposição.`)
+        return
+      }
+    }
     setSaving(true)
     try {
       const token = getToken()
       const payload = toApiPayload(availability)
       await apiFetch("/api/volunteers/availability", { method: "PUT", body: JSON.stringify(payload) }, token)
-      persistAvailability(availability)
       toast.success("Disponibilidade salva com sucesso")
     } catch {
-      persistAvailability(availability)
-      toast.info("Disponibilidade salva no navegador. Sincronize novamente quando a conexão estiver estável.")
+      toast.error("Não foi possível salvar no servidor. Suas alterações continuam na tela; tente novamente.")
     } finally {
       setSaving(false)
     }
@@ -172,7 +154,6 @@ export default function VoluntarioDisponibilidadePage() {
           slots: enabled ? (d.slots.length > 0 ? d.slots : [{ id: `${day}-${Date.now()}`, start: "09:00", end: "17:00" }]) : [],
         }
       })
-      persistAvailability(next)
       return next
     })
   }
@@ -180,7 +161,6 @@ export default function VoluntarioDisponibilidadePage() {
   function addSlot(day: string) {
     setAvailability((prev) => {
       const next = prev.map((d) => d.day === day ? { ...d, slots: [...d.slots, { id: `${day}-${Date.now()}`, start: "09:00", end: "17:00" }] } : d)
-      persistAvailability(next)
       return next
     })
   }
@@ -188,7 +168,6 @@ export default function VoluntarioDisponibilidadePage() {
   function removeSlot(day: string, slotId: string) {
     setAvailability((prev) => {
       const next = prev.map((d) => d.day === day ? { ...d, slots: d.slots.filter((s) => s.id !== slotId) } : d)
-      persistAvailability(next)
       return next
     })
   }
@@ -196,7 +175,6 @@ export default function VoluntarioDisponibilidadePage() {
   function updateSlot(day: string, slotId: string, field: "start" | "end", value: string) {
     setAvailability((prev) => {
       const next = prev.map((d) => d.day === day ? { ...d, slots: d.slots.map((s) => s.id === slotId ? { ...s, [field]: value } : s) } : d)
-      persistAvailability(next)
       return next
     })
   }
@@ -226,7 +204,7 @@ export default function VoluntarioDisponibilidadePage() {
             description="A disponibilidade atualizada ajuda a equipe TDB a encaminhar beneficiários, organizar consultas e reduzir remarcações."
             icon={<Clock className="h-4 w-4" aria-hidden="true" />}
             primaryAction={(
-              <Button size="lg" onClick={handleSave} disabled={saving} className="h-14 rounded-full bg-accent text-base font-black text-accent-foreground hover:bg-accent/90">
+              <Button size="lg" onClick={handleSave} disabled={saving || loadError} className="h-14 rounded-full bg-accent text-base font-black text-accent-foreground hover:bg-accent/90">
                 {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
                 Salvar disponibilidade
               </Button>
@@ -239,6 +217,8 @@ export default function VoluntarioDisponibilidadePage() {
             )}
           />
 
+          {loadError && <div role="alert" className="mb-6 rounded-2xl border border-destructive p-5"><p>Não foi possível carregar sua disponibilidade. A edição está bloqueada para preservar os horários existentes.</p><Button className="mt-3" onClick={() => setRevision(value => value + 1)}>Tentar novamente</Button></div>}
+          <VolunteerCapacity />
           <div className="mb-6 grid gap-4 md:grid-cols-2">
             <Card className="tdb-polished-card rounded-[2rem]">
               <CardContent className="flex items-center gap-3 p-5">
@@ -267,13 +247,13 @@ export default function VoluntarioDisponibilidadePage() {
                 <div key={dayData.day} className={`rounded-[2rem] border p-5 transition-all ${dayData.enabled ? "border-primary/25 bg-primary/5" : "border-border bg-card"}`}>
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                      <Switch id={`switch-${dayData.day}`} checked={dayData.enabled} onCheckedChange={() => toggleDay(dayData.day)} />
+                      <Switch disabled={saving || loadError} id={`switch-${dayData.day}`} checked={dayData.enabled} onCheckedChange={() => toggleDay(dayData.day)} />
                       <Label htmlFor={`switch-${dayData.day}`} className={dayData.enabled ? "font-black text-foreground" : "text-muted-foreground"}>
                         {dayData.dayName}
                       </Label>
                     </div>
                     {dayData.enabled && (
-                      <Button variant="outline" size="sm" onClick={() => addSlot(dayData.day)} className="h-9 gap-2 rounded-full px-4 font-bold">
+                      <Button variant="outline" size="sm" disabled={saving} onClick={() => addSlot(dayData.day)} className="h-9 gap-2 rounded-full px-4 font-bold">
                         <Plus className="h-4 w-4" />
                         Adicionar horário
                       </Button>
@@ -285,17 +265,17 @@ export default function VoluntarioDisponibilidadePage() {
                       {dayData.slots.map((slot) => (
                         <div key={slot.id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-background p-3">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <Select value={slot.start} onValueChange={(value) => updateSlot(dayData.day, slot.id, "start", value)}>
-                            <SelectTrigger className="w-28 rounded-full"><SelectValue /></SelectTrigger>
+                          <Select disabled={saving} value={slot.start} onValueChange={(value) => updateSlot(dayData.day, slot.id, "start", value)}>
+                            <SelectTrigger aria-label={`Início em ${dayData.dayName}`} className="w-28 rounded-full"><SelectValue /></SelectTrigger>
                             <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
                           </Select>
                           <span className="text-muted-foreground">até</span>
-                          <Select value={slot.end} onValueChange={(value) => updateSlot(dayData.day, slot.id, "end", value)}>
-                            <SelectTrigger className="w-28 rounded-full"><SelectValue /></SelectTrigger>
+                          <Select disabled={saving} value={slot.end} onValueChange={(value) => updateSlot(dayData.day, slot.id, "end", value)}>
+                            <SelectTrigger aria-label={`Fim em ${dayData.dayName}`} className="w-28 rounded-full"><SelectValue /></SelectTrigger>
                             <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
                           </Select>
                           {dayData.slots.length > 1 && (
-                            <Button variant="ghost" size="icon" onClick={() => removeSlot(dayData.day, slot.id)} className="rounded-full">
+                            <Button variant="ghost" size="icon" disabled={saving} aria-label={`Remover horário de ${dayData.dayName}`} onClick={() => removeSlot(dayData.day, slot.id)} className="rounded-full">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}

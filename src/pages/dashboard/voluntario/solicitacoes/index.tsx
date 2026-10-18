@@ -1,5 +1,6 @@
+import { useVisibleRefresh } from "@/hooks/use-visible-refresh"
 import { formatDate } from "@/lib/dates"
-import { useState, useEffect } from "react"
+import { useCallback, useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
@@ -55,7 +56,7 @@ export default function SolicitacoesPage() {
     if (user?.full_name) setUserName(user.full_name)
   }, [])
 
-  const loadRequests = async (showLoader = false) => {
+  const loadRequests = useCallback(async (showLoader = false) => {
     try {
       if (showLoader) setIsLoading(true)
       const token = getToken()
@@ -72,13 +73,9 @@ export default function SolicitacoesPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  useEffect(() => {
-    loadRequests(true)
-    const interval = window.setInterval(() => loadRequests(false), 7000)
-    return () => window.clearInterval(interval)
   }, [navigate])
+
+  useVisibleRefresh(loadRequests)
 
   const filteredRequests = requests.filter((r) =>
     r.beneficiario.toLowerCase().includes(search.toLowerCase()) ||

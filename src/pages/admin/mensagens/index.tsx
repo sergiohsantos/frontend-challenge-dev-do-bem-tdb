@@ -1,5 +1,6 @@
+import { useConversationRequest } from "@/hooks/use-conversation-request"
 import { formatDateTime, utcTimestamp } from "@/lib/dates"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
@@ -114,15 +115,51 @@ export default function AdminMensagensPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [newMessage, setNewMessage] = useState("")
   const [sending, setSending] = useState(false)
+  const beginRequest = useConversationRequest()
+  const activeSelection = useRef<string | number | null>(null)
+  const urlSetter = useRef(setSearchParams)
+  urlSetter.current = setSearchParams
+  const initialLocation = useRef({ search: new URLSearchParams(window.location.search) })
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  function scrollToLatest(behavior: ScrollBehavior = "auto") {
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior, block: "end" }), 0)
-  }
+  }, [])
 
-  useEffect(() => { void fetchThreads() }, [])
+  const openThread = useCallback(async (thread: UnifiedThread, updateUrl = true) => {
+    const controller = beginRequest()
+    if (activeSelection.current !== thread.threadId) setNewMessage("")
+    activeSelection.current = thread.threadId
+    setActiveThread(thread); setActiveTab(tabForThread(thread.threadType)); setMessages([])
+    try {
+      setIsLoadingMessages(true)
+      const token = getToken()
+      if (!token) return
+      if (thread.threadType === "case_public") {
+        const data = await apiFetch<Message[]>(`/api/communication/cases/${thread.caseId}/messages`, { signal: controller.signal }, token)
+        if (controller.signal.aborted) return
+        setMessages(orderMessages((data || []).filter((message) => !message.isInternal)))
+      } else {
+        const [caseMessages, ...approvalMessages] = await Promise.all([
+          apiFetch<Message[]>(`/api/communication/cases/${thread.caseId}/messages`, { signal: controller.signal }, token),
+          ...thread.approvalIds.map((approvalId) => apiFetch<Message[]>(`/api/communication/approvals/${approvalId}/messages`, { signal: controller.signal }, token)),
+        ])
+        if (controller.signal.aborted) return
+        setMessages(orderMessages([...(caseMessages || []).filter((message) => message.isInternal), ...approvalMessages.flat()]))
+      }
+      setActiveThread(thread)
+      setActiveTab(tabForThread(thread.threadType))
+      if (updateUrl) urlSetter.current({ thread: thread.threadId })
+    } catch (error) {
+      if (controller.signal.aborted) return
+      toast.error(error instanceof Error ? error.message : "Erro ao abrir conversa")
+    } finally {
+      if (!controller.signal.aborted) setIsLoadingMessages(false)
+      scrollToLatest()
+    }
+  }, [beginRequest, scrollToLatest])
 
-  async function fetchThreads() {
+  const fetchThreads = useCallback(async () => {
     setLoading(true)
     try {
       const token = getToken()
@@ -131,43 +168,29 @@ export default function AdminMensagensPage() {
       const rawThreads = response.threads || []
       const mergedThreads = mergeThreads(rawThreads)
       setThreads(mergedThreads)
-      const initialThread = findInitialThread(rawThreads, mergedThreads, requestedThreadId)
+      const initialThread = findInitialThread(rawThreads, mergedThreads, initialLocation.current.search.get("thread") || initialLocation.current.search.get("threadId"))
       if (initialThread) { setActiveTab(tabForThread(initialThread.threadType)); await openThread(initialThread, false) } else { setActiveThread(null); setMessages([]) }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao carregar mensagens")
     } finally {
       setLoading(false)
     }
-  }
+  }, [navigate, openThread])
 
-  async function openThread(thread: UnifiedThread, updateUrl = true) {
-    try {
-      setIsLoadingMessages(true)
-      const token = getToken()
-      if (!token) return
-      if (thread.threadType === "case_public") {
-        const data = await apiFetch<Message[]>(`/api/communication/cases/${thread.caseId}/messages`, {}, token)
-        setMessages(orderMessages((data || []).filter((message) => !message.isInternal)))
-      } else {
-        const [caseMessages, ...approvalMessages] = await Promise.all([
-          apiFetch<Message[]>(`/api/communication/cases/${thread.caseId}/messages`, {}, token),
-          ...thread.approvalIds.map((approvalId) => apiFetch<Message[]>(`/api/communication/approvals/${approvalId}/messages`, {}, token)),
-        ])
-        setMessages(orderMessages([...(caseMessages || []).filter((message) => message.isInternal), ...approvalMessages.flat()]))
-      }
-      setActiveThread(thread)
-      setActiveTab(tabForThread(thread.threadType))
-      if (updateUrl) setSearchParams({ thread: thread.threadId })
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao abrir conversa")
-    } finally {
-      setIsLoadingMessages(false)
-      scrollToLatest()
-    }
-  }
+  useEffect(() => { void fetchThreads() }, [fetchThreads])
+
+
+
+
+
+  useEffect(() => {
+    if (!requestedThreadId || !threads.length || activeSelection.current === requestedThreadId) return
+    const thread = threads.find(value => value.threadId === requestedThreadId)
+    if (thread) void openThread(thread)
+  }, [requestedThreadId, threads, openThread])
 
   async function handleSendMessage() {
-    if (!activeThread || !newMessage.trim()) return
+    if (!activeThread || !newMessage.trim() || sending || isLoadingMessages) return
     try {
       setSending(true)
       const token = getToken()
@@ -176,9 +199,9 @@ export default function AdminMensagensPage() {
         method: "POST",
         body: JSON.stringify({ content: newMessage, messageType: "TEXT", audience: activeThread.threadType === "case_public" ? "BENEFICIARY" : "VOLUNTEER_ADMIN", scope: "CASE" }),
       }, token)
+      if (activeSelection.current !== activeThread.threadId) return
       setNewMessage("")
       await openThread(activeThread)
-      await fetchThreads()
       scrollToLatest("smooth")
       toast.success("Mensagem enviada com sucesso")
     } catch (error) {
@@ -206,7 +229,7 @@ export default function AdminMensagensPage() {
             <p className="text-sm text-muted-foreground">O chat interno reúne Admin + voluntário + histórico de aprovação por beneficiário, em uma única conversa.</p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ViewTab)}>
+          <Tabs value={activeTab} onValueChange={(value) => { const thread = threads.find(item => tabForThread(item.threadType) === value); if (thread) void openThread(thread); else { beginRequest().abort(); activeSelection.current = null; setActiveThread(null); setMessages([]); setNewMessage(""); setActiveTab(value as ViewTab); setIsLoadingMessages(false) } }}>
             <TabsList className="mb-4 grid h-auto w-full grid-cols-2 rounded-2xl p-1 lg:w-[360px]"><TabsTrigger value="public" className="gap-2 rounded-full"><Users className="h-4 w-4" />Público</TabsTrigger><TabsTrigger value="internal" className="gap-2 rounded-full"><Shield className="h-4 w-4" />Interno</TabsTrigger></TabsList>
             <TabsContent value={activeTab}>
               <Card className="min-w-0">
@@ -227,7 +250,7 @@ export default function AdminMensagensPage() {
                     <div className="lg:col-span-2">
                       {!activeThread ? <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Selecione uma conversa para ver o histórico e responder com segurança.</div> : <div className="space-y-4"><div className="rounded-2xl border bg-card p-4"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-foreground">{activeThread.title || activeThread.beneficiaryName}</p>{getThreadBadges(activeThread)}{activeThread.statusLabel ? <Badge variant="secondary" className="rounded-full">{activeThread.statusLabel}</Badge> : null}</div>{activeThread.subtitle ? <p className="mt-1 text-sm text-muted-foreground">{activeThread.subtitle}</p> : null}</div>
                         <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-2xl border bg-muted/30 p-4">{isLoadingMessages ? <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : messages.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhuma mensagem nesta conversa. Envie uma orientação curta quando houver uma ação pendente.</div> : messages.map((message, index) => { const mine = message.senderRole === "admin" || message.senderRole === "ADMIN"; return <div key={message.id || index} className={`flex ${mine ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl p-3 shadow-sm ${mine ? "bg-primary text-primary-foreground" : "border bg-background"}`}><p className="text-sm leading-6">{message.content}</p><div className="mt-1 flex flex-wrap items-center gap-2 text-xs opacity-70"><span>{message.senderName}</span>{message.createdAt ? <span>{formatDateTime(message.createdAt)}</span> : null}</div></div></div> })}<div ref={bottomRef} /></div>
-                        <div className="rounded-2xl border bg-card p-4"><div className="flex flex-col gap-3 sm:flex-row"><Textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={activeThread.threadType === "case_public" ? "Digite uma mensagem para o chat do caso..." : "Digite uma mensagem interna para o voluntário responsável por este beneficiário..."} className="min-h-[96px] rounded-2xl" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSendMessage() } }} /><Button onClick={() => void handleSendMessage()} disabled={!newMessage.trim() || sending} className="h-12 gap-2 rounded-full font-black sm:h-auto sm:min-h-[96px] sm:rounded-2xl">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Enviar</Button></div></div></div>}
+                        <div className="rounded-2xl border bg-card p-4"><div className="flex flex-col gap-3 sm:flex-row"><Textarea disabled={isLoadingMessages || sending} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={activeThread.threadType === "case_public" ? "Digite uma mensagem para o chat do caso..." : "Digite uma mensagem interna para o voluntário responsável por este beneficiário..."} className="min-h-[96px] rounded-2xl" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSendMessage() } }} /><Button onClick={() => void handleSendMessage()} disabled={!newMessage.trim() || sending || isLoadingMessages} className="h-12 gap-2 rounded-full font-black sm:h-auto sm:min-h-[96px] sm:rounded-2xl">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Enviar</Button></div></div></div>}
                     </div>
                   </div>
                 )}</CardContent>

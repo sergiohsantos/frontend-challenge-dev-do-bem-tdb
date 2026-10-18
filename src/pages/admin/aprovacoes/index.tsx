@@ -1,6 +1,7 @@
+import { useVisibleRefresh } from "@/hooks/use-visible-refresh"
 import { formatDate } from "@/lib/dates"
 import { LoadError } from "@/components/ui/load-error"
-import { useState, useEffect } from "react"
+import { useCallback, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   FileCheck,
@@ -109,7 +110,7 @@ export default function AprovacaoPage() {
   const [approvedRequests, setApprovedRequests] = useState<ApprovalRequest[]>([])
   const [rejectedRequests, setRejectedRequests] = useState<ApprovalRequest[]>([])
 
-  const loadApprovals = async (showLoader = false) => {
+  const loadApprovals = useCallback(async (showLoader = false) => {
     try {
       if (showLoader) {
         setIsLoading(true)
@@ -137,18 +138,10 @@ export default function AprovacaoPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [navigate])
 
   // Load approvals from API
-  useEffect(() => {
-    loadApprovals(true)
-
-    const interval = window.setInterval(() => {
-      loadApprovals(false)
-    }, 7000)
-
-    return () => window.clearInterval(interval)
-  }, [navigate])
+  useVisibleRefresh(loadApprovals)
 
   const filteredRequests = pendingRequests.filter((r) => {
     const matchesSearch = r.beneficiario.toLowerCase().includes(search.toLowerCase()) ||
