@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function AdminRecuperarSenhaPage() {
   const [token] = useState(() => {
-    const value = new URLSearchParams(window.location.hash.slice(1)).get("token") || ""
-    if (value) window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search)
-    return value
+    return new URLSearchParams(window.location.hash.slice(1)).get("token") || ""
   })
+  useEffect(() => {
+    if (token) window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search)
+  }, [token])
   const [available, setAvailable] = useState<boolean | null>(null)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
