@@ -13,15 +13,15 @@ A central mantém fila, agenda, busca e navegação por caso. A evolução adici
 
 ## Implantação após aprovação das PRs
 
-1. Implantar primeiro a API Python desta evolução com os recursos opcionais desligados (padrão). Conferir os fluxos existentes e depois implantar o frontend.
-2. Responsáveis/prazos e histórico de entrega dependem de duas tabelas adicionais e das flags `ADMIN_TRACKING_ENABLED` e `WHATSAPP_DELIVERY_HISTORY_ENABLED`. Não executar migração automaticamente. Seguir `docs/OPERACAO-EXTENSOES.md` e os scripts revisáveis na PR Python antes de habilitar, uma flag por vez.
+1. Implantar primeiro a API Python desta evolução com recuperação por e-mail desligada (padrão). Conferir os fluxos existentes e depois implantar o frontend.
+2. Responsáveis/prazos e histórico de entrega dependem de duas tabelas adicionais e são ativados automaticamente quando o schema estiver completo, sem variáveis de ambiente. Não executar migração automaticamente. Seguir `docs/OPERACAO-EXTENSOES.md` e os scripts revisáveis na PR Python antes de preparar uma tabela por vez. A API percebe o schema em até 30 segundos; atualizar a página para conferir.
 3. Capacidade usa as preferências existentes do voluntário. É informativa, não representa horários livres ou bloqueio automático de encaminhamento.
 4. Perfil salva nome/e-mail no servidor com confirmação da senha atual. Observações continuam locais. Recuperação por e-mail só aparece quando a API confirmar configuração SMTP/HTTPS completa; sem isso, permanece o contato manual.
 5. Conferir troca rápida entre conversas públicas/internas, falha e tentativa de salvar disponibilidade, além do erro de carregamento que bloqueia sobrescrita. As telas não anunciam salvamento quando o servidor falha.
 
 ## Rollback
 
-Desligar as flags opcionais e seguir a reversão da PR Python, mantendo as tabelas e seu histórico. Reimplantar o frontend e a imagem Python anteriores se necessário. Mudanças legítimas de perfil, senha e preferências não são apagadas. Não há merge, deploy ou DDL automático nesta entrega. A publicação do frontend continua exclusivamente manual no workflow de produção.
+Seguir a reversão da PR Python, reimplantando a versão anterior e mantendo as tabelas e seu histórico. Somente a recuperação de e-mail conserva uma flag de ambiente. Reimplantar o frontend e a imagem Python anteriores se necessário. Mudanças legítimas de perfil, senha e preferências não são apagadas. Não há merge, deploy ou DDL automático nesta entrega. A publicação do frontend continua exclusivamente manual no workflow de produção.
 
 ## Validação e evolução posterior
 
