@@ -1,5 +1,6 @@
+import { useVisibleRefresh } from "@/hooks/use-visible-refresh"
 import { formatDate, formatDateTime } from "@/lib/dates"
-import { useState, useEffect } from "react"
+import { useCallback, useState, useEffect } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
@@ -82,7 +83,7 @@ export default function SolicitacaoDetailPage() {
     }
   }, [])
 
-  const loadRequest = async (showLoader = false) => {
+  const loadRequest = useCallback(async (showLoader = false) => {
     try {
       if (showLoader) {
         setIsLoading(true)
@@ -101,21 +102,9 @@ export default function SolicitacaoDetailPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [navigate, params.id])
 
-  useEffect(() => {
-    if (!params.id) {
-      return
-    }
-
-    loadRequest(true)
-
-    const interval = window.setInterval(() => {
-      loadRequest(false)
-    }, 7000)
-
-    return () => window.clearInterval(interval)
-  }, [params.id, navigate])
+  useVisibleRefresh(loadRequest, Boolean(params.id))
 
   const handleSendComment = async () => {
     if (!newComment.trim() || !request) return

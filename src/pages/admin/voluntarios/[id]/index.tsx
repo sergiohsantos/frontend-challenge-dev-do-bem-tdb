@@ -1,3 +1,4 @@
+import { VolunteerCapacity } from "@/components/dashboard/volunteer-capacity"
 import { useEffect, useMemo, useState } from "react"
 import { Link, useParams, useSearchParams } from "react-router-dom"
 import { ArrowLeft, Calendar, Loader2, Star, User, Users } from "lucide-react"
@@ -124,6 +125,7 @@ export default function AdminVolunteerDetailPage() {
                 <Badge variant="outline">{detail.status || "sem status"}</Badge>
               </div>
 
+              <VolunteerCapacity volunteerId={Number(params.id)} />
               <div className="grid gap-6 lg:grid-cols-3">
                 <Card className="lg:col-span-2">
                   <CardHeader>

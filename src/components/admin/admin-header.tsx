@@ -4,7 +4,7 @@ import { Bell, User, LogOut, Settings, Menu, Moon, Sun, Loader2 } from "lucide-r
 import { Button } from "@/components/ui/button"
 import { apiFetch } from "@/lib/api"
 import { clearAuth, getToken, getUser } from "@/lib/auth"
-import { useTheme } from "@/components/theme-provider"
+import { useTheme } from "@/components/theme-context"
 import {
   DropdownMenu,
   DropdownMenuContent,

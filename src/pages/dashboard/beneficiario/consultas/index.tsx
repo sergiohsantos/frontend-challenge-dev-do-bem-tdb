@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useCallback, useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { BeneficiaryPageHero } from "@/components/dashboard/beneficiary-page-hero"
@@ -55,7 +55,7 @@ export default function ConsultasPage() {
     if (user?.full_name) setUserName(user.full_name)
   }, [])
 
-  const loadAppointments = async () => {
+  const loadAppointments = useCallback(async () => {
     try {
       const token = getToken()
       if (!token) {
@@ -73,11 +73,11 @@ export default function ConsultasPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [navigate])
 
   useEffect(() => {
     loadAppointments()
-  }, [navigate])
+  }, [loadAppointments])
 
   const upcomingAppointments = appointments.filter(a => a.status === "scheduled" || a.status === "confirmed" || a.status === "rescheduled")
   const pastAppointments = appointments.filter(a => a.status === "completed" || a.status === "cancelled")

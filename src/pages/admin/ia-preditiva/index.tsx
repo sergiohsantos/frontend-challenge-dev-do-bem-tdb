@@ -1,5 +1,5 @@
 import { formatDate, formatDateTime } from "@/lib/dates"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   Activity,
   AlertTriangle,
@@ -184,7 +184,7 @@ export default function AdminIAPreditivaPage() {
   const [isPredicting, setIsPredicting] = useState(false)
   const [predictError, setPredictError] = useState<string | null>(null)
 
-  async function loadAIStatus() {
+  const loadAIStatus = useCallback(async () => {
     setIsStatusLoading(true)
     setStatusError(null)
     setWhatsAppStatusError(null)
@@ -209,9 +209,9 @@ export default function AdminIAPreditivaPage() {
     }
 
     setIsStatusLoading(false)
-  }
+  }, [])
 
-  async function loadDashboard(nextFilters: AIRiskDashboardParams = filters) {
+  const loadDashboard = useCallback(async (nextFilters: AIRiskDashboardParams) => {
     setIsDashboardLoading(true)
     setDashboardError(null)
 
@@ -224,12 +224,12 @@ export default function AdminIAPreditivaPage() {
     } finally {
       setIsDashboardLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     void loadAIStatus()
     void loadDashboard(INITIAL_FILTERS)
-  }, [])
+  }, [loadDashboard, loadAIStatus])
 
   const metadata = modelStatus?.metadata
   const metrics = metadata?.metrics

@@ -90,7 +90,7 @@ export async function apiFetch<T>(
     } else if (response.status === 422 && (!errorMessage || errorMessage.startsWith("Erro na requisição"))) {
       errorMessage = "Revise os dados informados e tente novamente."
     }
-    throw new Error(errorMessage)
+    throw Object.assign(new Error(errorMessage), { status: response.status })
   }
   
   return data as T
@@ -130,7 +130,7 @@ export async function apiUpload<T>(path: string, formData: FormData, token?: str
     if (response.status === 422 && (!errorMessage || errorMessage.startsWith("Erro na requisição"))) {
       errorMessage = "Revise o arquivo e os dados informados antes de enviar."
     }
-    throw new Error(errorMessage)
+    throw Object.assign(new Error(errorMessage), { status: response.status })
   }
 
   return data as T
@@ -582,7 +582,7 @@ export async function apiDownload(
     } catch {
       // Response is not JSON, keep default error message
     }
-    throw new Error(errorMessage)
+    throw Object.assign(new Error(errorMessage), { status: response.status })
   }
   
   // Get filename from Content-Disposition header if available

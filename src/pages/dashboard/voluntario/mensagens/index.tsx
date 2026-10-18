@@ -1,5 +1,6 @@
+import { useConversationRequest } from "@/hooks/use-conversation-request"
 import { formatDateTime, utcTimestamp } from "@/lib/dates"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
@@ -128,38 +129,50 @@ export default function VoluntarioMensagensPage() {
   const [error, setError] = useState<string | null>(null)
   const [newMessage, setNewMessage] = useState("")
   const [isSending, setIsSending] = useState(false)
+  const beginRequest = useConversationRequest()
+  const activeSelection = useRef<string | number | null>(null)
+  const urlSetter = useRef(setSearchParams)
+  urlSetter.current = setSearchParams
+  const initialLocation = useRef({ search: new URLSearchParams(window.location.search) })
   const bottomRef = useRef<HTMLDivElement>(null)
   const user = getUser()
 
-  function scrollToLatest(behavior: ScrollBehavior = "auto") {
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior, block: "end" }), 0)
-  }
+  }, [])
 
-  async function loadThreadMessages(thread: UnifiedThread) {
+  const loadThreadMessages = useCallback(async (thread: UnifiedThread) => {
+    const controller = beginRequest()
+    if (activeSelection.current !== thread.threadId) setNewMessage("")
+    activeSelection.current = thread.threadId
+    setActiveThread(thread); setActiveTab(tabForThread(thread.threadType)); setMessages([])
     try {
       setIsLoadingMessages(true)
       const token = getToken()
       if (!token) return
       if (thread.threadType === "case_public") {
-        const data = await apiFetch<Message[]>(`/api/communication/cases/${thread.caseId}/messages`, {}, token)
+        const data = await apiFetch<Message[]>(`/api/communication/cases/${thread.caseId}/messages`, { signal: controller.signal }, token)
+        if (controller.signal.aborted) return
         setMessages(orderMessages((data || []).filter((message) => !message.isInternal)))
       } else {
         const [caseMessages, ...approvalMessages] = await Promise.all([
-          apiFetch<Message[]>(`/api/communication/cases/${thread.caseId}/messages`, {}, token),
-          ...thread.approvalIds.map((approvalId) => apiFetch<Message[]>(`/api/communication/approvals/${approvalId}/messages`, {}, token)),
+          apiFetch<Message[]>(`/api/communication/cases/${thread.caseId}/messages`, { signal: controller.signal }, token),
+          ...thread.approvalIds.map((approvalId) => apiFetch<Message[]>(`/api/communication/approvals/${approvalId}/messages`, { signal: controller.signal }, token)),
         ])
+        if (controller.signal.aborted) return
         setMessages(orderMessages([...(caseMessages || []).filter((message) => message.isInternal), ...approvalMessages.flat()]))
       }
       setActiveThread(thread)
       setActiveTab(tabForThread(thread.threadType))
-      setSearchParams({ thread: thread.threadId })
+      urlSetter.current({ thread: thread.threadId })
     } catch {
+      if (controller.signal.aborted) return
       setError("Não foi possível carregar as mensagens desta conversa agora.")
     } finally {
-      setIsLoadingMessages(false)
+      if (!controller.signal.aborted) setIsLoadingMessages(false)
       scrollToLatest()
     }
-  }
+  }, [beginRequest, scrollToLatest])
 
   useEffect(() => {
     async function loadConversations() {
@@ -173,7 +186,7 @@ export default function VoluntarioMensagensPage() {
         const rawThreads = data.threads || [...(data.items || []), ...(data.internalThreads || []), ...(data.approvalThreads || [])]
         const mergedThreads = mergeThreads(rawThreads)
         setThreads(mergedThreads)
-        const initialThread = findInitialThread(rawThreads, mergedThreads, requestedThreadId, requestedCaseId)
+        const initialThread = findInitialThread(rawThreads, mergedThreads, initialLocation.current.search.get("thread") || initialLocation.current.search.get("threadId"), initialLocation.current.search.get("caseId"))
         if (initialThread) await loadThreadMessages(initialThread)
       } catch {
         setError("Não foi possível carregar suas conversas agora. Tente novamente em instantes.")
@@ -182,14 +195,20 @@ export default function VoluntarioMensagensPage() {
       }
     }
     void loadConversations()
-  }, [navigate, requestedThreadId, requestedCaseId])
+  }, [navigate, loadThreadMessages])
 
   useEffect(() => {
     if (!isLoadingMessages) scrollToLatest()
-  }, [messages, isLoadingMessages])
+  }, [messages, isLoadingMessages, scrollToLatest])
+
+  useEffect(() => {
+    if (!requestedThreadId || !threads.length || activeSelection.current === requestedThreadId) return
+    const thread = threads.find(value => value.threadId === requestedThreadId)
+    if (thread) void loadThreadMessages(thread)
+  }, [requestedThreadId, threads, loadThreadMessages])
 
   async function handleSendMessage() {
-    if (!newMessage.trim() || !activeThread) return
+    if (!newMessage.trim() || !activeThread || isSending || isLoadingMessages) return
     try {
       setIsSending(true)
       const token = getToken()
@@ -203,6 +222,7 @@ export default function VoluntarioMensagensPage() {
           scope: "CASE",
         }),
       }, token)
+      if (activeSelection.current !== activeThread.threadId) return
       setNewMessage("")
       await loadThreadMessages(activeThread)
       scrollToLatest("smooth")
@@ -246,7 +266,7 @@ export default function VoluntarioMensagensPage() {
 
           {error && <AlertBanner type="error" title="Atenção" message={error} dismissible onDismiss={() => setError(null)} className="mb-6" />}
 
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ViewTab)}>
+          <Tabs value={activeTab} onValueChange={(value) => { const thread = threads.find(item => tabForThread(item.threadType) === value); if (thread) void loadThreadMessages(thread); else { beginRequest().abort(); activeSelection.current = null; setActiveThread(null); setMessages([]); setNewMessage(""); setActiveTab(value as ViewTab); setIsLoadingMessages(false) } }}>
             <TabsList className="mb-5 grid h-12 w-full grid-cols-2 rounded-full bg-muted lg:w-[360px]">
               <TabsTrigger value="public" className="gap-2 rounded-full"><Users className="h-4 w-4" />Casos</TabsTrigger>
               <TabsTrigger value="internal" className="gap-2 rounded-full"><Shield className="h-4 w-4" />Interno</TabsTrigger>
@@ -330,7 +350,7 @@ export default function VoluntarioMensagensPage() {
                               if ((event.ctrlKey || event.metaKey) && event.key === "Enter") void handleSendMessage()
                             }}
                           />
-                          <Button onClick={handleSendMessage} disabled={!newMessage.trim() || isSending} className="h-12 rounded-full px-6 font-black sm:h-auto sm:min-h-[88px] sm:rounded-2xl">
+                          <Button onClick={handleSendMessage} disabled={!newMessage.trim() || isSending || isLoadingMessages} className="h-12 rounded-full px-6 font-black sm:h-auto sm:min-h-[88px] sm:rounded-2xl">
                             {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                             <span className="ml-2 sm:sr-only">Enviar</span>
                           </Button>

@@ -1,5 +1,6 @@
+import { useConversationRequest } from "@/hooks/use-conversation-request"
 import { formatDateTime, utcTimestamp } from "@/lib/dates"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { BeneficiaryPageHero } from "@/components/dashboard/beneficiary-page-hero"
@@ -63,29 +64,40 @@ export default function BeneficiarioMensagensPage() {
   const [isSending, setIsSending] = useState(false)
   const [newMessage, setNewMessage] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const beginRequest = useConversationRequest()
+  const activeSelection = useRef<string | number | null>(null)
+  const urlSetter = useRef(setSearchParams)
+  urlSetter.current = setSearchParams
+  const initialLocation = useRef({ search: new URLSearchParams(window.location.search) })
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  function scrollToLatest(behavior: ScrollBehavior = "auto") {
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior, block: "end" }), 0)
-  }
+  }, [])
 
-  async function loadMessagesForCase(targetCaseId: number, thread?: BeneficiaryThread) {
+  const loadMessagesForCase = useCallback(async (targetCaseId: number, thread?: BeneficiaryThread) => {
+    const controller = beginRequest()
+    if (activeSelection.current !== targetCaseId) setNewMessage("")
+    activeSelection.current = targetCaseId
+    setCaseId(targetCaseId); setActiveName(thread?.volunteerName || "Equipe de atendimento"); setMessages([]); setError(null)
     try {
       setIsLoadingMessages(true)
       const token = getToken()
       if (!token) return
-      const data = await apiFetch<Message[]>(`/api/communication/cases/${targetCaseId}/messages`, {}, token)
-      setMessages(orderMessages(data || []))
+      const data = await apiFetch<Message[]>(`/api/communication/cases/${targetCaseId}/messages`, { signal: controller.signal }, token)
+      if (controller.signal.aborted) return
+      setMessages(orderMessages((data || []).filter(message => !message.isInternal)))
       setCaseId(targetCaseId)
       setActiveName(thread?.volunteerName || "Equipe de atendimento")
-      setSearchParams({ caseId: String(targetCaseId), thread: thread?.threadId || `case-public-${targetCaseId}` })
+      urlSetter.current({ caseId: String(targetCaseId), thread: thread?.threadId || `case-public-${targetCaseId}` })
     } catch {
+      if (controller.signal.aborted) return
       setError("Não foi possível carregar as mensagens desta conversa agora.")
     } finally {
-      setIsLoadingMessages(false)
+      if (!controller.signal.aborted) setIsLoadingMessages(false)
       scrollToLatest()
     }
-  }
+  }, [beginRequest, scrollToLatest])
 
   useEffect(() => {
     async function loadConversations() {
@@ -99,8 +111,8 @@ export default function BeneficiarioMensagensPage() {
         const loadedThreads = orderThreads(data.threads || data.conversations || data.items || [])
         setThreads(loadedThreads)
         if (loadedThreads.length > 0) {
-          const initialThread = selectedCaseId
-            ? loadedThreads.find((item) => item.caseId === Number(selectedCaseId)) || loadedThreads[0]
+          const initialThread = initialLocation.current.search.get("caseId")
+            ? loadedThreads.find((item) => item.caseId === Number(initialLocation.current.search.get("caseId"))) || loadedThreads[0]
             : loadedThreads[0]
           await loadMessagesForCase(initialThread.caseId, initialThread)
         }
@@ -111,14 +123,20 @@ export default function BeneficiarioMensagensPage() {
       }
     }
     void loadConversations()
-  }, [navigate, selectedCaseId, selectedThread])
+  }, [navigate, loadMessagesForCase])
 
   useEffect(() => {
     if (!isLoadingMessages) scrollToLatest()
-  }, [messages, isLoadingMessages])
+  }, [messages, isLoadingMessages, scrollToLatest])
+
+  useEffect(() => {
+    if (!selectedCaseId || !threads.length || activeSelection.current === Number(selectedCaseId)) return
+    const thread = threads.find(value => value.caseId === Number(selectedCaseId))
+    if (thread) void loadMessagesForCase(thread.caseId, thread)
+  }, [selectedCaseId, threads, loadMessagesForCase])
 
   async function handleSendMessage() {
-    if (!newMessage.trim() || !caseId) return
+    if (!newMessage.trim() || !caseId || isSending || isLoadingMessages) return
     try {
       setIsSending(true)
       const token = getToken()
@@ -127,6 +145,7 @@ export default function BeneficiarioMensagensPage() {
         method: "POST",
         body: JSON.stringify({ content: newMessage, messageType: "TEXT" }),
       }, token)
+      if (activeSelection.current !== caseId) return
       setNewMessage("")
       const activeThread = threads.find((item) => item.caseId === caseId || item.threadId === selectedThread)
       await loadMessagesForCase(caseId, activeThread)
@@ -225,8 +244,8 @@ export default function BeneficiarioMensagensPage() {
                       <div ref={bottomRef} />
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
-                      <Textarea placeholder="Digite sua mensagem..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} className="min-h-[88px] rounded-2xl" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSendMessage() } }} />
-                      <Button onClick={() => void handleSendMessage()} disabled={!newMessage.trim() || isSending} className="h-12 rounded-full px-6 font-black sm:h-auto sm:min-h-[88px] sm:rounded-2xl">
+                      <Textarea disabled={isLoadingMessages || isSending} placeholder="Digite sua mensagem..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} className="min-h-[88px] rounded-2xl" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSendMessage() } }} />
+                      <Button onClick={() => void handleSendMessage()} disabled={!newMessage.trim() || isSending || isLoadingMessages} className="h-12 rounded-full px-6 font-black sm:h-auto sm:min-h-[88px] sm:rounded-2xl">
                         {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                         <span className="ml-2 sm:sr-only">Enviar</span>
                       </Button>

@@ -69,6 +69,11 @@ export function saveAuth(token: string, user: AuthUser): void {
 }
 export function getToken(): string | null { return accessToken }
 export function getUser(): AuthUser | null { return currentUser }
+export function updateAuthProfile(profile: Pick<AuthUser, 'full_name' | 'email'>): void {
+  if (!currentUser) return
+  currentUser = { ...currentUser, full_name: profile.full_name, name: profile.full_name, email: profile.email }
+  notify()
+}
 export function getRoleFromCookie(): string | null { return currentUser?.role || null }
 export function isAuthenticated(): boolean { return !!accessToken }
 
