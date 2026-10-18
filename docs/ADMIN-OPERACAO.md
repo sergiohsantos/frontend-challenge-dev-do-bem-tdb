@@ -13,6 +13,10 @@ A central mantém fila, agenda, busca e navegação por caso. A evolução adici
 
 ## Implantação após aprovação das PRs
 
+Oracle de produção preparado em 18/10/2026, com backup e restauração isolada validados.
+As duas tabelas novas e seus índices já existem; não repetir o SQL nesse ambiente.
+Após o deploy Python, os recursos serão reconhecidos automaticamente.
+
 1. Implantar primeiro a API Python desta evolução com recuperação por e-mail desligada (padrão). Conferir os fluxos existentes e depois implantar o frontend.
 2. Responsáveis/prazos e histórico de entrega dependem de duas tabelas adicionais e são ativados automaticamente quando o schema estiver completo, sem variáveis de ambiente. Não executar migração automaticamente. Seguir `docs/OPERACAO-EXTENSOES.md` e os scripts revisáveis na PR Python antes de preparar uma tabela por vez. A API percebe o schema em até 30 segundos; atualizar a página para conferir.
 3. Capacidade usa as preferências existentes do voluntário. É informativa, não representa horários livres ou bloqueio automático de encaminhamento.
