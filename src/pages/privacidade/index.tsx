@@ -6,15 +6,15 @@ import { HelpButton } from "@/components/layout/help-button"
 const privacyContact = {
   controller: "Sérgio Henrique da S. Santos",
   email: "sergiotraks@gmail.com",
-  updatedAt: "15 de outubro de 2026",
+  updatedAt: "19 de outubro de 2026",
 }
-const accountDeletionEmail = `mailto:${privacyContact.email}?subject=${encodeURIComponent("Exclusão de conta — Dev do Bem / Meu Atendimento TDB")}&body=${encodeURIComponent("Olá, desejo solicitar a exclusão da minha conta e dos dados associados ao projeto Dev do Bem / Meu Atendimento TDB.\n\nNome: \nE-mail ou telefone vinculado ao cadastro: \n\nPeço a confirmação do recebimento e orientação sobre a verificação de identidade. Não incluirei senha, CPF completo, documentos ou informações de saúde nesta mensagem.")}`
+const accountDeletionEmail = `mailto:${privacyContact.email}?subject=${encodeURIComponent("Exclusão de conta — Dev do Bem - TDB")}&body=${encodeURIComponent("Olá, desejo solicitar a exclusão da minha conta e dos dados associados ao projeto Dev do Bem - TDB.\n\nNome: \nE-mail ou telefone vinculado ao cadastro: \n\nPeço a confirmação do recebimento e orientação sobre a verificação de identidade. Não incluirei senha, CPF completo, documentos ou informações de saúde nesta mensagem.")}`
 
 const sections = [
   {
     title: "1. Quem é responsável",
     paragraphs: [
-      "Esta política abrange o site Dev do Bem e o aplicativo Meu Atendimento TDB. Este ambiente é um projeto acadêmico da FIAP, sob responsabilidade de Sérgio Henrique da S. Santos. Não é um serviço oficial operado pela ONG Turma do Bem.",
+      "Esta política abrange o site Dev do Bem e o aplicativo Dev do Bem - TDB (anteriormente Meu Atendimento TDB). Este ambiente é um projeto acadêmico da FIAP, sob responsabilidade de Sérgio Henrique da S. Santos. Não é um serviço oficial operado pela ONG Turma do Bem.",
       "O projeto demonstra o acompanhamento de beneficiários e a comunicação entre participantes. Não substitui orientação profissional nem é um canal de urgência. Para demonstrações e testes, prefira dados fictícios.",
     ],
   },
@@ -70,7 +70,7 @@ export default function PrivacidadePage() {
       <Header />
       <main id="main-content" tabIndex={-1} className="flex-1">
         <section className="bg-primary px-4 py-12 text-center text-primary-foreground lg:py-16">
-          <p className="mb-3 text-sm font-semibold">Dev do Bem · Meu Atendimento TDB</p>
+          <p className="mb-3 text-sm font-semibold">Dev do Bem - TDB</p>
           <h1 className="text-3xl font-bold sm:text-4xl">Política de Privacidade</h1>
           <p className="mt-4">Projeto acadêmico · Atualizada em {privacyContact.updatedAt}</p>
         </section>
@@ -85,7 +85,7 @@ export default function PrivacidadePage() {
             <h2 id="exclusao-titulo" className="text-xl font-semibold">7. Solicitar exclusão da conta e dos dados</h2>
             <p className="leading-7 text-muted-foreground">Você pode solicitar a exclusão mesmo sem o aplicativo instalado ou sem conseguir entrar na conta. O pedido é recebido e tratado manualmente por {privacyContact.controller}.</p>
             <ol className="list-decimal space-y-3 pl-6 leading-7 text-muted-foreground">
-              <li>Envie um e-mail para <a className="break-all font-semibold text-primary underline" href={`mailto:${privacyContact.email}`}>{privacyContact.email}</a> com o assunto “Exclusão de conta — Dev do Bem / Meu Atendimento TDB”.</li>
+              <li>Envie um e-mail para <a className="break-all font-semibold text-primary underline" href={`mailto:${privacyContact.email}`}>{privacyContact.email}</a> com o assunto “Exclusão de conta — Dev do Bem - TDB”.</li>
               <li>Informe seu nome e o e-mail ou telefone vinculado ao cadastro. Não envie senha, CPF completo, documentos ou informações de saúde no pedido inicial.</li>
               <li>Aguarde as orientações de verificação pelo contato cadastrado. Pedidos de responsável legal também precisam dessa verificação.</li>
             </ol>
