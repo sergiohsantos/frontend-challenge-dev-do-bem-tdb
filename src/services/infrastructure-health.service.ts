@@ -18,6 +18,19 @@ export type InfrastructurePoint = z.infer<typeof pointSchema>
 export type HealthPeriod = 10 | 30 | 60
 export const HEALTH_OBJECT_PATH = '/observability/health.json'
 
+export function infrastructureRequestsPerSecond(value: number | null) {
+  if (value === null) return '—'
+  if (value > 0 && value < 0.01) return '<0,01'
+  return value.toLocaleString('pt-BR', { maximumFractionDigits: value < 1 ? 2 : 1 })
+}
+
+export function infrastructureAge(seconds: number | null) {
+  if (seconds === null) return 'sem amostras'
+  if (seconds < 60) return 'há menos de 1 min'
+  if (seconds < 3600) return `há ${Math.floor(seconds / 60)} min`
+  return `há ${Math.floor(seconds / 3600)} h`
+}
+
 export function infrastructureRate(value: number | null) {
   if (value === null) return '—'
   if (value > 0 && value < 0.01) return '<0,01%'
@@ -73,13 +86,20 @@ export function summarizeInfrastructure(data: InfrastructureSnapshot, minutes: H
     !requests || active.some(point => point[key] === null) ? null :
       active.reduce((sum, point) => sum + point.requests * (point[key] as number), 0) / requests
   const totalErrorRate = weightedRate('totalErrorRate')
+  const error4xxRate = weightedRate('error4xxRate')
   const error5xxRate = weightedRate('error5xxRate')
   const latestSample = points.length ? points[points.length - 1].timestamp : null
-  const stale = now - Date.parse(data.generatedAt) > 180000 ||
-    Boolean(latestSample && now - Date.parse(latestSample) > 300000)
+  const latestReceivedSample = data.points[data.points.length - 1]?.timestamp ?? null
+  const collectionAgeSeconds = Math.max(0, Math.floor((now - Date.parse(data.generatedAt)) / 1000))
+  const sampleAgeSeconds = latestReceivedSample ? Math.max(0, Math.floor((now - Date.parse(latestReceivedSample)) / 1000)) : null
+  const collectionStale = collectionAgeSeconds > 180
+  const samplesStale = sampleAgeSeconds !== null && sampleAgeSeconds > 300
+  const stale = collectionStale || samplesStale
   const missing = points.length !== minutes
-  const status = stale ? 'Dados atrasados' : !points.length ? 'Sem amostras' :
-    error5xxRate === null ? 'Dados parciais' : error5xxRate > 0 ? 'Erros 5xx observados' : 'Sem erros 5xx observados'
+  const status = collectionStale ? 'Coleta atrasada' : samplesStale ? 'Amostras atrasadas' : !points.length ? 'Sem amostras no período' :
+    (error5xxRate ?? 0) > 0 ? 'Erros 5xx observados' :
+    totalErrorRate === null || error4xxRate === null || error5xxRate === null ? 'Dados parciais' :
+    error4xxRate > 0 ? 'Respostas 4xx observadas' : 'Sem erros HTTP observados'
   const byStamp = new Map(points.map(point => [Date.parse(point.timestamp), point]))
   const chart = Array.from({ length: minutes }, (_, i) => {
     const stamp = start + i * 60000
@@ -91,9 +111,11 @@ export function summarizeInfrastructure(data: InfrastructureSnapshot, minutes: H
     requestsPerSecond: points.length ? requests / (points.length * 60) : null,
     bytesDownloaded: !points.length || points.some(point => point.bytesDownloaded === null) ? null :
       points.reduce((sum, point) => sum + (point.bytesDownloaded as number), 0),
-    totalErrorRate, error4xxRate: weightedRate('error4xxRate'), error5xxRate,
+    totalErrorRate, error4xxRate, error5xxRate,
     successRate: totalErrorRate === null ? null : 100 - totalErrorRate,
-    latestSample, missing, stale, status, sampleCount: points.length,
+    latestSample, latestReceivedSample, collectionAgeSeconds, sampleAgeSeconds,
+    collectionStale, samplesStale, missing, stale, status, sampleCount: points.length,
+    periodStart: new Date(start).toISOString(), periodEnd: data.windowEnd,
   }
 }
 
