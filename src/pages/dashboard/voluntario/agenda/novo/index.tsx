@@ -1,5 +1,5 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { VolunteerPageHero } from "@/components/dashboard/volunteer-page-hero"
 import { HelpButton } from "@/components/layout/help-button"
@@ -28,6 +28,8 @@ interface ApprovedProcedure {
   procedureType?: string
   status: string
   canSchedule?: boolean
+  appointmentId?: number
+  canReschedule?: boolean
 }
 
 interface ScheduleAppointment {
@@ -36,6 +38,7 @@ interface ScheduleAppointment {
   date: string
   time: string
   status: string
+  approvalRequestId?: string
 }
 
 function normalizePatient(raw: Record<string, unknown>): Patient {
@@ -55,7 +58,9 @@ function normalizeProcedure(raw: Record<string, unknown>): ApprovedProcedure {
     title: String(raw.procedureTitle ?? ((raw.procedimento as Record<string, unknown> | undefined)?.titulo) ?? raw.title ?? "Procedimento"),
     procedureType: raw.procedureType ? String(raw.procedureType) : undefined,
     status: String(raw.status ?? ""),
-    canSchedule: raw.canSchedule === undefined ? undefined : Boolean(raw.canSchedule),
+    canSchedule: raw.canSchedule === true,
+    canReschedule: raw.canReschedule === true,
+    appointmentId: typeof raw.appointmentId === "number" ? raw.appointmentId : undefined,
   }
 }
 
@@ -78,6 +83,7 @@ function normalizeScheduleAppointment(raw: Record<string, unknown>): ScheduleApp
     date: String(raw.date ?? ""),
     time: String(raw.time ?? ""),
     status,
+    approvalRequestId: typeof raw.approvalRequestId === "string" ? raw.approvalRequestId : undefined,
   }
 }
 
@@ -91,6 +97,7 @@ function buildScheduleConflictMessage(appointment: ScheduleAppointment) {
 
 export default function NovaConsultaPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -100,9 +107,13 @@ export default function NovaConsultaPage() {
   const [approvedProcedures, setApprovedProcedures] = useState<ApprovedProcedure[]>([])
   const [scheduleAppointments, setScheduleAppointments] = useState<ScheduleAppointment[]>([])
   const [userName, setUserName] = useState("...")
+  const [isRefreshing, setIsRefreshing] = useState(true)
+  const [availabilityValid, setAvailabilityValid] = useState(false)
+  const refreshRef = useRef<() => Promise<void>>(async () => {})
+  const submittingRef = useRef(false)
   const [formData, setFormData] = useState({
-    patientId: "",
-    approvalRequestId: "",
+    patientId: searchParams.get("patientId") || "",
+    approvalRequestId: searchParams.get("approvalRequestId") || "",
     date: "",
     time: "",
     type: "procedimento",
@@ -115,7 +126,13 @@ export default function NovaConsultaPage() {
   }, [])
 
   useEffect(() => {
+    let active = true
+    let busy = false
+    const controller = new AbortController()
     const loadData = async () => {
+      if (busy || !active) return
+      busy = true
+      setIsRefreshing(true)
       try {
         const token = getToken()
         if (!token) {
@@ -124,9 +141,9 @@ export default function NovaConsultaPage() {
         }
 
         const [patientsData, requestsData, scheduleData] = await Promise.all([
-          apiFetch<unknown>("/api/volunteers/my-patients", {}, token),
-          apiFetch<unknown>("/api/volunteers/procedure-requests", {}, token),
-          apiFetch<unknown>("/api/volunteers/schedule", {}, token),
+          apiFetch<unknown>("/api/volunteers/my-patients", { signal: controller.signal }, token),
+          apiFetch<unknown>("/api/volunteers/procedure-requests", { signal: controller.signal }, token),
+          apiFetch<unknown>("/api/volunteers/schedule", { signal: controller.signal }, token),
         ])
 
         const patientsPayload = Array.isArray(patientsData)
@@ -153,18 +170,44 @@ export default function NovaConsultaPage() {
                 ? (scheduleData as { schedule: unknown[] }).schedule
                 : []
 
-        setPatients(patientsPayload.map((item) => normalizePatient(item as Record<string, unknown>)))
-        setApprovedProcedures(requestsPayload.map((item) => normalizeProcedure(item as Record<string, unknown>)))
+        if (!active) return
+        const procedures = requestsPayload.map((item) => normalizeProcedure(item as Record<string, unknown>))
+        const eligiblePatients = new Set(procedures.filter((item) => item.status === "aprovado" && item.canSchedule === true).map((item) => item.beneficiaryId))
+        setPatients(patientsPayload.map((item) => normalizePatient(item as Record<string, unknown>)).filter((item) => eligiblePatients.has(item.id)))
+        setApprovedProcedures(procedures)
         setScheduleAppointments(schedulePayload.map((item) => normalizeScheduleAppointment(item as Record<string, unknown>)))
+        setFormData((previous) => eligiblePatients.has(Number(previous.patientId)) ? previous : { ...previous, patientId: "", approvalRequestId: "" })
+        setAvailabilityValid(true)
+        setError(null)
       } catch (err) {
+        if (!active) return
+        setAvailabilityValid(false)
         setError(err instanceof Error ? err.message : "Erro ao carregar dados para o agendamento")
       } finally {
-        setIsLoading(false)
+        busy = false
+        if (active) { setIsLoading(false); setIsRefreshing(false) }
       }
     }
 
-    loadData()
+    const onVisible = () => { if (document.visibilityState !== "hidden" && !submittingRef.current) void loadData() }
+    refreshRef.current = loadData
+    void loadData()
+    window.addEventListener("focus", onVisible)
+    document.addEventListener("visibilitychange", onVisible)
+    return () => {
+      active = false
+      controller.abort()
+      refreshRef.current = async () => {}
+      window.removeEventListener("focus", onVisible)
+      document.removeEventListener("visibilitychange", onVisible)
+    }
   }, [navigate])
+
+  useEffect(() => {
+    if (!success) return
+    const timer = setTimeout(() => navigate("/dashboard/voluntario/agenda"), 1500)
+    return () => clearTimeout(timer)
+  }, [navigate, success])
 
   const proceduresForSelectedPatient = useMemo(() => {
     if (!formData.patientId) return []
@@ -177,12 +220,15 @@ export default function NovaConsultaPage() {
 
   const scheduleConflict = useMemo(() => {
     if (!formData.date || !formData.time) return null
+    const selected = approvedProcedures.find((item) => item.id === formData.approvalRequestId)
+    if (!selected || selected.canSchedule !== true || selected.beneficiaryId !== Number(formData.patientId)) return null
     return scheduleAppointments.find((appointment) => (
+      !(selected?.canReschedule && (appointment.id === selected.appointmentId || appointment.approvalRequestId === selected.id)) &&
       appointment.date === formData.date &&
       appointment.time === formData.time &&
       appointmentBlocksSchedule(appointment)
     )) ?? null
-  }, [formData.date, formData.time, scheduleAppointments])
+  }, [formData.date, formData.time, formData.patientId, formData.approvalRequestId, approvedProcedures, scheduleAppointments])
 
   useEffect(() => {
     if (!formData.patientId) return
@@ -201,11 +247,17 @@ export default function NovaConsultaPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (submittingRef.current || isRefreshing || !availabilityValid || success) return
     setError(null)
     if (scheduleConflict) {
       setError(buildScheduleConflictMessage(scheduleConflict))
       return
     }
+    if (!proceduresForSelectedPatient.some((item) => item.id === formData.approvalRequestId)) {
+      setError("Escolha um procedimento disponível para agendamento.")
+      return
+    }
+    submittingRef.current = true
     setIsSubmitting(true)
 
     try {
@@ -215,6 +267,11 @@ export default function NovaConsultaPage() {
         return
       }
 
+      const current = await apiFetch<unknown>("/api/volunteers/procedure-requests", {}, token)
+      const fresh = Array.isArray(current) ? current.map((item) => normalizeProcedure(item as Record<string, unknown>)) : []
+      if (!fresh.some((item) => item.id === formData.approvalRequestId && item.beneficiaryId === Number(formData.patientId) && item.status === "aprovado" && item.canSchedule === true)) {
+        throw new Error("Este procedimento não está mais disponível para agendamento. A lista foi atualizada.")
+      }
       const response = await apiFetch<{ message?: string }>("/api/volunteers/appointments", {
         method: "POST",
         body: JSON.stringify({
@@ -229,10 +286,11 @@ export default function NovaConsultaPage() {
 
       setSuccessMessage(response.message || "Agendamento concluído com sucesso")
       setSuccess(true)
-      setTimeout(() => navigate("/dashboard/voluntario/agenda"), 1500)
     } catch (err) {
+      await refreshRef.current()
       setError(err instanceof Error ? err.message : "Erro ao agendar consulta")
     } finally {
+      submittingRef.current = false
       setIsSubmitting(false)
     }
   }
@@ -328,7 +386,7 @@ export default function NovaConsultaPage() {
                     <Label htmlFor="patient">Paciente *</Label>
                     {patients.length === 0 ? (
                       <div className="rounded-2xl border border-warning/50 bg-warning/10 p-3 text-sm text-warning">
-                        Nenhum paciente encontrado. Você precisa ter pacientes atribuídos.
+                        Nenhum procedimento disponível para agendamento. Consultas já agendadas permanecem na agenda; pedidos de reagendamento voltam a aparecer aqui.
                       </div>
                     ) : (
                       <Select value={formData.patientId} onValueChange={(value) => setFormData(prev => ({ ...prev, patientId: value, approvalRequestId: "" }))}>
@@ -366,7 +424,7 @@ export default function NovaConsultaPage() {
 
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <Button type="button" variant="outline" className="h-11 rounded-full sm:flex-1" onClick={() => navigate("/dashboard/voluntario/agenda")}>Cancelar</Button>
-                    <Button type="submit" className="h-11 rounded-full font-black sm:flex-1" disabled={isSubmitting || !formData.patientId || !formData.approvalRequestId || !formData.date || !formData.time || !formData.type || Boolean(scheduleConflict)}>
+                    <Button type="submit" className="h-11 rounded-full font-black sm:flex-1" disabled={isSubmitting || isRefreshing || !availabilityValid || !formData.patientId || !formData.approvalRequestId || !formData.date || !formData.time || !formData.type || Boolean(scheduleConflict)}>
                       {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Agendar consulta
                     </Button>
                   </div>

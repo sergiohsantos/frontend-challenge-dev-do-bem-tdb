@@ -517,6 +517,9 @@ export interface ProcedureRequest {
   dataSolicitacao: string
   dataAtualizacao?: string
   canSchedule?: boolean
+  canReschedule?: boolean
+  appointmentId?: number | null
+  appointmentStatus?: "scheduled" | "confirmed" | "rescheduled" | "completed" | "cancelled" | null
   adminComments?: Array<{
     id: number
     content: string

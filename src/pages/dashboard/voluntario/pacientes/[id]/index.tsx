@@ -248,7 +248,7 @@ export default function VoluntarioPacienteDetailPage() {
             backLabel="Voltar aos pacientes"
             primaryAction={(
               <Button size="lg" asChild className="h-14 rounded-full bg-accent text-base font-black text-accent-foreground hover:bg-accent/90">
-                <Link to={`/dashboard/voluntario/agenda/novo?patientId=${patient.id}`}><Calendar className="mr-2 h-5 w-5" />Agendar consulta</Link>
+                <Link to={`/dashboard/voluntario/agenda/novo?patientId=${patient.id}`}><Calendar className="mr-2 h-5 w-5" />Ver disponibilidade</Link>
               </Button>
             )}
             secondaryAction={(
