@@ -70,7 +70,7 @@ export default function AdminInfraestruturaPage() {
 
   return <div className="tdb-admin-shell flex min-h-screen bg-background text-foreground">
     <AdminSidebar />
-    <div className="min-w-0 flex-1"><AdminHeader />
+    <div className="min-w-0 flex-1 [&>header>div:first-child>div]:hidden sm:[&>header>div:first-child>div]:block"><AdminHeader />
       <main id="main-content" tabIndex={-1} className="mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
         <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-start">
           <div><p className="text-sm text-muted-foreground">Admin / Infraestrutura</p>
