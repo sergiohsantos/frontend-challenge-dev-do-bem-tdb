@@ -24,6 +24,7 @@ import {
   AlertCircle,
   User,
   ShieldCheck,
+  CalendarPlus,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { apiFetch, type ProcedureRequest } from "@/lib/api"
@@ -85,6 +86,9 @@ export default function SolicitacoesPage() {
 
   const pendingRequests = filteredRequests.filter(r => ["pendente", "em_analise", "info_adicional"].includes(r.status))
   const approvedRequests = filteredRequests.filter(r => r.status === "aprovado")
+  const readyRequests = approvedRequests.filter(r => r.canSchedule === true && r.canReschedule !== true)
+  const rescheduleRequests = approvedRequests.filter(r => r.canSchedule === true && r.canReschedule === true)
+  const unavailableRequests = approvedRequests.filter(r => r.canSchedule !== true)
   const rejectedRequests = filteredRequests.filter(r => r.status === "rejeitado")
   const actionRequiredRequests = filteredRequests.filter(r => r.status === "info_adicional")
 
@@ -192,7 +196,13 @@ export default function SolicitacoesPage() {
               {pendingRequests.length > 0 ? pendingRequests.map((request) => <RequestCard key={request.id} request={request} />) : <EmptyRequests icon={<FileText className="h-10 w-10" />} text="Nenhuma solicitação pendente" />}
             </TabsContent>
             <TabsContent value="aprovados" className="space-y-4">
-              {approvedRequests.length > 0 ? approvedRequests.map((request) => <RequestCard key={request.id} request={request} />) : <EmptyRequests icon={<CheckCircle2 className="h-10 w-10" />} text="Nenhuma solicitação aprovada" />}
+              <h2 className="text-lg font-bold">Disponíveis para agendar ({readyRequests.length})</h2>
+              {readyRequests.length > 0 ? readyRequests.map((request) => <RequestCard key={request.id} request={request} />) : <EmptyRequests icon={<CalendarPlus className="h-10 w-10" />} text="Nenhum procedimento aguardando primeiro agendamento" />}
+              <h2 className="pt-4 text-lg font-bold">Reagendamento solicitado ({rescheduleRequests.length})</h2>
+              {rescheduleRequests.length > 0 ? rescheduleRequests.map((request) => <RequestCard key={request.id} request={request} />) : <EmptyRequests icon={<Clock className="h-10 w-10" />} text="Nenhum pedido de reagendamento disponível" />}
+              <h2 className="pt-4 text-lg font-bold">Histórico de aprovações ({unavailableRequests.length})</h2>
+              <p className="text-sm text-muted-foreground">A aprovação permanece no histórico. Procedimentos com consulta vinculada só voltam ao agendamento quando há pedido de reagendamento.</p>
+              {unavailableRequests.map((request) => <RequestCard key={request.id} request={request} />)}
             </TabsContent>
             <TabsContent value="rejeitados" className="space-y-4">
               {rejectedRequests.length > 0 ? rejectedRequests.map((request) => <RequestCard key={request.id} request={request} />) : <EmptyRequests icon={<XCircle className="h-10 w-10" />} text="Nenhuma solicitação rejeitada" />}
@@ -233,6 +243,11 @@ function RequestCard({ request }: { request: ProcedureRequest }) {
               <Badge variant="outline" className={`rounded-full ${status.color}`}>
                 <StatusIcon className="mr-1 h-3 w-3" />{status.label}
               </Badge>
+              {request.status === "aprovado" && (
+                <Badge variant="outline" className="rounded-full">
+                  {request.canReschedule && request.canSchedule ? "Reagendamento solicitado" : request.canSchedule === true ? "Disponível para agendar" : request.appointmentStatus === "completed" ? "Consulta realizada" : request.appointmentStatus === "cancelled" ? "Consulta encerrada" : request.appointmentStatus === "scheduled" || request.appointmentStatus === "confirmed" ? "Consulta agendada" : "Indisponível para agendamento"}
+                </Badge>
+              )}
             </div>
 
             <div>
@@ -254,6 +269,11 @@ function RequestCard({ request }: { request: ProcedureRequest }) {
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row lg:ml-6 lg:w-44 lg:flex-col">
+            {request.status === "aprovado" && request.canSchedule === true && request.beneficiario_id && (
+              <Button size="sm" asChild className="h-10 w-full rounded-full font-bold">
+                <Link to={`/dashboard/voluntario/agenda/novo?patientId=${request.beneficiario_id}&approvalRequestId=${encodeURIComponent(request.public_id || request.id)}`}><CalendarPlus className="mr-2 h-4 w-4" />{request.canReschedule ? "Reagendar consulta" : "Agendar consulta"}</Link>
+              </Button>
+            )}
             <Button variant="outline" size="sm" asChild className="h-10 w-full rounded-full font-bold">
               <Link to={`/dashboard/voluntario/solicitacoes/${request.public_id || request.id}`}><Eye className="mr-2 h-4 w-4" />Ver detalhes</Link>
             </Button>
