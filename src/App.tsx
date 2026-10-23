@@ -47,6 +47,7 @@ const VoluntarioSolicitacaoNovaPage = lazy(() => import('./pages/dashboard/volun
 const AdminLoginPage = lazy(() => import('./pages/admin/login/index'))
 const AdminRecuperarSenhaPage = lazy(() => import('./pages/admin/recuperar-senha/index'))
 const AdminDashboardPage = lazy(() => import('./pages/admin/index'))
+const AdminInfraestruturaPage = lazy(() => import('./pages/admin/infraestrutura/index'))
 const AdminAprovacoesPage = lazy(() => import('./pages/admin/aprovacoes/index'))
 const AdminAprovacaoDetailPage = lazy(() => import('./pages/admin/aprovacoes/[id]/index'))
 const AdminBeneficiariosPage = lazy(() => import('./pages/admin/beneficiarios/index'))
@@ -141,6 +142,7 @@ function App() {
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/recuperar-senha" element={<AdminRecuperarSenhaPage />} />
         <Route path="/admin" element={<RequireRole role="admin" loginPath="/admin/login"><AdminDashboardPage /></RequireRole>} />
+        <Route path="/admin/infraestrutura" element={<RequireRole role="admin" loginPath="/admin/login"><AdminInfraestruturaPage /></RequireRole>} />
         <Route path="/admin/aprovacoes" element={<RequireRole role="admin" loginPath="/admin/login"><AdminAprovacoesPage /></RequireRole>} />
         <Route path="/admin/aprovacoes/:id" element={<RequireRole role="admin" loginPath="/admin/login"><AdminAprovacaoDetailPage /></RequireRole>} />
         <Route path="/admin/beneficiarios" element={<RequireRole role="admin" loginPath="/admin/login"><AdminBeneficiariosPage /></RequireRole>} />

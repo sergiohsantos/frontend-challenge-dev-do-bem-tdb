@@ -19,7 +19,8 @@ import {
   UserRoundCheck,
   ClipboardList,
   MessageSquare,
-  BrainCircuit
+  BrainCircuit,
+  Server
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -50,6 +51,7 @@ const managementItems = [
 ]
 
 const systemItems = [
+  { title: "Infraestrutura", href: "/admin/infraestrutura", icon: Server },
   { title: "Mensagens", href: "/admin/mensagens", icon: MessageSquare },
   { title: "Relatórios", href: "/admin/relatorios", icon: FileBarChart },
   { title: "Configurações", href: "/admin/configuracoes", icon: Settings },
