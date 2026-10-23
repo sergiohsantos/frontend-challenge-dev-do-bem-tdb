@@ -6,7 +6,7 @@ npm run build
 [[ -f dist/index.html ]]
 aws s3 sync dist/ "s3://$S3_BUCKET/releases/$GITHUB_SHA/" --cache-control 'no-cache'
 # Keep previous hashed assets so active browser sessions and rollback still work.
-aws s3 sync dist/ "s3://$S3_BUCKET/" --exclude 'index.html' --exclude 'assets/*' --cache-control 'public,max-age=3600'
+aws s3 sync dist/ "s3://$S3_BUCKET/" --exclude 'index.html' --exclude 'assets/*' --exclude 'observability/*' --cache-control 'public,max-age=3600'
 if [[ -d dist/assets ]]; then
   aws s3 sync dist/assets/ "s3://$S3_BUCKET/assets/" --cache-control 'public,max-age=31536000,immutable'
 fi

@@ -77,6 +77,8 @@ if name == 'aws':
         self.assertLess(assets, index)
         self.assertLess(index, invalidate)
         self.assertFalse(any('--delete' in c for c in calls))
+        root_upload = next(c for c in calls if c[:4] == ['aws', 's3', 'sync', 'dist/'] and 'index.html' in c)
+        self.assertIn('observability/*', root_upload)
         self.assertIn('Published frontend release', (self.cwd / 'summary').read_text())
 
     def test_develop_is_blocked_before_any_upload(self):
